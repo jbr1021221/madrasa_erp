@@ -55,7 +55,14 @@ class PaymentController extends Controller
 
         // Get filter options
         $classrooms = Classroom::all();
-        $sections = Student::distinct()->pluck('section')->filter();
+        
+        // Pass classroom data (sections) as JSON for JavaScript
+        $classroomData = $classrooms->mapWithKeys(function($classroom) {
+            return [$classroom->id => [
+                'sections' => $classroom->sections ?? []
+            ]];
+        });
+
         $months = [
             'January', 'February', 'March', 'April', 'May', 'June',
             'July', 'August', 'September', 'October', 'November', 'December'
@@ -69,7 +76,7 @@ class PaymentController extends Controller
             'payments',
             'totalEarnings',
             'classrooms',
-            'sections',
+            'classroomData',
             'months',
             'years'
         ));
@@ -97,11 +104,15 @@ class PaymentController extends Controller
             'payment_type' => 'required|string',
             'payment_mode' => 'required|string',
             'note' => 'nullable|string',
+            'redirect_to' => 'nullable|string',
         ]);
 
         $payment = Payment::create($validated);
 
-        return redirect()->route('payments.index')
+        // Check if redirect_to is specified
+        $redirectRoute = $validated['redirect_to'] ?? 'payments.index';
+        
+        return redirect()->route($redirectRoute)
             ->with('success', 'Payment recorded successfully.');
     }
 

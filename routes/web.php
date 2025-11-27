@@ -23,6 +23,7 @@ Route::put('/classrooms/{classroom}', [ClassroomController::class, 'update'])->n
 Route::delete('/classrooms/{classroom}', [ClassroomController::class, 'destroy'])->name('classrooms.destroy');
 
 // Students routes
+Route::get('/students/generate-id/{classId}', [StudentController::class, 'generateStudentId'])->name('students.generate-id');
 Route::get('/students', [StudentController::class, 'index'])->name('students.index');
 Route::get('/students/create', [StudentController::class, 'create'])->name('students.create');
 Route::post('/students', [StudentController::class, 'store'])->name('students.store');

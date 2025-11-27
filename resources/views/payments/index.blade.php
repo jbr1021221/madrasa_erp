@@ -15,7 +15,7 @@
 </div>
 
 <form method="GET" action="{{ route('payments.index') }}" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
-  <select name="class_id" style="background:#1b1f22;color:var(--text);border:1px solid rgba(255,255,255,0.15);padding:6px 10px;border-radius:var(--radius);font-size:14px;width:180px">
+  <select name="class_id" id="class_id" onchange="updateSections()" style="background:#1b1f22;color:var(--text);border:1px solid rgba(255,255,255,0.15);padding:6px 10px;border-radius:var(--radius);font-size:14px;width:180px">
     <option value="">All Classes</option>
     @foreach($classrooms as $classroom)
       <option value="{{ $classroom->id }}" {{ request('class_id') == $classroom->id ? 'selected' : '' }}>
@@ -24,13 +24,8 @@
     @endforeach
   </select>
 
-  <select name="section" style="background:#1b1f22;color:var(--text);border:1px solid rgba(255,255,255,0.15);padding:6px 10px;border-radius:var(--radius);font-size:14px;width:180px">
+  <select name="section" id="section" style="background:#1b1f22;color:var(--text);border:1px solid rgba(255,255,255,0.15);padding:6px 10px;border-radius:var(--radius);font-size:14px;width:180px">
     <option value="">All Sections</option>
-    @foreach($sections as $section)
-      <option value="{{ $section }}" {{ request('section') == $section ? 'selected' : '' }}>
-        Section {{ $section }}
-      </option>
-    @endforeach
   </select>
 
   <select name="month" style="background:#1b1f22;color:var(--text);border:1px solid rgba(255,255,255,0.15);padding:6px 10px;border-radius:var(--radius);font-size:14px;width:180px">
@@ -152,8 +147,60 @@ th,td{padding:10px;font-size:14px;border-bottom:1px solid rgba(255,255,255,0.07)
 </style>
 @endsection
 
-@section('extra-scripts')
+@section('scripts')
 <script>
+const classroomData = @json($classroomData);
+const currentSection = "{{ request('section') }}";
+
+function updateSections() {
+    const classSelect = document.getElementById('class_id');
+    const classId = classSelect.value;
+    const sectionSelect = document.getElementById('section');
+    
+    // Reset section dropdown
+    sectionSelect.innerHTML = '<option value="">All Sections</option>';
+    
+    let sectionsToShow = new Set();
+    
+    if (classId && classroomData[classId]) {
+        // Show sections for specific class
+        const data = classroomData[classId];
+        if (data.sections && data.sections.length > 0) {
+            data.sections.forEach(s => sectionsToShow.add(s));
+        } else {
+            sectionsToShow.add('A'); // Fallback
+        }
+    } else {
+        // Show all unique sections from all classes
+        Object.values(classroomData).forEach(cls => {
+            if (cls.sections && cls.sections.length > 0) {
+                cls.sections.forEach(s => sectionsToShow.add(s));
+            }
+        });
+        // If no sections found in any class, default to A, B
+        if (sectionsToShow.size === 0) {
+            sectionsToShow.add('A');
+            sectionsToShow.add('B');
+        }
+    }
+    
+    // Populate dropdown
+    Array.from(sectionsToShow).sort().forEach(section => {
+        const option = document.createElement('option');
+        option.value = section;
+        option.textContent = `Section ${section}`;
+        if (section === currentSection) {
+            option.selected = true;
+        }
+        sectionSelect.appendChild(option);
+    });
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateSections();
+});
+
 function viewPaymentHistory(studentId) {
   fetch(`/payments/student/${studentId}/history`)
     .then(response => response.json())

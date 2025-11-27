@@ -21,6 +21,11 @@ class Payment extends Model
         'transaction_id'
     ];
 
+    protected $casts = [
+        'payment_date' => 'date',
+        'amount' => 'decimal:2',
+    ];
+
     public function student()
     {
         return $this->belongsTo(Student::class);

@@ -64,6 +64,22 @@
       <td>{{ $student->classroom->name ?? 'N/A' }}</td>
       <td>{{ $student->section }}</td>
       <td style="display:flex;gap:6px;justify-content:center">
+        @php
+          $monthlyFee = 0;
+          $className = 'N/A';
+          if($student->classroom) {
+              $className = $student->classroom->name;
+              if($student->classroom->fees) {
+                  foreach($student->classroom->fees as $fee) {
+                      // Check for Monthly type (partial match, case-insensitive)
+                      if(isset($fee['type']) && stripos($fee['type'], 'Monthly') !== false) {
+                          $monthlyFee += (float)$fee['amount'];
+                      }
+                  }
+              }
+          }
+        @endphp
+        <button class="action-btn" onclick="openPayModal({{ $student->id }}, '{{ $student->name }} ({{ $className }})', {{ $monthlyFee }})" title="Fees: {{ json_encode($student->classroom->fees ?? []) }}">Pay</button>
         <a href="{{ route('students.show', $student) }}" class="action-btn">View</a>
         <a href="{{ route('students.edit', $student) }}" class="action-btn">Edit</a>
         <form action="{{ route('students.destroy', $student) }}" method="POST" style="display:inline" onsubmit="return confirm('Are you sure to delete this student?')">
@@ -80,6 +96,68 @@
     @endforelse
   </tbody>
 </table>
+
+<!-- PAY MODAL -->
+<div class="modal" id="payModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Monthly Fee</h3>
+      <span class="close" onclick="closePayModal()">✕</span>
+    </div>
+    <form action="{{ route('payments.store') }}" method="POST">
+      @csrf
+      <input type="hidden" name="student_id" id="payStudentId">
+      <input type="hidden" name="payment_type" value="Monthly Fee">
+      <input type="hidden" name="redirect_to" value="students.index">
+      
+      <div style="margin-bottom:12px">
+        <label>Student</label>
+        <input type="text" id="payStudentName" readonly style="background:#15181a;cursor:not-allowed">
+      </div>
+
+      <div style="margin-bottom:12px">
+        <label>Date</label>
+        <input type="date" name="payment_date" value="{{ date('Y-m-d') }}" required>
+      </div>
+
+      <div style="margin-bottom:12px">
+        <label>Amount</label>
+        <input type="number" name="amount" id="payAmount" value="0" required>
+      </div>
+
+      <div style="margin-bottom:12px">
+        <label>Month</label>
+        <select name="month" required>
+          @foreach(['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] as $month)
+            <option value="{{ $month }}" {{ date('F') == $month ? 'selected' : '' }}>{{ $month }}</option>
+          @endforeach
+        </select>
+      </div>
+
+      <div style="margin-bottom:12px">
+        <label>Payment Mode</label>
+        <select name="payment_mode" required>
+          <option value="Cash">Cash</option>
+          <option value="Bkash">Bkash</option>
+          <option value="Bank">Bank</option>
+          <option value="Rocket">Rocket</option>
+          <option value="Upay">Upay</option>
+          <option value="Others">Others</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom:16px">
+        <label>Note</label>
+        <input type="text" name="note" placeholder="Optional note">
+      </div>
+
+      <div style="text-align:right">
+        <button type="button" class="btn ghost" onclick="closePayModal()">Cancel</button>
+        <button type="submit" class="btn">Confirm Payment</button>
+      </div>
+    </form>
+  </div>
+</div>
 @endsection
 
 @section('extra-styles')
@@ -97,5 +175,42 @@ td{padding:10px;font-size:14px;text-align:center}
 }
 .action-btn.delete{border-color:var(--danger);color:var(--danger)}
 .btn.ghost{background:transparent;border:1px solid var(--accent);color:var(--accent)}
+
+/* MODAL */
+.modal{
+  position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);
+  display:none;justify-content:center;align-items:center;z-index:9999;
+}
+.modal-content{
+  width:400px;background:var(--card);padding:20px;border-radius:var(--radius);
+  border:1px solid rgba(255,255,255,0.15);
+}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.modal-header h3{margin:0}
+.close{cursor:pointer;color:var(--muted);font-size:18px}
+label{display:block;margin-bottom:6px;font-size:13px;color:var(--muted)}
+input,select{width:100%;padding:8px;background:#1b1f22;border:1px solid rgba(255,255,255,0.15);color:var(--text);border-radius:4px}
 </style>
+@endsection
+
+@section('scripts')
+<script>
+function openPayModal(id, name, amount) {
+  document.getElementById('payStudentId').value = id;
+  document.getElementById('payStudentName').value = name;
+  document.getElementById('payAmount').value = amount;
+  document.getElementById('payModal').style.display = 'flex';
+}
+
+function closePayModal() {
+  document.getElementById('payModal').style.display = 'none';
+}
+
+// Close on outside click
+document.getElementById('payModal').addEventListener('click', function(e) {
+  if (e.target === this) {
+    closePayModal();
+  }
+});
+</script>
 @endsection

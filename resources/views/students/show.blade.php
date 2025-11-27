@@ -13,46 +13,50 @@
 
 <div class="info-grid">
   <div class="info-item">
-    <div class="info-label">Class</div>
-    <div class="info-value">{{ $student->classroom->name ?? 'N/A' }}</div>
+    <div class="info-label">Student ID</div>
+    <div class="info-value">{{ $student->student_id }}</div>
   </div>
-
   <div class="info-item">
-    <div class="info-label">Roll Number</div>
-    <div class="info-value">{{ $student->roll }}</div>
+    <div class="info-label">Class & Section</div>
+    <div class="info-value">{{ $student->classroom->name ?? 'N/A' }} ({{ $student->section }})</div>
   </div>
-
   <div class="info-item">
-    <div class="info-label">Email</div>
-    <div class="info-value">{{ $student->email }}</div>
+    <div class="info-label">Father's Name</div>
+    <div class="info-value">{{ $student->father_name }}</div>
+  </div>
+  <div class="info-item">
+    <div class="info-label">Mobile</div>
+    <div class="info-value">{{ $student->mobile }}</div>
   </div>
 </div>
 
-<h3 style="margin-top:30px;margin-bottom:10px">Fees</h3>
+<h3 style="margin-top:30px;margin-bottom:10px">Class Fees Structure</h3>
 <table>
   <thead>
     <tr>
+      <th>Fee Name</th>
       <th>Type</th>
       <th>Amount</th>
-      <th>Due Date</th>
-      <th>Status</th>
     </tr>
   </thead>
   <tbody>
-    @forelse($student->fees as $fee)
-    <tr>
-      <td>{{ $fee->type }}</td>
-      <td>৳ {{ number_format($fee->amount, 2) }}</td>
-      <td>{{ $fee->due_date }}</td>
-      <td>
-        <span class="status-badge status-{{ $fee->status }}">{{ ucfirst($fee->status) }}</span>
-      </td>
-    </tr>
-    @empty
-    <tr>
-      <td colspan="4" style="color:var(--muted);padding:20px">No fees assigned</td>
-    </tr>
-    @endforelse
+    @if($student->classroom && $student->classroom->fees)
+      @foreach($student->classroom->fees as $fee)
+      <tr>
+        <td>{{ $fee['name'] }}</td>
+        <td>{{ $fee['type'] }}</td>
+        <td>৳ {{ number_format($fee['amount'], 2) }}</td>
+      </tr>
+      @endforeach
+      <tr style="background:rgba(227,120,20,0.1)">
+        <td colspan="2" style="font-weight:bold;text-align:right">Total Class Fee</td>
+        <td style="font-weight:bold;color:var(--accent)">৳ {{ number_format($student->classroom->total_fee, 2) }}</td>
+      </tr>
+    @else
+      <tr>
+        <td colspan="3" style="color:var(--muted);padding:20px">No fees defined for this class</td>
+      </tr>
+    @endif
   </tbody>
 </table>
 
@@ -61,22 +65,26 @@
   <thead>
     <tr>
       <th>Date</th>
+      <th>Type</th>
+      <th>Month</th>
       <th>Amount</th>
-      <th>Method</th>
-      <th>Transaction ID</th>
+      <th>Mode</th>
+      <th>Note</th>
     </tr>
   </thead>
   <tbody>
     @forelse($student->payments as $payment)
     <tr>
-      <td>{{ $payment->payment_date }}</td>
+      <td>{{ $payment->payment_date->format('d M, Y') }}</td>
+      <td>{{ $payment->payment_type }}</td>
+      <td>{{ $payment->month }}</td>
       <td>৳ {{ number_format($payment->amount, 2) }}</td>
-      <td>{{ ucfirst($payment->payment_method) }}</td>
-      <td>{{ $payment->transaction_id ?? 'N/A' }}</td>
+      <td>{{ ucfirst($payment->payment_mode) }}</td>
+      <td>{{ $payment->note ?? '-' }}</td>
     </tr>
     @empty
     <tr>
-      <td colspan="4" style="color:var(--muted);padding:20px">No payments recorded</td>
+      <td colspan="6" style="color:var(--muted);padding:20px">No payments recorded</td>
     </tr>
     @endforelse
   </tbody>

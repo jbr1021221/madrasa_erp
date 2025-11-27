@@ -45,31 +45,34 @@ class StudentController extends Controller
     /**
      * Show the form for creating a new resource.
      */
+    /**
+     * Show the form for creating a new resource.
+     */
     public function create()
     {
         $classrooms = Classroom::all();
-        $sections = ['A', 'B'];
         
         // Generate initial student ID (will be updated when class is selected)
-        $student_id = $this->generateStudentId(null);
+        $student_id = $this->generateStudentIdInternal(null);
         
-        // Pass classroom fees as JSON for JavaScript
-        $classroomFees = $classrooms->mapWithKeys(function($classroom) {
+        // Pass classroom data (fees & sections) as JSON for JavaScript
+        $classroomData = $classrooms->mapWithKeys(function($classroom) {
             return [$classroom->id => [
                 'fees' => $classroom->fees,
-                'total_fee' => $classroom->total_fee
+                'total_fee' => $classroom->total_fee,
+                'sections' => $classroom->sections ?? []
             ]];
         });
         
-        return view('students.create', compact('classrooms', 'sections', 'student_id', 'classroomFees'));
+        return view('students.create', compact('classrooms', 'student_id', 'classroomData'));
     }
 
     /**
      * AJAX endpoint to generate student ID for selected class
      */
-    public function generateId($classId)
+    public function generateStudentId($classId)
     {
-        $studentId = $this->generateStudentId($classId);
+        $studentId = $this->generateStudentIdInternal($classId);
         return response()->json(['student_id' => $studentId]);
     }
 
@@ -92,6 +95,23 @@ class StudentController extends Controller
             'payment_mode' => 'required|string',
             'payment_note' => 'nullable|string',
             'total_admission_fee' => 'required|numeric|min:0',
+            // New student details
+            'dob' => 'required|date',
+            'gender' => 'required|string|in:Male,Female,Other',
+            'blood_group' => 'nullable|string|max:5',
+            'last_school' => 'nullable|string|max:255',
+            'siblings_count' => 'nullable|integer|min:1',
+            'birth_order' => 'nullable|integer|min:1',
+            // Address details
+            'present_district' => 'required|string|max:255',
+            'permanent_address' => 'nullable|string',
+            'permanent_district' => 'nullable|string|max:255',
+            // Guardian details
+            'guardian_occupation' => 'required|string|max:255',
+            'guardian_nationality' => 'required|string|max:255',
+            'guardian_phone' => 'required|string|max:20',
+            'guardian_email' => 'nullable|email|max:255',
+            'guardian_nid' => 'required|string|max:30',
         ]);
 
         // Handle file upload
@@ -130,8 +150,17 @@ class StudentController extends Controller
     public function edit(Student $student)
     {
         $classrooms = Classroom::all();
-       $sections = ['A', 'B'];
-        return view('students.edit', compact('student', 'classrooms', 'sections'));
+        
+        // Pass classroom data (fees & sections) as JSON for JavaScript
+        $classroomData = $classrooms->mapWithKeys(function($classroom) {
+            return [$classroom->id => [
+                'fees' => $classroom->fees,
+                'total_fee' => $classroom->total_fee,
+                'sections' => $classroom->sections ?? []
+            ]];
+        });
+
+        return view('students.edit', compact('student', 'classrooms', 'classroomData'));
     }
 
     /**
@@ -149,6 +178,23 @@ class StudentController extends Controller
             'class_id' => 'required|exists:classrooms,id',
             'section' => 'required|string|max:10',
             'nid_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            // New student details
+            'dob' => 'required|date',
+            'gender' => 'required|string|in:Male,Female,Other',
+            'blood_group' => 'nullable|string|max:5',
+            'last_school' => 'nullable|string|max:255',
+            'siblings_count' => 'nullable|integer|min:1',
+            'birth_order' => 'nullable|integer|min:1',
+            // Address details
+            'present_district' => 'required|string|max:255',
+            'permanent_address' => 'nullable|string',
+            'permanent_district' => 'nullable|string|max:255',
+            // Guardian details
+            'guardian_occupation' => 'required|string|max:255',
+            'guardian_nationality' => 'required|string|max:255',
+            'guardian_phone' => 'required|string|max:20',
+            'guardian_email' => 'nullable|email|max:255',
+            'guardian_nid' => 'required|string|max:30',
         ]);
 
         // Handle file upload
@@ -184,7 +230,7 @@ class StudentController extends Controller
      * Generate unique student ID
      * Format: YY + ClassNumber + Sequential (e.g., 251001, 251002)
      */
-    private function generateStudentId($classId = null)
+    private function generateStudentIdInternal($classId = null)
     {
         $year = date('y'); // Last 2 digits of year (e.g., 25 for 2025)
         
