@@ -14,18 +14,12 @@ class StudentTest extends TestCase
 
     public function test_can_list_students()
     {
-        $classroom = Classroom::factory()->create();
-        Student::create([
-            'name' => 'John Doe',
-            'class_id' => $classroom->id,
-            'roll' => 1,
-            'email' => 'john@example.com'
-        ]);
+        $student = Student::factory()->create();
 
         $response = $this->get(route('students.index'));
 
         $response->assertStatus(200);
-        $response->assertSee('John Doe');
+        $response->assertSee($student->name);
     }
 
     public function test_can_create_student()
@@ -34,35 +28,59 @@ class StudentTest extends TestCase
 
         $data = [
             'name' => 'Jane Doe',
+            'father_name' => 'John Doe Sr.',
+            'mother_name' => 'Jane Doe Sr.',
+            'address' => '123 Main St',
+            'mobile' => '01712345678',
+            'alt_mobile' => '01812345678',
             'class_id' => $classroom->id,
-            'roll' => 2,
-            'email' => 'jane@example.com'
+            'section' => 'A',
+            'payment_mode' => 'Cash',
+            'total_admission_fee' => 1000,
+            'dob' => '2015-01-01',
+            'gender' => 'Female',
+            'blood_group' => 'A+',
+            'last_school' => 'Previous School',
+            'siblings_count' => 1,
+            'birth_order' => 1,
+            'present_district' => 'Dhaka',
+            'permanent_address' => '456 Another St',
+            'permanent_district' => 'Chittagong',
+            'guardian_occupation' => 'Engineer',
+            'guardian_nationality' => 'Bangladeshi',
+            'guardian_phone' => '01912345678',
+            'guardian_email' => 'guardian@example.com',
+            'guardian_nid' => '1234567890',
         ];
 
         $response = $this->post(route('students.store'), $data);
 
-        $response->assertRedirect(route('students.index'));
+        $response->assertRedirect(route('students.receipt.confirm', Student::first()));
         $this->assertDatabaseHas('students', [
             'name' => 'Jane Doe',
-            'email' => 'jane@example.com'
+            'guardian_email' => 'guardian@example.com'
         ]);
     }
 
     public function test_can_update_student()
     {
-        $classroom = Classroom::factory()->create();
-        $student = Student::create([
-            'name' => 'Old Name',
-            'class_id' => $classroom->id,
-            'roll' => 3,
-            'email' => 'old@example.com'
-        ]);
+        $student = Student::factory()->create();
 
         $data = [
             'name' => 'New Name',
-            'class_id' => $classroom->id,
-            'roll' => 4,
-            'email' => 'new@example.com'
+            'father_name' => $student->father_name,
+            'mother_name' => $student->mother_name,
+            'address' => $student->address,
+            'mobile' => $student->mobile,
+            'class_id' => $student->class_id,
+            'section' => $student->section,
+            'dob' => $student->dob,
+            'gender' => $student->gender,
+            'present_district' => $student->present_district,
+            'guardian_occupation' => $student->guardian_occupation,
+            'guardian_nationality' => $student->guardian_nationality,
+            'guardian_phone' => $student->guardian_phone,
+            'guardian_nid' => $student->guardian_nid,
         ];
 
         $response = $this->put(route('students.update', $student), $data);
@@ -71,19 +89,12 @@ class StudentTest extends TestCase
         $this->assertDatabaseHas('students', [
             'id' => $student->id,
             'name' => 'New Name',
-            'email' => 'new@example.com'
         ]);
     }
 
     public function test_can_delete_student()
     {
-        $classroom = Classroom::factory()->create();
-        $student = Student::create([
-            'name' => 'To Delete',
-            'class_id' => $classroom->id,
-            'roll' => 5,
-            'email' => 'delete@example.com'
-        ]);
+        $student = Student::factory()->create();
 
         $response = $this->delete(route('students.destroy', $student));
 

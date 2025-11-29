@@ -81,6 +81,7 @@
         @endphp
         <button class="action-btn" onclick="openPayModal({{ $student->id }}, '{{ $student->name }} ({{ $className }})', {{ $monthlyFee }})" title="Fees: {{ json_encode($student->classroom->fees ?? []) }}">Pay</button>
         <a href="{{ route('students.show', $student) }}" class="action-btn">View</a>
+        <a href="{{ route('students.receipt.download', $student) }}" class="action-btn receipt" title="Download Admission Receipt">Receipt</a>
         <a href="{{ route('students.edit', $student) }}" class="action-btn">Edit</a>
         <form action="{{ route('students.destroy', $student) }}" method="POST" style="display:inline" onsubmit="return confirm('Are you sure to delete this student?')">
           @csrf
@@ -174,6 +175,8 @@ td{padding:10px;font-size:14px;text-align:center}
   text-decoration:none;display:inline-block;margin:2px
 }
 .action-btn.delete{border-color:var(--danger);color:var(--danger)}
+.action-btn.receipt{border-color:#4caf50;color:#4caf50}
+.action-btn.receipt:hover{background:rgba(76,175,80,0.1)}
 .btn.ghost{background:transparent;border:1px solid var(--accent);color:var(--accent)}
 
 /* MODAL */

@@ -20,7 +20,7 @@ class Student extends Model
         'nid_file_path',
         'class_id',
         'section',
-        // New student details
+        // New student details  
         'dob',
         'gender',
         'siblings_count',

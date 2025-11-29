@@ -32,6 +32,12 @@ Route::get('/students/{student}/edit', [StudentController::class, 'edit'])->name
 Route::put('/students/{student}', [StudentController::class, 'update'])->name('students.update');
 Route::delete('/students/{student}', [StudentController::class, 'destroy'])->name('students.destroy');
 
+
+// Student Receipt routes
+Route::get('/students/{student}/receipt/confirm', [StudentController::class, 'receiptConfirm'])->name('students.receipt.confirm');
+Route::get('/students/{student}/receipt', [StudentController::class, 'viewReceipt'])->name('students.receipt.view');
+Route::get('/students/{student}/receipt/download', [StudentController::class, 'downloadReceipt'])->name('students.receipt.download');
+
 // Payments routes
 Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
 Route::get('/payments/create', [PaymentController::class, 'create'])->name('payments.create');
