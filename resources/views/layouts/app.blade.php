@@ -47,9 +47,8 @@ html,body{
 .brand{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .logo{
   width:42px;height:42px;border-radius:var(--radius);
-  background:var(--accent);color:#041617;
-  display:flex;justify-content:center;align-items:center;
-  font-size:18px;font-weight:700;
+  object-fit:cover;
+  border:1px solid rgba(255,255,255,0.1);
 }
 .nav{display:flex;flex-direction:column;gap:4px;margin-top:10px}
 .nav-btn{

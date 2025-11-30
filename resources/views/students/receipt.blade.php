@@ -27,42 +27,15 @@
         
         /* Header Section */
         .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #8B0000;
+            margin-bottom: 20px;
+            text-align: center;
         }
         
-        .logo-section {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-        
-        .logo {
-            width: 80px;
-            height: 80px;
-        }
-        
-        .school-info h1 {
-            color: #8B0000;
-            font-size: 24px;
-            margin-bottom: 5px;
-        }
-        
-        .school-info .features {
-            color: #003366;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-        
-        .contact-info {
-            text-align: right;
-            font-size: 12px;
-            color: #333;
-            line-height: 1.6;
+        .banner-image {
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            display: block;
         }
         
         /* Invoice Title */
@@ -217,35 +190,7 @@
     <div class="receipt-container">
         <!-- Header -->
         <div class="header">
-            <div class="logo-section">
-                <div class="logo">
-                    <!-- Add your school logo here -->
-                    <svg viewBox="0 0 100 100" fill="#8B0000">
-                        <rect x="20" y="40" width="60" height="50" fill="#8B0000"/>
-                        <path d="M50 10 L80 35 L20 35 Z" fill="#8B0000"/>
-                        <rect x="45" y="55" width="10" height="20" fill="white"/>
-                    </svg>
-                </div>
-                <div class="school-info">
-                    <h1>Al Akhirah</h1>
-                    <h1>INTERNATIONAL ACADEMY</h1>
-                    <div class="features">
-                        <strong>-Hifzul Quran</strong><br>
-                        <strong>-Islamic Studies</strong>
-                    </div>
-                </div>
-            </div>
-            <div class="school-info">
-                <div class="features">
-                    <strong>-English Medium</strong><br>
-                    <strong>-Islamic Tarbiyah</strong>
-                </div>
-            </div>
-            <div class="contact-info">
-                <strong>Dhanmondi 14 new (old 29) H#9, Dhaka-1205</strong><br>
-                alakhirahacademy.com<br>
-                01762 391754
-            </div>
+            <img src="{{ asset('academy-banner.png') }}" alt="Al Akhirah International Academy" class="banner-image">
         </div>
         
         <!-- Invoice Title -->

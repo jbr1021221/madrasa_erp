@@ -381,4 +381,16 @@ private function generateStudentIdInternal($classId = null)
         
         return $pdf->stream('student_receipt_' . $student->student_id . '.pdf');
     }
+
+    /**
+     * Download student admission form as PDF
+     */
+    public function downloadAdmissionForm(Student $student)
+    {
+        $student->load(['classroom']);
+        
+        $pdf = Pdf::loadView('students.admission-form', compact('student'))
+            ->setPaper('a4', 'portrait');
+               return $pdf->download($student->student_id . '_admission_form.pdf');
+    }
 }

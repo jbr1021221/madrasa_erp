@@ -34,12 +34,12 @@
       <td>{{ $classroom->max_students_per_section }}</td>
       <td style="font-size:12px">{{ $classroom->fees_string }}</td>
       <td>৳ {{ number_format($classroom->total_fee, 0) }}</td>
-      <td>
+      <td style="display:flex;gap:6px;justify-content:center">
         <a href="{{ route('classrooms.edit', $classroom) }}" class="action-btn">Edit</a>
         <form action="{{ route('classrooms.destroy', $classroom) }}" method="POST" style="display:inline" onsubmit="return confirm('Delete this class?')">
           @csrf
           @method('DELETE')
-          <button type="submit" class="action-btn delete" style="background:transparent">Delete</button>
+          <button type="submit" class="action-btn delete">Delete</button>
         </form>
       </td>
     </tr>
@@ -54,9 +54,11 @@
 
 @section('extra-styles')
 <style>
-.action-btn{padding:5px 10px;background:transparent;color:var(--accent);
-  border:1px solid var(--accent);border-radius:6px;cursor:pointer;font-size:13px;
-  text-decoration:none;display:inline-block;margin:2px;}
+.action-btn{
+  padding:6px 10px;border-radius:6px;border:1px solid var(--accent);
+  color:var(--accent);background:transparent;cursor:pointer;font-size:13px;
+  text-decoration:none;display:inline-block;margin:2px
+}
 .action-btn.delete{border-color:var(--danger);color:var(--danger)}
 </style>
 @endsection

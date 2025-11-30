@@ -34,8 +34,8 @@
       @enderror
     </div>
     <div class="form-group">
-      <label>Mother Name *</label>
-      <input type="text" name="mother_name" placeholder="Mother's Name" value="{{ old('mother_name', $student->mother_name) }}" required>
+      <label>Mother Name</label>
+      <input type="text" name="mother_name" placeholder="Mother's Name" value="{{ old('mother_name', $student->mother_name) }}">
       @error('mother_name')
         <div class="error">{{ $message }}</div>
       @enderror
@@ -43,8 +43,8 @@
   </div>
 
   <div class="form-group">
-    <label>Address *</label>
-    <input type="text" name="address" placeholder="Full Address" value="{{ old('address', $student->address) }}" style="width:100%" required>
+    <label>Address</label>
+    <input type="text" name="address" placeholder="Full Address" value="{{ old('address', $student->address) }}" style="width:100%">
     @error('address')
       <div class="error">{{ $message }}</div>
     @enderror
@@ -82,15 +82,15 @@
 
   <div class="form-row">
     <div class="form-group">
-      <label>Date of Birth *</label>
-      <input type="date" name="dob" value="{{ old('dob', $student->dob ? $student->dob->format('Y-m-d') : '') }}" required>
+      <label>Date of Birth</label>
+      <input type="date" name="dob" value="{{ old('dob', $student->dob ? $student->dob->format('Y-m-d') : '') }}">
       @error('dob')
         <div class="error">{{ $message }}</div>
       @enderror
     </div>
     <div class="form-group">
-      <label>Gender *</label>
-      <select name="gender" required>
+      <label>Gender</label>
+      <select name="gender">
         <option value="">Select Gender</option>
         <option value="Male" {{ old('gender', $student->gender) == 'Male' ? 'selected' : '' }}>Male</option>
         <option value="Female" {{ old('gender', $student->gender) == 'Female' ? 'selected' : '' }}>Female</option>
@@ -149,16 +149,16 @@
   <h4 style="margin-top:28px;margin-bottom:12px;color:var(--text);border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:8px">Address Information</h4>
 
   <div class="form-group">
-    <label>Present Address *</label>
-    <textarea name="address" rows="2" placeholder="Current residential address" required>{{ old('address', $student->address) }}</textarea>
+    <label>Present Address</label>
+    <textarea name="address" rows="2" placeholder="Current residential address">{{ old('address', $student->address) }}</textarea>
     @error('address')
       <div class="error">{{ $message }}</div>
     @enderror
   </div>
 
   <div class="form-group">
-    <label>Present District *</label>
-    <input type="text" name="present_district" placeholder="e.g., Dhaka" value="{{ old('present_district', $student->present_district) }}" required>
+    <label>Present District</label>
+    <input type="text" name="present_district" placeholder="e.g., Dhaka" value="{{ old('present_district', $student->present_district) }}">
     @error('present_district')
       <div class="error">{{ $message }}</div>
     @enderror
@@ -184,15 +184,15 @@
 
   <div class="form-row">
     <div class="form-group">
-      <label>Guardian Occupation *</label>
-      <input type="text" name="guardian_occupation" placeholder="e.g., Teacher, Farmer" value="{{ old('guardian_occupation', $student->guardian_occupation) }}" required>
+      <label>Guardian Occupation</label>
+      <input type="text" name="guardian_occupation" placeholder="e.g., Teacher, Farmer" value="{{ old('guardian_occupation', $student->guardian_occupation) }}">
       @error('guardian_occupation')
         <div class="error">{{ $message }}</div>
       @enderror
     </div>
     <div class="form-group">
-      <label>Guardian Nationality *</label>
-      <input type="text" name="guardian_nationality" placeholder="e.g., Bangladeshi" value="{{ old('guardian_nationality', $student->guardian_nationality) }}" required>
+      <label>Guardian Nationality</label>
+      <input type="text" name="guardian_nationality" placeholder="e.g., Bangladeshi" value="{{ old('guardian_nationality', $student->guardian_nationality) }}">
       @error('guardian_nationality')
         <div class="error">{{ $message }}</div>
       @enderror
@@ -201,8 +201,8 @@
 
   <div class="form-row">
     <div class="form-group">
-      <label>Guardian Phone *</label>
-      <input type="text" name="guardian_phone" placeholder="01XXXXXXXXX" value="{{ old('guardian_phone', $student->guardian_phone) }}" required>
+      <label>Guardian Phone</label>
+      <input type="text" name="guardian_phone" placeholder="01XXXXXXXXX" value="{{ old('guardian_phone', $student->guardian_phone) }}">
       @error('guardian_phone')
         <div class="error">{{ $message }}</div>
       @enderror
@@ -217,8 +217,8 @@
   </div>
 
   <div class="form-group">
-    <label>Guardian NID Number *</label>
-    <input type="text" name="guardian_nid" placeholder="National ID Number" value="{{ old('guardian_nid', $student->guardian_nid) }}" required>
+    <label>Guardian NID Number</label>
+    <input type="text" name="guardian_nid" placeholder="National ID Number" value="{{ old('guardian_nid', $student->guardian_nid) }}">
     @error('guardian_nid')
       <div class="error">{{ $message }}</div>
     @enderror

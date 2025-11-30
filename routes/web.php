@@ -37,6 +37,7 @@ Route::delete('/students/{student}', [StudentController::class, 'destroy'])->nam
 Route::get('/students/{student}/receipt/confirm', [StudentController::class, 'receiptConfirm'])->name('students.receipt.confirm');
 Route::get('/students/{student}/receipt', [StudentController::class, 'viewReceipt'])->name('students.receipt.view');
 Route::get('/students/{student}/receipt/download', [StudentController::class, 'downloadReceipt'])->name('students.receipt.download');
+Route::get('/students/{student}/admission-form/download', [StudentController::class, 'downloadAdmissionForm'])->name('students.admission-form.download');
 
 // Payments routes
 Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');

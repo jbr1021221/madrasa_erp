@@ -1,6 +1,6 @@
 <aside class="sidebar">
   <div class="brand">
-    <div class="logo">M</div>
+    <img src="{{ asset('madrasa-logo.jpeg') }}" alt="Madrasa Logo" class="logo">
     <div>
       <h2 style="margin:0;font-size:18px">Madrasa</h2>
       <p class="small" style="margin:0">Smart Dashboard</p>
@@ -9,16 +9,16 @@
 
   <nav class="nav">
     <a class="nav-btn {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
-      📊 Dashboard
+      Dashboard
     </a>
     <a class="nav-btn {{ request()->routeIs('students.*') ? 'active' : '' }}" href="/students">
-      👨‍🎓 Students
+      Students
     </a>
     <a class="nav-btn {{ request()->routeIs('classrooms.*') ? 'active' : '' }}" href="{{ route('classrooms.index') }}">
-      🏫 Classes
+      Classes
     </a>
     <a class="nav-btn {{ request()->routeIs('accounts.*') ? 'active' : '' }}" href="/accounts">
-      💰 Accounts
+      Accounts
     </a>
   </nav>
 
