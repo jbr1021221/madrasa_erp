@@ -32,6 +32,7 @@ class StoreStudentRequest extends FormRequest
             'class_id' => 'required|exists:classrooms,id',
             'section' => 'required|string|max:10',
             'nid_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'payment_mode' => 'required|string',
             'payment_note' => 'nullable|string',
             'total_admission_fee' => 'required|numeric|min:0',

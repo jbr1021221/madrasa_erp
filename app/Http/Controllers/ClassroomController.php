@@ -33,7 +33,9 @@ class ClassroomController extends Controller
             'name' => 'required|string|max:255',
             'sections' => 'required|string',
             'max_students_per_section' => 'required|integer|min:1',
-            'fees' => 'required|array|min:1',
+            'admission_fee' => 'required|numeric|min:0',
+            'monthly_fee' => 'required|numeric|min:0',
+            'fees' => 'nullable|array',
             'fees.*.name' => 'required|string',
             'fees.*.amount' => 'required|numeric|min:0',
             'fees.*.type' => 'required|in:One Time,Monthly,Yearly'
@@ -41,6 +43,11 @@ class ClassroomController extends Controller
 
         $classroom = new Classroom();
         $classroom->fill($validated);
+        
+        // Ensure fees is an array if not present
+        if (!isset($validated['fees'])) {
+            $classroom->fees = [];
+        }
         
         // Convert sections string to array
         $classroom->sections = array_map('trim', explode(',', $validated['sections']));
@@ -72,13 +79,20 @@ class ClassroomController extends Controller
             'name' => 'required|string|max:255',
             'sections' => 'required|string',
             'max_students_per_section' => 'required|integer|min:1',
-            'fees' => 'required|array|min:1',
+            'admission_fee' => 'required|numeric|min:0',
+            'monthly_fee' => 'required|numeric|min:0',
+            'fees' => 'nullable|array',
             'fees.*.name' => 'required|string',
             'fees.*.amount' => 'required|numeric|min:0',
             'fees.*.type' => 'required|in:One Time,Monthly,Yearly'
         ]);
 
         $classroom->fill($validated);
+
+        // Ensure fees is an array if not present
+        if (!isset($validated['fees'])) {
+            $classroom->fees = [];
+        }
 
         // Convert sections string to array
         $classroom->sections = array_map('trim', explode(',', $validated['sections']));

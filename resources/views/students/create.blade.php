@@ -130,6 +130,15 @@ label{display:block;margin-bottom:6px;margin-top:16px;font-size:14px;color:var(-
         @enderror
       </div>
 
+      <div class="form-group">
+        <label>Student Photo</label>
+        <input type="file" name="photo" accept=".jpg,.jpeg,.png">
+        <small style="color: var(--muted); font-size: 12px; margin-top: 4px; display: block;">Upload a passport-size photo (JPG, JPEG, or PNG)</small>
+        @error('photo')
+          <div class="error">{{ $message }}</div>
+        @enderror
+      </div>
+
       <h4 style="margin-top:28px;margin-bottom:12px;color:var(--text);border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:8px">Student Details</h4>
 
       <div class="form-row">
@@ -403,6 +412,8 @@ function updateClassInfo() {
     generateStudentId(classId);
     
     // Display Fees
+    const admissionFee = parseFloat(data.admission_fee) || 0;
+    const monthlyFee = parseFloat(data.monthly_fee) || 0;
     const totalFee = parseFloat(data.total_fee) || 0;
     const fees = data.fees || [];
     
@@ -412,6 +423,20 @@ function updateClassInfo() {
     html += '<thead><tr><th>Fee Name</th><th>Type</th><th style="text-align:right;">Amount</th></tr></thead>';
     html += '<tbody>';
     
+    // Static Admission Fee
+    html += `<tr>
+        <td>Admission Fee</td>
+        <td><small style="color: var(--muted);">One Time</small></td>
+        <td style="text-align:right;">৳ ${admissionFee.toFixed(2)}</td>
+    </tr>`;
+    
+    // Static Monthly Fee
+    html += `<tr>
+        <td>Monthly Fee</td>
+        <td><small style="color: var(--muted);">Monthly</small></td>
+        <td style="text-align:right;">৳ ${monthlyFee.toFixed(2)}</td>
+    </tr>`;
+    
     if (fees && fees.length > 0) {
         fees.forEach(fee => {
             html += `<tr>
@@ -420,8 +445,6 @@ function updateClassInfo() {
                 <td style="text-align:right;">৳ ${parseFloat(fee.amount).toFixed(2)}</td>
             </tr>`;
         });
-    } else {
-        html += '<tr><td colspan="3" style="text-align:center; color: var(--muted);">No fees available</td></tr>';
     }
     
     html += '</tbody></table>';

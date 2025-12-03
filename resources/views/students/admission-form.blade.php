@@ -82,6 +82,13 @@
             font-size: 9px;
             color: #51272f;
             background: #fff;
+            overflow: hidden;
+        }
+
+        .photo-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .date-box {
@@ -95,8 +102,10 @@
         .checkboxes {
     display: flex;
     justify-content: center;
-    gap: 20px;
+    align-items: center;
+    gap: 30px;
     margin-bottom: 8px;
+    text-align: center;
 }
 
 .checkboxes label {
@@ -105,6 +114,14 @@
     gap: 5px;
     font-size: 10px;
     font-weight: 600;
+}
+
+.checkbox-box {
+    width: 12px;
+    height: 12px;
+    border: 1.5px solid #51272f;
+    display: inline-block;
+    background: white;
 }
         
         h1 {
@@ -292,7 +309,11 @@
             <!-- Photo Right -->
             <div class="photo-right">
                 <div class="photo-box">
-                    <br>Attach<br>Photo<br>Here
+                    @if($student->photo && file_exists(storage_path('app/public/' . $student->photo)))
+                        <img src="{{ storage_path('app/public/' . $student->photo) }}" alt="Student Photo">
+                    @else
+                        <br>Attach<br>Photo<br>Here
+                    @endif
                 </div>
                 <div class="date-box">
                     Date: ________________
@@ -305,8 +326,8 @@
         <!-- Academic Year, Class, Shift -->
 
          <div class="checkboxes">
-                <label><input type="checkbox"  disabled> Hifz</label>
-                <label><input type="checkbox"  disabled> Schooling</label>
+                <label><span class="checkbox-box"></span> Hifz</label>
+                <label><span class="checkbox-box"></span> Schooling</label>
             </div>
         <div class="row mb-2">
             <div class="col-md-4">

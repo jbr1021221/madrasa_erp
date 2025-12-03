@@ -62,6 +62,8 @@ class StudentController extends Controller
         $classroomData = $classrooms->mapWithKeys(function($classroom) {
             return [$classroom->id => [
                 'fees' => $classroom->fees,
+                'admission_fee' => $classroom->admission_fee,
+                'monthly_fee' => $classroom->monthly_fee,
                 'total_fee' => $classroom->total_fee,
                 'sections' => $classroom->sections ?? []
             ]];
@@ -101,6 +103,11 @@ class StudentController extends Controller
         // Handle file upload
         if ($request->hasFile('nid_file')) {
             $validated['nid_file_path'] = $request->file('nid_file')->store('nid_files', 'public');
+        }
+
+        // Handle photo upload
+        if ($request->hasFile('photo')) {
+            $validated['photo'] = $request->file('photo')->store('student_photos', 'public');
         }
 
         // Create the student

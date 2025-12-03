@@ -96,7 +96,24 @@ label{display:block;margin-bottom:6px;margin-top:16px;font-size:14px;}
         <div class="error">{{ $message }}</div>
       @enderror
 
-      <label style="margin-top:24px">Fees *</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
+        <div>
+          <label>Admission Fee *</label>
+          <input type="number" name="admission_fee" value="{{ old('admission_fee', $classroom->admission_fee ?? 0) }}" required min="0" step="0.01">
+          @error('admission_fee')
+            <div class="error">{{ $message }}</div>
+          @enderror
+        </div>
+        <div>
+          <label>Monthly Fee *</label>
+          <input type="number" name="monthly_fee" value="{{ old('monthly_fee', $classroom->monthly_fee ?? 0) }}" required min="0" step="0.01">
+          @error('monthly_fee')
+            <div class="error">{{ $message }}</div>
+          @enderror
+        </div>
+      </div>
+
+      <label style="margin-top:24px">Additional Fees (Optional)</label>
       <div id="feesContainer">
         @if(isset($classroom) && count($classroom->fees) > 0)
           @foreach($classroom->fees as $index => $fee)

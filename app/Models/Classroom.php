@@ -13,6 +13,8 @@ class Classroom extends Model
         'name',
         'sections',
         'max_students_per_section',
+        'admission_fee',
+        'monthly_fee',
         'fees',
         'total_fee'
     ];
@@ -20,19 +22,22 @@ class Classroom extends Model
     protected $casts = [
         'sections' => 'array',
         'fees' => 'array',
+        'admission_fee' => 'decimal:2',
+        'monthly_fee' => 'decimal:2',
         'total_fee' => 'decimal:2'
     ];
 
     /**
-     * Calculate total fee from fees array
+     * Calculate total fee from admission fee + additional fees
      */
     public function calculateTotalFee()
     {
-        if (empty($this->fees)) {
-            return 0;
+        $additionalFees = 0;
+        if (!empty($this->fees)) {
+            $additionalFees = collect($this->fees)->sum('amount');
         }
 
-        return collect($this->fees)->sum('amount');
+        return $this->admission_fee + $additionalFees;
     }
 
     /**
