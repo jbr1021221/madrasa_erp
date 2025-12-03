@@ -73,7 +73,7 @@
 
         .photo-box {
             width: 100px;
-            height: 110px;
+            height: 100px;
             border: 1px dashed #51272f;
             display: flex;
             align-items: center;

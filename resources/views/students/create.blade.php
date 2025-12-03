@@ -46,7 +46,7 @@ label{display:block;margin-bottom:6px;margin-top:16px;font-size:14px;color:var(-
 .fee-table tr:nth-child(odd) {background: rgba(255,255,255,0.04);}
 .total-fee-display {
   margin-top: 14px;font-size: 18px;font-weight: 700;text-align: right;
-  color: var(--accent);padding: 12px;background: rgba(227,120,20,0.1);
+  color: #fff;padding: 12px;background: rgba(53, 52, 51, 0.1);
   border-radius: var(--radius);
 }
 </style>
@@ -139,7 +139,7 @@ label{display:block;margin-bottom:6px;margin-top:16px;font-size:14px;color:var(-
         @enderror
       </div>
 
-      <h4 style="margin-top:28px;margin-bottom:12px;color:var(--text);border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:8px">Student Details</h4>
+      <h4 style="margin-top:28px;margin-bottom:12px;color:var(--text);border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:8px;text-align:center">Student Details</h4>
 
       <div class="form-row">
         <div class="form-group">
@@ -207,7 +207,7 @@ label{display:block;margin-bottom:6px;margin-top:16px;font-size:14px;color:var(-
         </div>
       </div>
 
-      <h4 style="margin-top:28px;margin-bottom:12px;color:var(--text);border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:8px">Address Information</h4>
+      <h4 style="margin-top:28px;margin-bottom:12px;color:var(--text);border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:8px;text-align:center">Address Information</h4>
 
       <div class="form-group">
         <label>Present Address</label>
@@ -217,13 +217,13 @@ label{display:block;margin-bottom:6px;margin-top:16px;font-size:14px;color:var(-
         @enderror
       </div>
 
-      <div class="form-group">
+      <!-- <div class="form-group">
         <label>Present District</label>
         <input type="text" name="present_district" placeholder="e.g., Dhaka" value="{{ old('present_district') }}">
         @error('present_district')
           <div class="error">{{ $message }}</div>
         @enderror
-      </div>
+      </div> -->
 
       <div class="form-group">
         <label>Permanent Address</label>
@@ -233,26 +233,26 @@ label{display:block;margin-bottom:6px;margin-top:16px;font-size:14px;color:var(-
         @enderror
       </div>
 
-      <div class="form-group">
+      <!-- <div class="form-group">
         <label>Permanent District</label>
         <input type="text" name="permanent_district" placeholder="e.g., Chittagong" value="{{ old('permanent_district') }}">
         @error('permanent_district')
           <div class="error">{{ $message }}</div>
         @enderror
-      </div>
+      </div> -->
 
-      <h4 style="margin-top:28px;margin-bottom:12px;color:var(--text);border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:8px">Guardian Details</h4>
+      <h4 style="margin-top:28px;margin-bottom:12px;color:var(--text);border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:8px;text-align:center">Guardian Details</h4>
 
       <div class="form-row">
         <div class="form-group">
-          <label>Guardian Occupation</label>
+          <label>Occupation</label>
           <input type="text" name="guardian_occupation" placeholder="e.g., Teacher, Farmer" value="{{ old('guardian_occupation') }}">
           @error('guardian_occupation')
             <div class="error">{{ $message }}</div>
           @enderror
         </div>
         <div class="form-group">
-          <label>Guardian Nationality</label>
+          <label>Nationality</label>
           <input type="text" name="guardian_nationality" placeholder="e.g., Bangladeshi" value="{{ old('guardian_nationality') }}">
           @error('guardian_nationality')
             <div class="error">{{ $message }}</div>
@@ -262,14 +262,14 @@ label{display:block;margin-bottom:6px;margin-top:16px;font-size:14px;color:var(-
 
       <div class="form-row">
         <div class="form-group">
-          <label>Guardian Phone</label>
+          <label>Phone</label>
           <input type="text" name="guardian_phone" placeholder="01XXXXXXXXX" value="{{ old('guardian_phone') }}">
           @error('guardian_phone')
             <div class="error">{{ $message }}</div>
           @enderror
         </div>
         <div class="form-group">
-          <label>Guardian Email</label>
+          <label>Email</label>
           <input type="email" name="guardian_email" placeholder="guardian@example.com" value="{{ old('guardian_email') }}">
           @error('guardian_email')
             <div class="error">{{ $message }}</div>
@@ -278,14 +278,14 @@ label{display:block;margin-bottom:6px;margin-top:16px;font-size:14px;color:var(-
       </div>
 
       <div class="form-group">
-        <label>Guardian NID Number</label>
+        <label>NID Number</label>
         <input type="text" name="guardian_nid" placeholder="National ID Number" value="{{ old('guardian_nid') }}">
         @error('guardian_nid')
           <div class="error">{{ $message }}</div>
         @enderror
       </div>
 
-      <h4 style="margin-top:28px;margin-bottom:12px;color:var(--text);border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:8px">Class & Section</h4>
+      <h4 style="margin-top:28px;margin-bottom:12px;color:var(--text);border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:8px;text-align:center">Class & Section</h4>
 
       <div class="form-row">
         <div class="form-group">
@@ -313,7 +313,7 @@ label{display:block;margin-bottom:6px;margin-top:16px;font-size:14px;color:var(-
         </div>
       </div>
 
-      <h4 style="margin-top:24px;margin-bottom:12px;color:var(--text)">Admission Fees</h4>
+      <h4 style="margin-top:24px;margin-bottom:12px;color:var(--text);text-align:center">Admission Fees</h4>
       <div style="background:rgba(255,255,255,0.04);padding:16px;border-radius:6px">
         <div id="admissionFeesDisplay">
           <p style="color: var(--muted);text-align:center;margin:0"><em>Please select a class to view fees</em></p>
@@ -414,10 +414,17 @@ function updateClassInfo() {
     // Display Fees
     const admissionFee = parseFloat(data.admission_fee) || 0;
     const monthlyFee = parseFloat(data.monthly_fee) || 0;
-    const totalFee = parseFloat(data.total_fee) || 0;
     const fees = data.fees || [];
     
-    totalFeeInput.value = totalFee;
+    // Calculate total dynamically
+    let calculatedTotal = admissionFee + monthlyFee;
+    if (fees && fees.length > 0) {
+        fees.forEach(fee => {
+            calculatedTotal += parseFloat(fee.amount) || 0;
+        });
+    }
+    
+    totalFeeInput.value = calculatedTotal;
     
     let html = '<table class="fee-table">';
     html += '<thead><tr><th>Fee Name</th><th>Type</th><th style="text-align:right;">Amount</th></tr></thead>';
@@ -448,9 +455,57 @@ function updateClassInfo() {
     }
     
     html += '</tbody></table>';
-    html += `<div class="total-fee-display">Admission Fee Total: ৳ ${totalFee.toFixed(2)}</div>`;
+    html += `<div class="total-fee-display">Total: ৳ ${calculatedTotal.toFixed(2)}</div>`;
+    
+    // Add discount input field
+      html += `<div style="margin-top: 15px; display: flex; align-items: center; justify-content: end;">
+        <label for="discount_amount" style="font-weight: 500; color: #fff; padding-right: 10px; padding-bottom: 10px; text-align: left;">Discount Amount:</label>
+        <input type="number" 
+               id="discount_amount" 
+               name="discount_amount" 
+               min="0" 
+               max="${calculatedTotal}" 
+               step="0.01" 
+               value="" 
+               placeholder="Enter discount amount"
+               style="width: 200px; height: 35px; padding: 6px 10px; border: 1px solid #ddd; border-radius: 4px; text-align: right;"
+               oninput="calculateFinalAmount(${calculatedTotal})">
+    </div>`;
+    
+    // Add final amount display (white background)
+    html += `<div id="final_amount_display" class="total-fee-display" style="background-color:#000; color: #df8705ff; border: 2px solid #28a745; margin-top: 10px;">
+        Final Amount: ৳ ${calculatedTotal.toFixed(2)}
+    </div>`;
     
     feesDisplay.innerHTML = html;
+}
+
+// New function to calculate final amount after discount
+function calculateFinalAmount(totalAmount) {
+    const discountInput = document.getElementById('discount_amount');
+    const finalAmountDisplay = document.getElementById('final_amount_display');
+    const totalFeeInput = document.getElementById('total_admission_fee');
+    
+    let discount = parseFloat(discountInput.value) || 0;
+    
+    // Ensure discount doesn't exceed total
+    if (discount > totalAmount) {
+        discount = totalAmount;
+        discountInput.value = totalAmount;
+    }
+    
+    if (discount < 0) {
+        discount = 0;
+        discountInput.value = 0;
+    }
+    
+    const finalAmount = totalAmount - discount;
+    
+    // Update display
+    finalAmountDisplay.innerHTML = `Final Amount: ৳ ${finalAmount.toFixed(2)}`;
+    
+    // Update hidden input with final amount (if you want to submit final amount instead of total)
+    totalFeeInput.value = finalAmount;
 }
 
 // Initialize on page load
@@ -465,6 +520,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('section').value = oldSection;
             }, 100);
         }
+    }
+});
+
+// Image Resizing (600x600)
+document.querySelector('input[name="photo"]').addEventListener('change', function(e) {
+    if (this.files && this.files[0]) {
+        const file = this.files[0];
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 600;
+                canvas.height = 600;
+                const ctx = canvas.getContext('2d');
+                
+                // Draw and resize to 600x600
+                ctx.drawImage(img, 0, 0, 600, 600);
+                
+                canvas.toBlob(function(blob) {
+                    const newFile = new File([blob], file.name, { type: 'image/jpeg', lastModified: Date.now() });
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(newFile);
+                    e.target.files = dataTransfer.files;
+                }, 'image/jpeg', 0.9);
+            }
+            img.src = event.target.result;
+        }
+        reader.readAsDataURL(file);
     }
 });
 </script>

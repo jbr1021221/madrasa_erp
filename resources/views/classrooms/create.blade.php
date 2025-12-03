@@ -96,18 +96,11 @@ label{display:block;margin-bottom:6px;margin-top:16px;font-size:14px;}
         <div class="error">{{ $message }}</div>
       @enderror
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
+      <div style="margin-top:16px">
         <div>
           <label>Admission Fee *</label>
-          <input type="number" name="admission_fee" value="{{ old('admission_fee', $classroom->admission_fee ?? 0) }}" required min="0" step="0.01">
+          <input type="number" name="admission_fee" value="{{ old('admission_fee', $classroom->admission_fee ?? '') }}" placeholder="0" required min="0" step="0.01">
           @error('admission_fee')
-            <div class="error">{{ $message }}</div>
-          @enderror
-        </div>
-        <div>
-          <label>Monthly Fee *</label>
-          <input type="number" name="monthly_fee" value="{{ old('monthly_fee', $classroom->monthly_fee ?? 0) }}" required min="0" step="0.01">
-          @error('monthly_fee')
             <div class="error">{{ $message }}</div>
           @enderror
         </div>
@@ -123,6 +116,7 @@ label{display:block;margin-bottom:6px;margin-top:16px;font-size:14px;}
               <select name="fees[{{ $index }}][type]" required>
                 <option value="One Time" {{ $fee['type'] == 'One Time' ? 'selected' : '' }}>One Time</option>
                 <option value="Monthly" {{ $fee['type'] == 'Monthly' ? 'selected' : '' }}>Monthly</option>
+                 <option value="Quarterly" {{ $fee['type'] == 'Quarterly' ? 'selected' : '' }}>Quarterly</option>
                 <option value="Yearly" {{ $fee['type'] == 'Yearly' ? 'selected' : '' }}>Yearly</option>
               </select>
               <button type="button" class="btn ghost" onclick="this.parentElement.remove()">X</button>
@@ -135,6 +129,7 @@ label{display:block;margin-bottom:6px;margin-top:16px;font-size:14px;}
             <select name="fees[0][type]" required>
               <option value="One Time">One Time</option>
               <option value="Monthly">Monthly</option>
+              <option value="Quarterly">Quarterly</option>
               <option value="Yearly">Yearly</option>
             </select>
             <button type="button" class="btn ghost" onclick="this.parentElement.remove()">X</button>

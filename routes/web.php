@@ -49,3 +49,6 @@ Route::get('payments/student/{student}/history', [PaymentController::class, 'stu
     ->name('payments.student.history');
 // Accounts routes (add if needed)
 Route::get('/accounts', [AccountController::class, 'index'])->name('accounts.index');
+Route::get('/phpinfo', function() {
+    phpinfo();
+});

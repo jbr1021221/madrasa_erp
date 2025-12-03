@@ -1,10 +1,6 @@
 <aside class="sidebar">
-  <div class="brand">
-    <img src="{{ asset('madrasa-logo.jpeg') }}" alt="Madrasa Logo" class="logo">
-    <div>
-      <h2 style="margin:0;font-size:18px">Madrasa</h2>
-      <p class="small" style="margin:0">Smart Dashboard</p>
-    </div>
+  <div class="brand" style="display:flex;justify-content:center;margin-bottom:20px;">
+    <img src="{{ asset('madrasa-logo.jpeg') }}" alt="Madrasa Logo" class="logo" style="width:120px;height:120px;">
   </div>
 
   <nav class="nav">
