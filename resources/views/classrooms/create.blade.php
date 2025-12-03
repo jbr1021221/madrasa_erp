@@ -165,6 +165,7 @@ function addFeeRow() {
     <select name="fees[${feeIndex}][type]" required>
       <option value="One Time">One Time</option>
       <option value="Monthly">Monthly</option>
+      <option value="Quarterly">Quarterly</option>
       <option value="Yearly">Yearly</option>
     </select>
     <button type="button" class="btn ghost" onclick="this.parentElement.remove()">X</button>

@@ -62,7 +62,7 @@
 
         .date-right {
             position: absolute;
-            top: 0;
+            top: 100px;
             right: 0;
             width: 100px;
             display: flex;
@@ -90,7 +90,7 @@
             color: #51272f;
             border-bottom: 4px solid #51272f;
             padding-bottom: 5px;
-            margin-top: 5px;
+        
         }
         
         .content {
@@ -167,6 +167,8 @@
         
         .payment-summary {
             margin-top: 10px;
+            width: 50%;
+            margin-left: auto;
         }
         
         .payment-method {
@@ -182,15 +184,20 @@
         
         .payment-row {
             display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            font-size: 10px;
+            justify-content: flex-end;
+            margin-bottom: 6px;
+            font-size: 9px;
+            gap: 10px;
+        }
+        
+        .payment-row span {
+            text-align: right;
         }
         
         .amount-box {
             border: 1px solid #51272f;
-            padding: 5px 10px;
-            min-width: 120px;
+            padding: 4px 8px;
+            min-width: 100px;
             text-align: right;
             background-color: white;
             font-weight: 500;
@@ -198,10 +205,9 @@
         
         .total-row {
             font-weight: bold;
-            font-size: 11px;
+            font-size: 9px;
             margin-top: 8px;
             padding-top: 8px;
-            border-top: 1px dashed #51272f;
         }
         
         .footer {
@@ -209,32 +215,14 @@
             padding-top: 15px;
             border-top: 1px solid #51272f;
             text-align: center;
-            font-size: 9px;
         }
         
-        .footer-content {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 20px;
-            margin-top: 10px;
-        }
-        
-        .footer-label {
-            color: #666;
-            font-size: 9px;
-        }
-        
-        .footer-partners {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-        
-        .footer-partners span {
-            color: #51272f;
-            font-weight: bold;
-            font-size: 9px;
+        .footer-image {
+            max-width: 100%;
+            height: auto;
+            max-height: 35px;
+            display: block;
+            margin: 0 auto;
         }
 
         @media print {
@@ -314,6 +302,17 @@
                     <span class="detail-label">Address:</span>
                     <span class="detail-value">{{ $student->address }}</span>
                 </div>
+                
+                <!-- Payment Method and In Word moved here -->
+                <div class="payment-method" style="margin-top: 15px;">
+                    <div class="payment-method-label">Pay Method:</div>
+                    <div>{{ $admissionPayment->payment_mode ?? 'Cash' }}</div>
+                </div>
+                
+                <div class="payment-method">
+                    <div class="payment-method-label">In Word:</div>
+                    <div>{{ ucwords($amountInWords) }} Taka Only</div>
+                </div>
             </div>
             
             <!-- Fee Section -->
@@ -322,7 +321,7 @@
                     <thead>
                         <tr>
                             <th>Description</th>
-                            <th style="text-align: right;">Amount (৳)</th>
+                            <th style="text-align: right;">Amount (Tk)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -357,16 +356,6 @@
                 
                 <!-- Payment Summary -->
                 <div class="payment-summary">
-                    <div class="payment-method">
-                        <div class="payment-method-label">Pay Method:</div>
-                        <div>{{ $admissionPayment->payment_mode ?? 'Cash' }}</div>
-                    </div>
-                    
-                    <div class="payment-method">
-                        <div class="payment-method-label">In Word:</div>
-                        <div>{{ ucwords($amountInWords) }} Taka Only</div>
-                    </div>
-                    
                     <div class="payment-row">
                         <span>Subtotal:</span>
                         <div class="amount-box">{{ number_format($student->classroom->total_fee ?? 0) }}</div>
@@ -387,14 +376,9 @@
         
         <!-- Footer -->
         <div class="footer">
-            <div class="footer-content">
-                <span class="footer-label">Affiliated with:</span>
-                <div class="footer-partners">
-                    <span>BRITISH COUNCIL</span>
-                    <span>Pearson</span>
-                    <span>edexcel</span>
-                </div>
-            </div>
+            @if(file_exists(public_path('footer-logos.png')))
+                <img src="{{ public_path('footer-logos.png') }}" alt="Affiliated Partners" class="footer-image">
+            @endif
         </div>
     </div>
 </body>

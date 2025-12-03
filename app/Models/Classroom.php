@@ -14,7 +14,6 @@ class Classroom extends Model
         'sections',
         'max_students_per_section',
         'admission_fee',
-        'monthly_fee',
         'fees',
         'total_fee'
     ];
@@ -23,7 +22,6 @@ class Classroom extends Model
         'sections' => 'array',
         'fees' => 'array',
         'admission_fee' => 'decimal:2',
-        'monthly_fee' => 'decimal:2',
         'total_fee' => 'decimal:2'
     ];
 

@@ -413,11 +413,10 @@ function updateClassInfo() {
     
     // Display Fees
     const admissionFee = parseFloat(data.admission_fee) || 0;
-    const monthlyFee = parseFloat(data.monthly_fee) || 0;
     const fees = data.fees || [];
     
     // Calculate total dynamically
-    let calculatedTotal = admissionFee + monthlyFee;
+    let calculatedTotal = admissionFee;
     if (fees && fees.length > 0) {
         fees.forEach(fee => {
             calculatedTotal += parseFloat(fee.amount) || 0;
@@ -435,13 +434,6 @@ function updateClassInfo() {
         <td>Admission Fee</td>
         <td><small style="color: var(--muted);">One Time</small></td>
         <td style="text-align:right;">৳ ${admissionFee.toFixed(2)}</td>
-    </tr>`;
-    
-    // Static Monthly Fee
-    html += `<tr>
-        <td>Monthly Fee</td>
-        <td><small style="color: var(--muted);">Monthly</small></td>
-        <td style="text-align:right;">৳ ${monthlyFee.toFixed(2)}</td>
     </tr>`;
     
     if (fees && fees.length > 0) {
