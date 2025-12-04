@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Receipt - {{ $student->name }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -52,13 +53,56 @@
             text-align: center;
             padding: 0 110px; /* Space for logo and date */
             padding-top: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
+        
         
         .banner-center img {
             max-width: 100%;
             height: auto;
             max-height: 90px;
+            display: block;
         }
+
+        .academy-info {
+            margin-top: 5px;
+            text-align: center;
+            line-height: 1.4;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .academy-subtitle {
+            font-size: 18px;
+            font-weight: 900;
+            color: #51272f;
+            margin-bottom: 3px;
+            letter-spacing: 1px;
+        }
+
+        .academy-address {
+            font-size: 11px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .academy-contacts {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            font-size: 10px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .contact-item {
+            white-space: nowrap;
+        }
+
 
         .date-right {
             position: absolute;
@@ -254,6 +298,15 @@
             <!-- Banner Center -->
             <div class="banner-center">
                 <img src="{{ public_path('academy-banner.png') }}" alt="Al Akhirah International Academy">
+                <div class="academy-info">
+                    <div class="academy-subtitle">International Academy</div>
+                    <div class="academy-address">House #9, Road #41, Sobhanbagh, Dhanmondi, Dhaka</div>
+                    <div class="academy-contacts">
+                        <span class="contact-item">Tel: +880 1729-649017</span>
+                        <span class="contact-item">Web: www.alakhirahacademy.com</span>
+                        <span class="contact-item">FB: /alakhirahacademy</span>
+                    </div>
+                </div>
             </div>
 
             <!-- Date Right -->
