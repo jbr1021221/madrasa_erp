@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Receipt - {{ $student->name }}</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -13,10 +12,10 @@
         }
 
         body {
-            font-family: Arial, sans-serif;
+            font-family: Arial;
             background-color: #fff;
             padding: 8px;
-            font-size: 10px;
+            font-size: 12px;
             line-height: 1.2;
         }
         
@@ -32,7 +31,9 @@
         .header-container {
             position: relative;
             min-height: 130px;
-            margin-bottom: 10px;
+            max-width: 95%;
+            margin: 0px 0px 0px 15px;
+
         }
 
         .logo-left {
@@ -53,11 +54,7 @@
             text-align: center;
             padding: 0 110px; /* Space for logo and date */
             padding-top: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
         }
-        
         
         .banner-center img {
             max-width: 100%;
@@ -67,42 +64,40 @@
         }
 
         .academy-info {
-            margin-top: 5px;
-            text-align: center;
-            line-height: 1.4;
+            font-family: 'Century Gothic', 'CenturyGothic', 'AppleGothic', sans-serif;
+            margin-top: 8px;
             width: 100%;
-            max-width: 100%;
         }
 
         .academy-subtitle {
-            font-size: 18px;
-            font-weight: 900;
+            font-family: 'Century Gothic', 'CenturyGothic', 'AppleGothic', sans-serif;
+            font-size: 16px;
+            font-weight: bold;
             color: #51272f;
-            margin-bottom: 3px;
             letter-spacing: 1px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
         }
 
         .academy-address {
-            font-size: 11px;
-            font-weight: 700;
+            font-size: 10px;
             color: #333;
             margin-bottom: 4px;
+            font-weight: 500;
         }
 
         .academy-contacts {
+            font-size: 9px;
+            color: #333;
             display: flex;
             justify-content: center;
             gap: 15px;
             flex-wrap: wrap;
-            font-size: 10px;
-            font-weight: 700;
-            color: #333;
         }
 
         .contact-item {
             white-space: nowrap;
         }
-
 
         .date-right {
             position: absolute;
@@ -116,13 +111,12 @@
         }
 
         .date-box {
-            font-size: 10px;
+            font-size: 12px;
             font-weight: bold;
             color: #51272f;
             text-align: center;
             width: 100%;
-            padding: 5px;
-            border: 1px dashed #51272f;
+            padding:0 15px;
             background: #fff;
         }
         
@@ -139,8 +133,9 @@
         
         .content {
             display: table;
-            width: 100%;
-            margin-bottom: 15px;
+            width: 98%;
+            margin-top: 15px;
+
         }
         
         .student-details, .fee-section {
@@ -150,37 +145,42 @@
         }
         
         .student-details {
-            width: 50%;
+            width: 35%;
             padding-right: 15px;
         }
         
         .fee-section {
-            width: 50%;
+            width: 65%;
             padding-left: 15px;
         }
-        
-        .detail-row {
-            margin-bottom: 8px;
-            font-size: 10px;
-        }
-        
-        .detail-label {
-            color: #333;
+
+            .detail-row {
+            font-size: 12px;
+            padding: 3px 0;
+            width: 80%;
+            display: block;
+            align-items: center;   /* FIX alignment */
+            }
+
+            .detail-label {
+            font-family: 'Century Gothic', 'CenturyGothic', 'AppleGothic', sans-serif;
+            color: #51272f;
             font-weight: 600;
-            display: inline-block;
             min-width: 100px;
-        }
-        
-        .detail-value {
+            }
+
+            .detail-value {
             color: #000;
             font-weight: normal;
-        }
+            margin-bottom:-2px !important;
+            padding-left:3px;
+            }
         
         .fee-table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 15px;
-            font-size: 10px;
+            font-size: 12px;
         }
         
         .fee-table th {
@@ -190,7 +190,7 @@
             font-weight: bold;
             border: 1px solid #51272f;
             color: #51272f;
-            font-size: 10px;
+            font-size: 12px;
         }
         
         .fee-table td {
@@ -217,20 +217,27 @@
         
         .payment-method {
             margin-bottom: 10px;
-            font-size: 10px;
+            font-size: 12px;
         }
         
-        .payment-method-label {
+        .payment-method-label label{
             font-weight: bold;
             margin-bottom: 3px;
             color: #51272f;
+        }
+        
+        
+        .payment-method-label {
+            font-weight: normal;
+            margin-bottom: 3px;
+            color: #000;
         }
         
         .payment-row {
             display: flex;
             justify-content: flex-end;
             margin-bottom: 6px;
-            font-size: 9px;
+            font-size: 12px;
             gap: 10px;
         }
         
@@ -249,7 +256,7 @@
         
         .total-row {
             font-weight: bold;
-            font-size: 9px;
+            font-size: 12px;
             margin-top: 8px;
             padding-top: 8px;
         }
@@ -308,13 +315,13 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Date Right -->
+      <!-- Date Right -->
             <div class="date-right">
                 <div class="date-box">
-                    Date:<br>{{ $admissionPayment->payment_date ? \Carbon\Carbon::parse($admissionPayment->payment_date)->format('d/m/Y') : date('d/m/Y') }}
+                    Date:{{ $admissionPayment->payment_date ? \Carbon\Carbon::parse($admissionPayment->payment_date)->format('d/m/Y') : date('d/m/Y') }}
                 </div>
             </div>
+         
         </div>
         
         <h1>PAYMENT RECEIPT</h1>
@@ -356,16 +363,7 @@
                     <span class="detail-value">{{ $student->address }}</span>
                 </div>
                 
-                <!-- Payment Method and In Word moved here -->
-                <div class="payment-method" style="margin-top: 15px;">
-                    <div class="payment-method-label">Pay Method:</div>
-                    <div>{{ $admissionPayment->payment_mode ?? 'Cash' }}</div>
-                </div>
                 
-                <div class="payment-method">
-                    <div class="payment-method-label">In Word:</div>
-                    <div>{{ ucwords($amountInWords) }} Taka Only</div>
-                </div>
             </div>
             
             <!-- Fee Section -->
@@ -410,19 +408,26 @@
                 <!-- Payment Summary -->
                 <div class="payment-summary">
                     <div class="payment-row">
-                        <span>Subtotal:</span>
-                        <div class="amount-box">{{ number_format($student->classroom->total_fee ?? 0) }}</div>
+                        
+                        <div class="amount-box"><span  style="float:left;" >Subtotal:</span>{{ number_format($student->classroom->total_fee ?? 0) }}</div>
                     </div>
                     
                     <div class="payment-row">
-                        <span>Discount:</span>
-                        <div class="amount-box">{{ number_format(($student->classroom->total_fee ?? 0) - ($admissionPayment->amount ?? 0)) }}</div>
+                       
+                        <div class="amount-box"> <span style="float:left;">Discount:</span>{{ number_format(($student->classroom->total_fee ?? 0) - ($admissionPayment->amount ?? 0)) }}</div>
                     </div>
                     
-                    <div class="payment-row total-row">
-                        <span>Total Paid:</span>
-                        <div class="amount-box">{{ number_format($admissionPayment->amount ?? 0) }}</div>
+                    <div class="payment-row">                       
+                        <div class="amount-box"> <span style="float:left;">Total Paid:</span>{{ number_format($admissionPayment->amount ?? 0) }}</div>
                     </div>
+                </div>
+                <!-- Payment Method and In Word moved here -->
+                <div class="payment-method" style="margin-top: 15px;">
+                    <div class="payment-method-label"><label>Pay Method:</label>{{ $admissionPayment->payment_mode ?? 'Cash' }}</div>
+                </div>
+                
+                <div class="payment-method">
+                    <div class="payment-method-label"><label>In Word:</label> {{ ucwords($amountInWords) }} Taka Only</div>
                 </div>
             </div>
         </div>

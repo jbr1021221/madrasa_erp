@@ -97,13 +97,7 @@ label{display:block;margin-bottom:6px;margin-top:16px;font-size:14px;color:var(-
         </div>
       </div>
 
-      <div class="form-group">
-        <label>Address</label>
-        <input type="text" name="address" placeholder="Full Address" value="{{ old('address') }}">
-        @error('address')
-          <div class="error">{{ $message }}</div>
-        @enderror
-      </div>
+      
 
       <div class="form-row">
         <div class="form-group">

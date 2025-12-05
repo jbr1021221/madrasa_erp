@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admission Form - {{ $student->name }}</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -51,13 +50,12 @@
 
         .banner-center {
             text-align: center;
-            padding: 0 110px; /* Space for logo and photo */
+            padding: 0 110px; /* Space for logo and date */
             padding-top: 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
-        
         
         .banner-center img {
             max-width: 100%;
@@ -67,42 +65,39 @@
         }
 
         .academy-info {
-            margin-top: 5px;
-            text-align: center;
-            line-height: 1.4;
+            font-family: 'Century Gothic', 'CenturyGothic', 'AppleGothic', sans-serif;
+            margin-top: 8px;
             width: 100%;
-            max-width: 100%;
         }
 
         .academy-subtitle {
-            font-size: 18px;
-            font-weight: 900;
+            font-size: 16px;
+            font-weight: bold;
             color: #51272f;
-            margin-bottom: 3px;
             letter-spacing: 1px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
         }
 
         .academy-address {
-            font-size: 11px;
-            font-weight: 700;
+            font-size: 10px;
             color: #333;
             margin-bottom: 4px;
+            font-weight: 500;
         }
 
         .academy-contacts {
+            font-size: 9px;
+            color: #333;
             display: flex;
             justify-content: center;
             gap: 15px;
             flex-wrap: wrap;
-            font-size: 10px;
-            font-weight: 700;
-            color: #333;
         }
 
         .contact-item {
             white-space: nowrap;
         }
-
 
         .photo-right {
             position: absolute;
@@ -144,20 +139,29 @@
             width: 100%;
         }
         .checkboxes {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 30px;
-    margin-bottom: 8px;
+    display: block;
     text-align: center;
+    margin-bottom: 8px;
+    padding: 8px 0;
+}
+
+.checkbox-wrapper {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: nowrap;
+    padding: 4px 0;
 }
 
 .checkboxes label {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 5px;
     font-size: 10px;
-    font-weight: 600;
+    font-weight: normal;
+    white-space: nowrap;
 }
 
 .checkbox-box {
@@ -166,6 +170,7 @@
     border: 1.5px solid #51272f;
     display: inline-block;
     background: white;
+    flex-shrink: 0;
 }
         
         h1 {
@@ -180,6 +185,7 @@
         }
         
         .form-label {
+            font-family: 'Century Gothic', 'CenturyGothic', 'AppleGothic', sans-serif;
             font-size: 9px;
             font-weight: 600;
             margin-bottom: 2px;
@@ -194,6 +200,7 @@
             display: block;
             color: #000;
         }
+        
 
         .row {
             display: table;
@@ -346,7 +353,8 @@
             </div>
 
             <!-- Banner Center -->
-            <div class="banner-center">
+          <!-- Banner Center -->
+          <div class="banner-center">
                 <img src="{{ public_path('academy-banner.png') }}" alt="Al Akhirah International Academy">
                 <div class="academy-info">
                     <div class="academy-subtitle">International Academy</div>
@@ -358,7 +366,6 @@
                     </div>
                 </div>
             </div>
-
             <!-- Photo Right -->
             <div class="photo-right">
                 <div class="photo-box">
@@ -379,8 +386,10 @@
         <!-- Academic Year, Class, Shift -->
 
          <div class="checkboxes">
-                <label><span class="checkbox-box"></span> Hifz</label>
-                <label><span class="checkbox-box"></span> Schooling</label>
+                <div class="checkbox-wrapper">
+                    <label><span class="checkbox-box"></span> Hifz</label>
+                    <label><span class="checkbox-box"></span> Schooling</label>
+                </div>
             </div>
         <div class="row mb-2">
             <div class="col-md-4">

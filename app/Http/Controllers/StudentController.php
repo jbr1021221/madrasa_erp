@@ -359,7 +359,7 @@ private function generateStudentIdInternal($classId = null)
             ->where('payment_type', 'Admission')
             ->first();
             
-        $amountInWords = $this->numberToWords($admissionPayment->amount ?? 0);
+        $amountInWords = $this->numberToWords(intval($admissionPayment->amount ?? 0));
         
         $pdf = Pdf::loadView('students.receipt', compact('student', 'admissionPayment', 'amountInWords'))
             ->setPaper('a5', 'portrait');
