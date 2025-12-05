@@ -8,6 +8,9 @@
 
 @yield('head-scripts')
 
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <style>
 /* ======================================
    GLOBAL DARK SMART UI
@@ -119,6 +122,20 @@ tfoot td{font-weight:bold;}
 </div>
 
 @yield('scripts')
+
+<!-- SweetAlert for success messages -->
+@if(session('success'))
+<script>
+    Swal.fire({
+        icon: 'success',
+        title: 'Success!',
+        text: '{{ session('success') }}',
+        confirmButtonColor: '#e37814',
+        timer: 3000,
+        timerProgressBar: true
+    });
+</script>
+@endif
 
 </body>
 </html>

@@ -6,6 +6,9 @@
 <title>{{ isset($classroom) ? 'Edit' : 'Add' }} Class – Madrasa ERP</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <style>
 :root{
   --bg:#0b0d0f;--panel:#111316;--card:#0f1416;--text:#e6eef3;--muted:#98a0a6;
@@ -122,18 +125,6 @@ label{display:block;margin-bottom:6px;margin-top:16px;font-size:14px;}
               <button type="button" class="btn ghost" onclick="this.parentElement.remove()">X</button>
             </div>
           @endforeach
-        @else
-          <div class="fees-row">
-            <input type="text" name="fees[0][name]" placeholder="Fee Name" required>
-            <input type="number" name="fees[0][amount]" placeholder="Amount" required min="0" step="0.01">
-            <select name="fees[0][type]" required>
-              <option value="One Time">One Time</option>
-              <option value="Monthly">Monthly</option>
-              <option value="Quarterly">Quarterly</option>
-              <option value="Yearly">Yearly</option>
-            </select>
-            <button type="button" class="btn ghost" onclick="this.parentElement.remove()">X</button>
-          </div>
         @endif
       </div>
       <button type="button" class="btn ghost" style="margin-top:10px" onclick="addFeeRow()">+ Add Fee</button>
@@ -153,7 +144,7 @@ label{display:block;margin-bottom:6px;margin-top:16px;font-size:14px;}
 </div>
 
 <script>
-let feeIndex = {{ isset($classroom) ? count($classroom->fees) : 1 }};
+let feeIndex = {{ isset($classroom) ? count($classroom->fees) : 0 }};
 
 function addFeeRow() {
   const container = document.getElementById('feesContainer');
@@ -174,6 +165,20 @@ function addFeeRow() {
   feeIndex++;
 }
 </script>
+
+<!-- SweetAlert for success messages -->
+@if(session('success'))
+<script>
+    Swal.fire({
+        icon: 'success',
+        title: 'Success!',
+        text: '{{ session('success') }}',
+        confirmButtonColor: '#e37814',
+        timer: 3000,
+        timerProgressBar: true
+    });
+</script>
+@endif
 
 </body>
 </html>

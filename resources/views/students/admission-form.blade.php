@@ -168,9 +168,14 @@
     width: 12px;
     height: 12px;
     border: 1.5px solid #51272f;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     background: white;
     flex-shrink: 0;
+    font-size: 9px;
+    line-height: 1;
+    font-weight: bold;
 }
         
         h1 {
@@ -387,8 +392,12 @@
 
          <div class="checkboxes">
                 <div class="checkbox-wrapper">
-                    <label><span class="checkbox-box"></span> Hifz</label>
-                    <label><span class="checkbox-box"></span> Schooling</label>
+                    <label>
+                        <span class="checkbox-box">{{ $student->program_type == 'Hifz' ? '✓' : '' }}</span> Hifz
+                    </label>
+                    <label>
+                        <span class="checkbox-box">{{ $student->program_type == 'Schooling' ? '✓' : '' }}</span> Schooling
+                    </label>
                 </div>
             </div>
         <div class="row mb-2">

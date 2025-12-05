@@ -6,6 +6,9 @@
 <title>Add Student – Madrasa ERP</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <style>
 :root{
   --bg:#0b0d0f;--panel:#111316;--card:#0f1416;--text:#e6eef3;--muted:#98a0a6;
@@ -307,6 +310,31 @@ label{display:block;margin-bottom:6px;margin-top:16px;font-size:14px;color:var(-
         </div>
       </div>
 
+      <div class="form-row">
+        <div class="form-group">
+          <label>Program Type *</label>
+          <select name="program_type" required>
+            <option value="">Select Program</option>
+            <option value="Hifz" {{ old('program_type') == 'Hifz' ? 'selected' : '' }}>Hifz</option>
+            <option value="Schooling" {{ old('program_type') == 'Schooling' ? 'selected' : '' }}>Schooling</option>
+          </select>
+          @error('program_type')
+            <div class="error">{{ $message }}</div>
+          @enderror
+        </div>
+        <div class="form-group">
+          <label>Shift *</label>
+          <select name="shift" required>
+            <option value="">Select Shift</option>
+            <option value="Morning" {{ old('shift') == 'Morning' ? 'selected' : '' }}>Morning</option>
+            <option value="Evening" {{ old('shift') == 'Evening' ? 'selected' : '' }}>Evening</option>
+          </select>
+          @error('shift')
+            <div class="error">{{ $message }}</div>
+          @enderror
+        </div>
+      </div>
+
       <h4 style="margin-top:24px;margin-bottom:12px;color:var(--text);text-align:center">Admission Fees</h4>
       <div style="background:rgba(255,255,255,0.04);padding:16px;border-radius:6px">
         <div id="admissionFeesDisplay">
@@ -405,43 +433,58 @@ function updateClassInfo() {
     // Regenerate Student ID based on selected class
     generateStudentId(classId);
     
-    // Display Fees
+    // Display Fees with Checkboxes
     const admissionFee = parseFloat(data.admission_fee) || 0;
     const fees = data.fees || [];
     
-    // Calculate total dynamically
+    // Start with admission fee always included
     let calculatedTotal = admissionFee;
-    if (fees && fees.length > 0) {
-        fees.forEach(fee => {
-            calculatedTotal += parseFloat(fee.amount) || 0;
-        });
-    }
     
     totalFeeInput.value = calculatedTotal;
     
-    let html = '<table class="fee-table">';
-    html += '<thead><tr><th>Fee Name</th><th>Type</th><th style="text-align:right;">Amount</th></tr></thead>';
-    html += '<tbody>';
+    // Create horizontal checkbox layout
+    let html = '<div style="background:rgba(255,255,255,0.04);padding:16px;border-radius:6px">';
+    html += '<h4 style="margin:0 0 12px 0;color:var(--text);text-align:center">Select Fees to Include</h4>';
     
-    // Static Admission Fee
-    html += `<tr>
-        <td>Admission Fee</td>
-        <td><small style="color: var(--muted);">One Time</small></td>
-        <td style="text-align:right;">৳ ${admissionFee.toFixed(2)}</td>
-    </tr>`;
+    // Admission Fee (always checked and disabled)
+    html += '<div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px">';
+    html += `<label style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:rgba(227,120,20,0.15);border:1px solid var(--accent);border-radius:6px;cursor:not-allowed;min-width:200px">
+        <input type="checkbox" checked disabled style="width:18px;height:18px;cursor:not-allowed">
+        <span style="flex:1">
+            <div style="font-weight:600;color:var(--text)">Admission Fee</div>
+            <div style="font-size:12px;color:var(--muted)">One Time</div>
+        </span>
+        <span style="font-weight:700;color:var(--accent)">৳${admissionFee.toFixed(2)}</span>
+    </label>`;
     
+    // All additional fees with checkboxes
     if (fees && fees.length > 0) {
-        fees.forEach(fee => {
-            html += `<tr>
-                <td>${fee.name}</td>
-                <td><small style="color: var(--muted);">${fee.type}</small></td>
-                <td style="text-align:right;">৳ ${parseFloat(fee.amount).toFixed(2)}</td>
-            </tr>`;
+        fees.forEach((fee, index) => {
+            const isOneTime = fee.type === 'One Time';
+            html += `<label style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.15);border-radius:6px;cursor:pointer;min-width:200px;transition:all 0.2s" 
+                onmouseover="this.style.background='rgba(227,120,20,0.1)';this.style.borderColor='var(--accent)'" 
+                onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.borderColor='rgba(255,255,255,0.15)'">
+                <input type="checkbox" 
+                       class="fee-checkbox" 
+                       data-amount="${fee.amount}" 
+                       data-index="${index}"
+                       ${isOneTime ? 'checked' : ''}
+                       onchange="updateTotalWithCheckboxes()"
+                       style="width:18px;height:18px;cursor:pointer">
+                <span style="flex:1">
+                    <div style="font-weight:600;color:var(--text)">${fee.name}</div>
+                    <div style="font-size:12px;color:var(--muted)">${fee.type}</div>
+                </span>
+                <span style="font-weight:700;color:var(--text)">৳${parseFloat(fee.amount).toFixed(2)}</span>
+            </label>`;
         });
     }
     
-    html += '</tbody></table>';
-    html += `<div class="total-fee-display">Total: ৳ ${calculatedTotal.toFixed(2)}</div>`;
+    html += '</div>'; // Close checkbox container
+    html += '</div>'; // Close main container
+    
+    // Total display
+    html += `<div class="total-fee-display" id="checkbox_total_display">Total: ৳ ${calculatedTotal.toFixed(2)}</div>`;
     
     // Add discount input field
       html += `<div style="margin-top: 15px; display: flex; align-items: center; justify-content: end;">
@@ -464,6 +507,49 @@ function updateClassInfo() {
     </div>`;
     
     feesDisplay.innerHTML = html;
+    
+    // Update the total display with initial calculation
+    updateTotalWithCheckboxes();
+}
+
+// Function to update total based on checked checkboxes
+function updateTotalWithCheckboxes() {
+    const classSelect = document.getElementById('class_id');
+    const classId = classSelect.value;
+    
+    if (!classId || !classroomData[classId]) return;
+    
+    const data = classroomData[classId];
+    const admissionFee = parseFloat(data.admission_fee) || 0;
+    
+    // Start with admission fee
+    let total = admissionFee;
+    
+    // Add checked fees
+    const checkboxes = document.querySelectorAll('.fee-checkbox:checked');
+    checkboxes.forEach(checkbox => {
+        total += parseFloat(checkbox.dataset.amount) || 0;
+    });
+    
+    // Update displays
+    const totalDisplay = document.getElementById('checkbox_total_display');
+    const totalFeeInput = document.getElementById('total_admission_fee');
+    const discountInput = document.getElementById('discount_amount');
+    
+    if (totalDisplay) {
+        totalDisplay.innerHTML = `Total: ৳ ${total.toFixed(2)}`;
+    }
+    
+    if (totalFeeInput) {
+        totalFeeInput.value = total;
+    }
+    
+    // Update discount max value
+    if (discountInput) {
+        discountInput.max = total;
+        // Recalculate final amount with current discount
+        calculateFinalAmount(total);
+    }
 }
 
 // New function to calculate final amount after discount
@@ -538,6 +624,20 @@ document.querySelector('input[name="photo"]').addEventListener('change', functio
     }
 });
 </script>
+
+<!-- SweetAlert for success messages -->
+@if(session('success'))
+<script>
+    Swal.fire({
+        icon: 'success',
+        title: 'Success!',
+        text: '{{ session('success') }}',
+        confirmButtonColor: '#e37814',
+        timer: 3000,
+        timerProgressBar: true
+    });
+</script>
+@endif
 
 </body>
 </html>

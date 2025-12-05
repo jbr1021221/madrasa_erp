@@ -20,6 +20,8 @@ class Student extends Model
         'nid_file_path',
         'class_id',
         'section',
+        'program_type', // Hifz or Schooling
+        'shift', // Morning or Evening
         'photo', // Student photo
         // New student details  
         'dob',

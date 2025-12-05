@@ -65,21 +65,21 @@
       <td>{{ $student->section }}</td>
       <td style="display:flex;gap:6px;justify-content:center">
         @php
-          $monthlyFee = 0;
+          $recurringFees = [];
           $className = 'N/A';
           if($student->classroom) {
               $className = $student->classroom->name;
               if($student->classroom->fees) {
                   foreach($student->classroom->fees as $fee) {
-                      // Check for Monthly type (partial match, case-insensitive)
-                      if(isset($fee['type']) && stripos($fee['type'], 'Monthly') !== false) {
-                          $monthlyFee += (float)$fee['amount'];
+                      // Include Monthly, Quarterly, and Yearly fees
+                      if(isset($fee['type']) && in_array($fee['type'], ['Monthly', 'Quarterly', 'Yearly'])) {
+                          $recurringFees[] = $fee;
                       }
                   }
               }
           }
         @endphp
-        <button class="action-btn" onclick="openPayModal({{ $student->id }}, '{{ $student->name }} ({{ $className }})', {{ $monthlyFee }})" title="Fees: {{ json_encode($student->classroom->fees ?? []) }}">Pay</button>
+        <button class="action-btn" onclick="openPayModal({{ $student->id }}, '{{ $student->name }} ({{ $className }})', {{ json_encode($recurringFees) }})" title="Fees: {{ json_encode($student->classroom->fees ?? []) }}">Pay</button>
         <a href="{{ route('students.show', $student) }}" class="action-btn">View</a>
         <a href="{{ route('students.receipt.download', $student) }}" class="action-btn receipt" title="Download Admission Receipt">Receipt</a>
         <a href="{{ route('students.edit', $student) }}" class="action-btn">Edit</a>
@@ -102,18 +102,25 @@
 <div class="modal" id="payModal">
   <div class="modal-content">
     <div class="modal-header">
-      <h3>Monthly Fee</h3>
+      <h3 id="payModalTitle">Payment</h3>
       <span class="close" onclick="closePayModal()">✕</span>
     </div>
     <form action="{{ route('payments.store') }}" method="POST">
       @csrf
       <input type="hidden" name="student_id" id="payStudentId">
-      <input type="hidden" name="payment_type" value="Monthly Fee">
+      <input type="hidden" name="payment_type" id="paymentType" value="">
       <input type="hidden" name="redirect_to" value="students.index">
       
       <div style="margin-bottom:12px">
         <label>Student</label>
         <input type="text" id="payStudentName" readonly style="background:#15181a;cursor:not-allowed">
+      </div>
+
+      <div style="margin-bottom:12px">
+        <label>Fee Type</label>
+        <select name="fee_type" id="feeTypeSelect" onchange="updatePaymentPeriod()" required>
+          <option value="">Select Fee Type</option>
+        </select>
       </div>
 
       <div style="margin-bottom:12px">
@@ -123,15 +130,13 @@
 
       <div style="margin-bottom:12px">
         <label>Amount</label>
-        <input type="number" name="amount" id="payAmount" value="0" required>
+        <input type="number" name="amount" id="payAmount" value="0" required readonly style="background:#15181a">
       </div>
 
-      <div style="margin-bottom:12px">
-        <label>Month</label>
-        <select name="month" required>
-          @foreach(['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] as $month)
-            <option value="{{ $month }}" {{ date('F') == $month ? 'selected' : '' }}>{{ $month }}</option>
-          @endforeach
+      <div style="margin-bottom:12px" id="periodContainer">
+        <label id="periodLabel">Period</label>
+        <select name="period" id="periodSelect" required>
+          <option value="">Select Period</option>
         </select>
       </div>
 
@@ -198,15 +203,95 @@ input,select{width:100%;padding:8px;background:#1b1f22;border:1px solid rgba(255
 
 @section('scripts')
 <script>
-function openPayModal(id, name, amount) {
+let currentFees = [];
+
+function openPayModal(id, name, fees) {
+  currentFees = fees;
   document.getElementById('payStudentId').value = id;
   document.getElementById('payStudentName').value = name;
-  document.getElementById('payAmount').value = amount;
+  
+  // Populate fee type dropdown
+  const feeTypeSelect = document.getElementById('feeTypeSelect');
+  feeTypeSelect.innerHTML = '<option value="">Select Fee Type</option>';
+  
+  if (fees && fees.length > 0) {
+    fees.forEach((fee, index) => {
+      const option = document.createElement('option');
+      option.value = index;
+      option.textContent = `${fee.name} (${fee.type}) - ৳${fee.amount}`;
+      option.dataset.amount = fee.amount;
+      option.dataset.type = fee.type;
+      option.dataset.name = fee.name;
+      feeTypeSelect.appendChild(option);
+    });
+  } else {
+    feeTypeSelect.innerHTML = '<option value="">No recurring fees available</option>';
+  }
+  
   document.getElementById('payModal').style.display = 'flex';
+}
+
+function updatePaymentPeriod() {
+  const feeTypeSelect = document.getElementById('feeTypeSelect');
+  const selectedOption = feeTypeSelect.options[feeTypeSelect.selectedIndex];
+  
+  if (!selectedOption || !selectedOption.value) return;
+  
+  const feeType = selectedOption.dataset.type;
+  const amount = selectedOption.dataset.amount;
+  const feeName = selectedOption.dataset.name;
+  
+  document.getElementById('payAmount').value = amount;
+  document.getElementById('paymentType').value = `${feeName} (${feeType})`;
+  document.getElementById('payModalTitle').textContent = `${feeType} Fee Payment`;
+  
+  const periodSelect = document.getElementById('periodSelect');
+  const periodLabel = document.getElementById('periodLabel');
+  
+  periodSelect.innerHTML = '';
+  
+  if (feeType === 'Monthly') {
+    periodLabel.textContent = 'Month';
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const currentMonth = new Date().toLocaleString('default', { month: 'long' });
+    months.forEach(month => {
+      const option = document.createElement('option');
+      option.value = month;
+      option.textContent = month;
+      if (month === currentMonth) option.selected = true;
+      periodSelect.appendChild(option);
+    });
+  } else if (feeType === 'Quarterly') {
+    periodLabel.textContent = 'Quarter';
+    const quarters = ['Q1 (Jan-Mar)', 'Q2 (Apr-Jun)', 'Q3 (Jul-Sep)', 'Q4 (Oct-Dec)'];
+    const currentMonth = new Date().getMonth();
+    const currentQuarter = Math.floor(currentMonth / 3);
+    quarters.forEach((quarter, index) => {
+      const option = document.createElement('option');
+      option.value = quarter;
+      option.textContent = quarter;
+      if (index === currentQuarter) option.selected = true;
+      periodSelect.appendChild(option);
+    });
+  } else if (feeType === 'Yearly') {
+    periodLabel.textContent = 'Year';
+    const currentYear = new Date().getFullYear();
+    for (let i = 0; i < 3; i++) {
+      const year = currentYear + i;
+      const option = document.createElement('option');
+      option.value = year;
+      option.textContent = year;
+      if (i === 0) option.selected = true;
+      periodSelect.appendChild(option);
+    }
+  }
 }
 
 function closePayModal() {
   document.getElementById('payModal').style.display = 'none';
+  document.getElementById('feeTypeSelect').innerHTML = '<option value="">Select Fee Type</option>';
+  document.getElementById('periodSelect').innerHTML = '<option value="">Select Period</option>';
+  document.getElementById('payAmount').value = 0;
 }
 
 // Close on outside click

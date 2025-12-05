@@ -30,14 +30,14 @@ class ClassroomController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|max:255|unique:classrooms,name',
             'sections' => 'required|string',
             'max_students_per_section' => 'required|integer|min:1',
             'admission_fee' => 'required|numeric|min:0',
             'fees' => 'nullable|array',
             'fees.*.name' => 'required|string',
             'fees.*.amount' => 'required|numeric|min:0',
-            'fees.*.type' => 'required|in:One Time,Monthly,Yearly'
+            'fees.*.type' => 'required|in:One Time,Monthly,Quarterly,Yearly'
         ]);
 
         $classroom = new Classroom();
@@ -75,14 +75,14 @@ class ClassroomController extends Controller
     public function update(Request $request, Classroom $classroom)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|max:255|unique:classrooms,name,' . $classroom->id,
             'sections' => 'required|string',
             'max_students_per_section' => 'required|integer|min:1',
             'admission_fee' => 'required|numeric|min:0',
             'fees' => 'nullable|array',
             'fees.*.name' => 'required|string',
             'fees.*.amount' => 'required|numeric|min:0',
-            'fees.*.type' => 'required|in:One Time,Monthly,Yearly'
+            'fees.*.type' => 'required|in:One Time,Monthly,Quarterly,Yearly'
         ]);
 
         $classroom->fill($validated);
