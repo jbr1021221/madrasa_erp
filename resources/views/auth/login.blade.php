@@ -15,7 +15,7 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui
   background:var(--panel);padding:40px;border-radius:var(--radius);
   border:1px solid rgba(255,255,255,0.05);width:100%;max-width:400px;
 }
-.brand{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:30px}
+.brand{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;margin-bottom:30px}
 .logo{
   width:50px;height:50px;border-radius:var(--radius);background:var(--accent);color:#041617;
   display:flex;align-items:center;justify-content:center;font-weight:700;font-size:24px;
@@ -38,8 +38,8 @@ button{
 
 <div class="login-card">
   <div class="brand">
-    <div class="logo"><img src="{{ asset('images/logo.jpeg') }}" alt="M" style="width: 80px; height: 80px; object-fit: contain;"></div>
-    <div style="font-size:20px;font-weight:bold">Al Akhirah Academy</div>
+    <img src="{{ asset('madrasa-logo.jpeg') }}" alt="Logo" style="width: 60px; height: 60px;">
+    <h1>Al Akhirah Academy</h1>
   </div>
   
   <h1>Login</h1>
