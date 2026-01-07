@@ -513,7 +513,7 @@ label{display:block;margin-bottom:6px;margin-top:16px;font-size:14px;color:var(-
        <div class="row" style="display:flex;gap:20px;margin-top:24px;">
           <!-- Available Monthly Fees Column -->
           <div style="flex:1;">
-            <h4 style="margin-top:0;margin-bottom:12px;color:var(--text);text-align:center;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:8px;">Available Monthly Fees</h4>
+            <h4 style="margin-top:0;margin-bottom:12px;color:var(--text);text-align:center;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:8px;">Available Fees</h4>
             <div id="availableFeesContainer" style="background:rgba(255,255,255,0.04);padding:10px;border-radius:6px;min-height:150px;max-height:500px;overflow-y:auto;">
               <p style="color:var(--muted);text-align:center;margin-top:20px;"><em>Select a class first</em></p>
             </div>
@@ -706,7 +706,7 @@ function updateClassInfo() {
     if(emptyMsg) emptyMsg.style.display = 'none';
 
     availableClassFees.forEach((fee, index) => {
-        if (fee.type !== 'Monthly') {
+        if (!['Monthly', 'Quarterly', 'Half Yearly', 'Half-Yearly', 'Half_Yearly'].includes(fee.type)) {
             addFeeToStudent(index);
         }
     });
@@ -733,7 +733,7 @@ function updateClassInfo() {
                 let baseName = of.name;
                 
                 // If we are restoring from paymentFees (fallback), name has suffix
-                if (of.type === 'Monthly' && of.name.includes(' - ')) {
+                if (['Monthly', 'Quarterly', 'Half Yearly', 'Half-Yearly', 'Half_Yearly'].includes(of.type) && of.name.includes(' - ')) {
                     baseName = of.name.split(' - ')[0]; // Approximate base name
                 } else if (!of.type && of.name.includes(' - ')) {
                      // Try to guess if it was supposed to be monthly
@@ -753,7 +753,7 @@ function updateClassInfo() {
                         let isPaid = false;
                         
                         if (paymentFees.length > 0) {
-                            if (of.type === 'Monthly') {
+                            if (['Monthly', 'Quarterly', 'Half Yearly', 'Half-Yearly', 'Half_Yearly'].includes(of.type)) {
                                 // For monthly, check if ANY payment exists starting with "Name - "
                                 // Safe check: included space-dash-space
                                 isPaid = paymentFees.some(pf => pf.name.startsWith(baseName + ' - '));
@@ -772,7 +772,7 @@ function updateClassInfo() {
                         
                         // Restore Months if monthly
                         // We must look at paymentFees to find which months were selected
-                        if (of.type === 'Monthly') {
+                        if (['Monthly', 'Quarterly', 'Half Yearly', 'Half-Yearly', 'Half_Yearly'].includes(of.type)) {
                              let monthsToSelect = [];
                              
                              if (paymentFees.length > 0) {
@@ -820,17 +820,17 @@ function renderAvailableFees() {
     if(!container) return;
     container.innerHTML = '';
     
-    // Only show Monthly fees in this list
-    const monthlyFees = availableClassFees.filter(f => f.type === 'Monthly');
+    // Show Monthly, Quarterly, and Half Yearly fees in this list
+    const periodicFees = availableClassFees.filter(f => ['Monthly', 'Quarterly', 'Half Yearly', 'Half-Yearly', 'Half_Yearly'].includes(f.type));
     
-    if (monthlyFees.length === 0) {
-        container.innerHTML = '<p style="color:var(--muted);text-align:center;">No monthly fees available</p>';
+    if (periodicFees.length === 0) {
+        container.innerHTML = '<p style="color:var(--muted);text-align:center;">No periodic fees available</p>';
         return;
     }
 
     // Note: We need original index from availableClassFees to pass to addFeeToStudent
     availableClassFees.forEach((fee, index) => {
-        if (fee.type !== 'Monthly') return;
+        if (!['Monthly', 'Quarterly', 'Half Yearly', 'Half-Yearly', 'Half_Yearly'].includes(fee.type)) return;
 
         const div = document.createElement('div');
         div.id = `avail_fee_div_${index}`;
@@ -857,24 +857,27 @@ function addFeeToStudent(feeIndex) {
     const emptyMsg = document.getElementById('emptyStudentFeesMsg');
     if (emptyMsg) emptyMsg.style.display = 'none';
 
-    if (fee.type === 'One Time') {
+    const isMonthly = fee.type === 'Monthly';
+    const isQuarterly = fee.type === 'Quarterly';
+    const isHalfYearly = ['Half Yearly', 'Half-Yearly', 'Half_Yearly'].includes(fee.type);
+    const isPeriodic = isMonthly || isQuarterly || isHalfYearly;
+
+    if (isPeriodic) {
+         const existing = Array.from(container.querySelectorAll('.student-fee-row')).find(r => r.dataset.name === fee.name);
+         if (existing) {
+             Swal.fire({ toast: true, icon: 'warning', title: 'Fee already added', position: 'top-end', showConfirmButton: false, timer: 1500 });
+             return existing.id;
+         }
+    } else {
+        // One Time or others
         const existing = Array.from(container.querySelectorAll('.student-fee-row')).find(r => r.dataset.name === fee.name);
         if (existing) {
              Swal.fire({ toast: true, icon: 'warning', title: 'Fee already added', position: 'top-end', showConfirmButton: false, timer: 1500 });
              return existing.id;
         }
     }
-    
-    if (fee.type === 'Monthly') {
-         const existing = Array.from(container.querySelectorAll('.student-fee-row')).find(r => r.dataset.name === fee.name);
-         if (existing) {
-             Swal.fire({ toast: true, icon: 'warning', title: 'Fee already added', position: 'top-end', showConfirmButton: false, timer: 1500 });
-             return existing.id;
-         }
-    }
 
     const rowId = 'fee_row_' + (feeRowCounter++);
-    const isMonthly = fee.type === 'Monthly';
     
     const row = document.createElement('div');
     row.className = 'student-fee-row';
@@ -883,14 +886,24 @@ function addFeeToStudent(feeIndex) {
     row.dataset.originalIndex = feeIndex;
     row.dataset.type = fee.type;
     row.dataset.name = fee.name;
+    row.dataset.isPeriodic = isPeriodic;
     // Updated Grid: added 30px col at start for Checkbox
     row.style.cssText = 'background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);margin-bottom:8px;padding:8px;border-radius:4px;display:grid;grid-template-columns:30px 2fr 1.5fr 1fr 1fr 30px;gap:8px;align-items:center;';
 
     let monthHtml = '<span style="color:var(--muted);font-size:11px;">N/A</span>';
-    if (isMonthly) {
-        const d = new Date();
-        const mIdx = d.getMonth();
-        const yr = d.getFullYear();
+    if (isPeriodic) {
+        let optionsHtml = '';
+        if (isMonthly) {
+            const d = new Date();
+            const mIdx = d.getMonth();
+            const yr = d.getFullYear();
+            optionsHtml = generateMonthOptions(rowId, mIdx, yr);
+        } else if (isQuarterly) {
+            optionsHtml = generateQuarterOptions(rowId);
+        } else if (isHalfYearly) {
+            optionsHtml = generateHalfYearlyOptions(rowId);
+        }
+
         monthHtml = `
             <div style="position:relative;">
                 <div onclick="toggleFeeMonth('${rowId}')" style="background:rgba(0,0,0,0.2);padding:4px 8px;border-radius:3px;font-size:11px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border:1px solid rgba(255,255,255,0.1);user-select:none;">
@@ -898,7 +911,7 @@ function addFeeToStudent(feeIndex) {
                     <span>▼</span>
                 </div>
                 <div id="dd_${rowId}" class="month-dropdown-menu" style="display:none;position:absolute;top:100%;left:0;width:160px;max-height:200px;overflow-y:auto;background:#2d3238;border:1px solid rgba(255,255,255,0.1);z-index:999;box-shadow:0 4px 12px rgba(0,0,0,0.3);border-radius:4px;padding:4px;">
-                    ${generateMonthOptions(rowId, mIdx, yr)}
+                    ${optionsHtml}
                 </div>
             </div>
         `;
@@ -922,7 +935,7 @@ function addFeeToStudent(feeIndex) {
             ৳ ${fee.amount}
         </div>
         <div style="text-align:right;">
-            ${isMonthly ? `<button type="button" onclick="removeFeeRow('${rowId}')" style="background:none;border:none;color:#ff4444;cursor:pointer;font-size:16px;line-height:1;">&times;</button>` : ''}
+            ${isPeriodic ? `<button type="button" onclick="removeFeeRow('${rowId}')" style="background:none;border:none;color:#ff4444;cursor:pointer;font-size:16px;line-height:1;">&times;</button>` : ''}
         </div>
     `;
     
@@ -946,6 +959,26 @@ function generateMonthOptions(rowId, startM, startY) {
         let chk = (i === 0) ? 'checked' : '';
         html += `<label style="display:block;padding:4px;cursor:pointer;font-size:11px;"><input type="checkbox" value="${val}" ${chk} onchange="updateFeeRow('${rowId}')" style="margin-right:6px;"> ${val}</label>`;
     }
+    return html;
+}
+
+function generateQuarterOptions(rowId) {
+    const quarters = ['1st Quarterly', '2nd Quarterly', '3rd Quarterly', '4th Quarterly'];
+    let html = '';
+    quarters.forEach((q, i) => {
+        let chk = (i === 0) ? 'checked' : '';
+        html += `<label style="display:block;padding:4px;cursor:pointer;font-size:11px;"><input type="checkbox" value="${q}" ${chk} onchange="updateFeeRow('${rowId}')" style="margin-right:6px;"> ${q}</label>`;
+    });
+    return html;
+}
+
+function generateHalfYearlyOptions(rowId) {
+    const halves = ['1st Half Yearly', '2nd Half Yearly'];
+    let html = '';
+    halves.forEach((h, i) => {
+        let chk = (i === 0) ? 'checked' : '';
+        html += `<label style="display:block;padding:4px;cursor:pointer;font-size:11px;"><input type="checkbox" value="${h}" ${chk} onchange="updateFeeRow('${rowId}')" style="margin-right:6px;"> ${h}</label>`;
+    });
     return html;
 }
 
@@ -986,7 +1019,8 @@ function updateFeeRow(rowId) {
     if(!row) return;
     
     const base = parseFloat(row.dataset.baseAmount);
-    const isMonthly = row.dataset.type === 'Monthly';
+    // Use the flag we set on creation to be safe
+    const isPeriodic = row.dataset.isPeriodic === 'true';
     const payNow = row.querySelector('.pay-now-check').checked;
     
     // Style update based on checkbox
@@ -997,13 +1031,18 @@ function updateFeeRow(rowId) {
     }
     
     let mul = 1;
-    if(isMonthly) {
+    if(isPeriodic) {
         const chk = row.querySelectorAll('.month-dropdown-menu input[type="checkbox"]:checked');
         mul = chk.length;
         const disp = row.querySelector('.month-display');
+        
+        let label = 'Months';
+        if (row.dataset.type === 'Quarterly') label = 'Qtrs';
+        if (['Half Yearly', 'Half-Yearly', 'Half_Yearly'].includes(row.dataset.type)) label = 'Halves';
+
         if(mul === 0) disp.innerText = 'None';
         else if(mul === 1) disp.innerText = chk[0].value.split(',')[0];
-        else disp.innerText = `${mul} Months`;
+        else disp.innerText = `${mul} ${label}`;
         
         row.dataset.selectedMonths = Array.from(chk).map(c => c.value).join('|');
     }
@@ -1068,7 +1107,8 @@ function collectAdmissionFees(event) {
         if (!isPaying) return;
 
         // Add to payment list (Only checked fees)
-        if (type === 'Monthly') {
+        // Add to payment list (Only checked fees)
+        if (['Monthly', 'Quarterly', 'Half Yearly', 'Half-Yearly', 'Half_Yearly'].includes(type)) {
             const months = (row.dataset.selectedMonths || '').split('|').filter(m => m);
             months.forEach(m => {
                 paymentFees.push({

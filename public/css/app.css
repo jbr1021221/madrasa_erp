@@ -17,11 +17,11 @@
   --success: #4caf50;
   --warning: #ffc107;
   --info: #2196f3;
-  
+
   /* Borders & Radius */
   --radius: 6px;
-  --border-color: rgba(255,255,255,0.1);
-  
+  --border-color: rgba(255, 255, 255, 0.1);
+
   /* Spacing */
   --spacing-xs: 4px;
   --spacing-sm: 8px;
@@ -52,18 +52,40 @@ body {
 /* ==================
    Typography
    ================== */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-weight: 600;
   line-height: 1.3;
   color: var(--text);
 }
 
-h1 { font-size: 2rem; }
-h2 { font-size: 1.75rem; }
-h3 { font-size: 1.5rem; }
-h4 { font-size: 1.25rem; }
-h5 { font-size: 1.125rem; }
-h6 { font-size: 1rem; }
+h1 {
+  font-size: 2rem;
+}
+
+h2 {
+  font-size: 1.75rem;
+}
+
+h3 {
+  font-size: 1.5rem;
+}
+
+h4 {
+  font-size: 1.25rem;
+}
+
+h5 {
+  font-size: 1.125rem;
+}
+
+h6 {
+  font-size: 1rem;
+}
 
 p {
   margin-bottom: 1rem;
@@ -99,7 +121,7 @@ a:hover {
 
 .btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(227,120,20,0.3);
+  box-shadow: 0 4px 12px rgba(227, 120, 20, 0.3);
 }
 
 .btn:active {
@@ -113,7 +135,7 @@ a:hover {
 }
 
 .btn.ghost:hover {
-  background: rgba(227,120,20,0.1);
+  background: rgba(227, 120, 20, 0.1);
 }
 
 .btn:disabled {
@@ -153,12 +175,12 @@ label {
   font-weight: 500;
 }
 
-input, 
-select, 
+input,
+select,
 textarea {
   background: #1b1f22;
   color: var(--text);
-  border: 1px solid rgba(255,255,255,0.15);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   padding: 8px 12px;
   border-radius: var(--radius);
   font-size: 14px;
@@ -173,7 +195,7 @@ select:focus,
 textarea:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(227,120,20,0.1);
+  box-shadow: 0 0 0 3px rgba(227, 120, 20, 0.1);
 }
 
 input[readonly],
@@ -204,7 +226,7 @@ table {
 }
 
 th {
-  background: rgba(255,255,255,0.15);
+  background: rgba(255, 255, 255, 0.15);
   padding: 10px;
   font-size: 14px;
   text-align: center;
@@ -216,19 +238,19 @@ td {
   padding: 10px;
   font-size: 14px;
   text-align: center;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 tbody tr:nth-child(odd) {
-  background: rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 tbody tr:nth-child(even) {
-  background: rgba(255,255,255,0.09);
+  background: rgba(255, 255, 255, 0.09);
 }
 
 tbody tr:hover {
-  background: rgba(227,120,20,0.18);
+  background: rgba(227, 120, 20, 0.18);
   transition: background 0.2s;
 }
 
@@ -239,7 +261,7 @@ tbody tr:hover {
   background: var(--card);
   padding: 20px;
   border-radius: var(--radius);
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   margin-bottom: 16px;
 }
 
@@ -247,7 +269,7 @@ tbody tr:hover {
   background: var(--panel);
   padding: 20px;
   border-radius: var(--radius);
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 /* ==================
@@ -262,26 +284,26 @@ tbody tr:hover {
 }
 
 .alert.success {
-  background: rgba(76,175,80,0.2);
+  background: rgba(76, 175, 80, 0.2);
   color: var(--success);
   border-color: var(--success);
 }
 
 .alert.error,
 .alert.danger {
-  background: rgba(255,78,78,0.2);
+  background: rgba(255, 78, 78, 0.2);
   color: var(--danger);
   border-color: var(--danger);
 }
 
 .alert.warning {
-  background: rgba(255,193,7,0.2);
+  background: rgba(255, 193, 7, 0.2);
   color: var(--warning);
   border-color: var(--warning);
 }
 
 .alert.info {
-  background: rgba(33,150,243,0.2);
+  background: rgba(33, 150, 243, 0.2);
   color: var(--info);
   border-color: var(--info);
 }
@@ -295,7 +317,7 @@ tbody tr:hover {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0,0,0,0.65);
+  background: rgba(0, 0, 0, 0.65);
   display: none;
   justify-content: center;
   align-items: center;
@@ -308,7 +330,7 @@ tbody tr:hover {
   background: var(--card);
   padding: 24px;
   border-radius: var(--radius);
-  border: 1px solid rgba(255,255,255,0.15);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   max-height: 90vh;
   overflow-y: auto;
 }
@@ -319,7 +341,7 @@ tbody tr:hover {
   align-items: center;
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .modal-header h3 {
@@ -357,7 +379,7 @@ tbody tr:hover {
 }
 
 .action-btn:hover {
-  background: rgba(227,120,20,0.15);
+  background: rgba(227, 120, 20, 0.15);
 }
 
 .action-btn.delete {
@@ -366,7 +388,7 @@ tbody tr:hover {
 }
 
 .action-btn.delete:hover {
-  background: rgba(255,78,78,0.15);
+  background: rgba(255, 78, 78, 0.15);
 }
 
 .action-btn.edit {
@@ -375,7 +397,7 @@ tbody tr:hover {
 }
 
 .action-btn.edit:hover {
-  background: rgba(255,193,7,0.15);
+  background: rgba(255, 193, 7, 0.15);
 }
 
 .action-btn.receipt {
@@ -384,7 +406,7 @@ tbody tr:hover {
 }
 
 .action-btn.receipt:hover {
-  background: rgba(76,175,80,0.15);
+  background: rgba(76, 175, 80, 0.15);
 }
 
 .action-btn.admission {
@@ -393,7 +415,7 @@ tbody tr:hover {
 }
 
 .action-btn.admission:hover {
-  background: rgba(33,150,243,0.15);
+  background: rgba(33, 150, 243, 0.15);
 }
 
 /* ==================
@@ -426,7 +448,7 @@ tbody tr:hover {
 .dataTables_length select {
   background: #1b1f22;
   color: var(--text);
-  border: 1px solid rgba(255,255,255,0.15);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   padding: 4px 8px;
   border-radius: 4px;
 }
@@ -434,7 +456,7 @@ tbody tr:hover {
 .dataTables_filter input {
   background: #1b1f22;
   color: var(--text);
-  border: 1px solid rgba(255,255,255,0.15);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   padding: 6px 12px;
   border-radius: 4px;
   margin-left: 8px;
@@ -452,7 +474,7 @@ tbody tr:hover {
 .dataTables_paginate .paginate_button {
   color: var(--text) !important;
   padding: 6px 12px;
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 4px;
   margin: 0 2px;
   cursor: pointer;
@@ -460,8 +482,8 @@ tbody tr:hover {
 }
 
 .dataTables_paginate .paginate_button:hover {
-  background: rgba(255,255,255,0.1);
-  border-color: rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .dataTables_paginate .paginate_button.current {
@@ -485,62 +507,185 @@ table.dataTable tbody tr {
 /* ==================
    Utility Classes
    ================== */
-.text-center { text-align: center; }
-.text-left { text-align: left; }
-.text-right { text-align: right; }
+.text-center {
+  text-align: center;
+}
 
-.mt-0 { margin-top: 0; }
-.mt-1 { margin-top: 8px; }
-.mt-2 { margin-top: 16px; }
-.mt-3 { margin-top: 24px; }
-.mt-4 { margin-top: 32px; }
+.text-left {
+  text-align: left;
+}
 
-.mb-0 { margin-bottom: 0; }
-.mb-1 { margin-bottom: 8px; }
-.mb-2 { margin-bottom: 16px; }
-.mb-3 { margin-bottom: 24px; }
-.mb-4 { margin-bottom: 32px; }
+.text-right {
+  text-align: right;
+}
 
-.p-0 { padding: 0; }
-.p-1 { padding: 8px; }
-.p-2 { padding: 16px; }
-.p-3 { padding: 24px; }
-.p-4 { padding: 32px; }
+.mt-0 {
+  margin-top: 0;
+}
 
-.d-flex { display: flex; }
-.d-block { display: block; }
-.d-inline { display: inline; }
-.d-none { display: none; }
+.mt-1 {
+  margin-top: 8px;
+}
 
-.flex-column { flex-direction: column; }
-.flex-row { flex-direction: row; }
-.justify-center { justify-content: center; }
-.justify-between { justify-content: space-between; }
-.align-center { align-items: center; }
+.mt-2 {
+  margin-top: 16px;
+}
 
-.gap-1 { gap: 8px; }
-.gap-2 { gap: 16px; }
-.gap-3 { gap: 24px; }
+.mt-3 {
+  margin-top: 24px;
+}
 
-.text-muted { color: var(--muted); }
-.text-accent { color: var(--accent); }
-.text-danger { color: var(--danger); }
-.text-success { color: var(--success); }
-.text-warning { color: var(--warning); }
+.mt-4 {
+  margin-top: 32px;
+}
 
-.font-bold { font-weight: 700; }
-.font-semibold { font-weight: 600; }
-.font-normal { font-weight: 400; }
+.mb-0 {
+  margin-bottom: 0;
+}
 
-.rounded { border-radius: var(--radius); }
-.rounded-full { border-radius: 9999px; }
+.mb-1 {
+  margin-bottom: 8px;
+}
 
-.shadow-sm { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-.shadow { box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-.shadow-lg { box-shadow: 0 10px 15px rgba(0,0,0,0.15); }
+.mb-2 {
+  margin-bottom: 16px;
+}
 
-.w-full { width: 100%; }
-.h-full { height: 100%; }
+.mb-3 {
+  margin-bottom: 24px;
+}
+
+.mb-4 {
+  margin-bottom: 32px;
+}
+
+.p-0 {
+  padding: 0;
+}
+
+.p-1 {
+  padding: 8px;
+}
+
+.p-2 {
+  padding: 16px;
+}
+
+.p-3 {
+  padding: 24px;
+}
+
+.p-4 {
+  padding: 32px;
+}
+
+.d-flex {
+  display: flex;
+}
+
+.d-block {
+  display: block;
+}
+
+.d-inline {
+  display: inline;
+}
+
+.d-none {
+  display: none;
+}
+
+.flex-column {
+  flex-direction: column;
+}
+
+.flex-row {
+  flex-direction: row;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.align-center {
+  align-items: center;
+}
+
+.gap-1 {
+  gap: 8px;
+}
+
+.gap-2 {
+  gap: 16px;
+}
+
+.gap-3 {
+  gap: 24px;
+}
+
+.text-muted {
+  color: var(--muted);
+}
+
+.text-accent {
+  color: var(--accent);
+}
+
+.text-danger {
+  color: var(--danger);
+}
+
+.text-success {
+  color: var(--success);
+}
+
+.text-warning {
+  color: var(--warning);
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.font-semibold {
+  font-weight: 600;
+}
+
+.font-normal {
+  font-weight: 400;
+}
+
+.rounded {
+  border-radius: var(--radius);
+}
+
+.rounded-full {
+  border-radius: 9999px;
+}
+
+.shadow-sm {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.shadow {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.shadow-lg {
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.15);
+}
+
+.w-full {
+  width: 100%;
+}
+
+.h-full {
+  height: 100%;
+}
 
 /* ==================
    Responsive Utilities
@@ -549,7 +694,7 @@ table.dataTable tbody tr {
   .hide-mobile {
     display: none;
   }
-  
+
   .dataTables_wrapper .bottom {
     flex-direction: column;
   }
@@ -562,6 +707,7 @@ table.dataTable tbody tr {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -572,6 +718,7 @@ table.dataTable tbody tr {
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -590,7 +737,7 @@ table.dataTable tbody tr {
    Loading Spinner
    ================== */
 .spinner {
-  border: 3px solid rgba(255,255,255,0.1);
+  border: 3px solid rgba(255, 255, 255, 0.1);
   border-top: 3px solid var(--accent);
   border-radius: 50%;
   width: 40px;
@@ -599,8 +746,13 @@ table.dataTable tbody tr {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* ==================
