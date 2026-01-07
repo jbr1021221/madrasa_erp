@@ -910,7 +910,7 @@ function addFeeToStudent(feeIndex) {
                     <span class="month-display" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px;">...</span>
                     <span>▼</span>
                 </div>
-                <div id="dd_${rowId}" class="month-dropdown-menu" style="display:none;position:absolute;top:100%;left:0;width:160px;max-height:200px;overflow-y:auto;background:#2d3238;border:1px solid rgba(255,255,255,0.1);z-index:999;box-shadow:0 4px 12px rgba(0,0,0,0.3);border-radius:4px;padding:4px;">
+                <div id="dd_${rowId}" class="month-dropdown-menu" style="display:none;position:absolute;top:100%;left:0;width:160px;max-height:200px;overflow-y:auto;background:#050607;border:1px solid rgba(255,255,255,0.1);z-index:999;box-shadow:0 4px 12px rgba(0,0,0,0.3);border-radius:4px;padding:4px;">
                     ${optionsHtml}
                 </div>
             </div>
@@ -957,27 +957,27 @@ function generateMonthOptions(rowId, startM, startY) {
         let yr = startY + yAdd;
         let val = `${monthNames[idx]}, ${yr.toString().slice(-2)}`;
         let chk = (i === 0) ? 'checked' : '';
-        html += `<label style="display:block;padding:4px;cursor:pointer;font-size:11px;"><input type="checkbox" value="${val}" ${chk} onchange="updateFeeRow('${rowId}')" style="margin-right:6px;"> ${val}</label>`;
+        html += `<label style="display:flex;align-items:center;justify-content:space-between;padding:4px;cursor:pointer;font-size:11px;white-space:nowrap;">${val} <input type="checkbox" value="${val}" ${chk} onchange="updateFeeRow('${rowId}')"></label>`;
     }
     return html;
 }
 
 function generateQuarterOptions(rowId) {
-    const quarters = ['1st Quarterly', '2nd Quarterly', '3rd Quarterly', '4th Quarterly'];
+    const quarters = ['1st Quater', '2nd Quater', '3rd Quater', '4th Quater'];
     let html = '';
     quarters.forEach((q, i) => {
         let chk = (i === 0) ? 'checked' : '';
-        html += `<label style="display:block;padding:4px;cursor:pointer;font-size:11px;"><input type="checkbox" value="${q}" ${chk} onchange="updateFeeRow('${rowId}')" style="margin-right:6px;"> ${q}</label>`;
+        html += `<label style="display:flex;align-items:center;justify-content:space-between;padding:4px;cursor:pointer;font-size:11px;white-space:nowrap;">${q} <input type="checkbox" value="${q}" ${chk} onchange="updateFeeRow('${rowId}')"></label>`;
     });
     return html;
 }
 
 function generateHalfYearlyOptions(rowId) {
-    const halves = ['1st Half Yearly', '2nd Half Yearly'];
+    const halves = ['1st Half', '2nd Half'];
     let html = '';
     halves.forEach((h, i) => {
         let chk = (i === 0) ? 'checked' : '';
-        html += `<label style="display:block;padding:4px;cursor:pointer;font-size:11px;"><input type="checkbox" value="${h}" ${chk} onchange="updateFeeRow('${rowId}')" style="margin-right:6px;"> ${h}</label>`;
+        html += `<label style="display:flex;align-items:center;justify-content:space-between;padding:4px;cursor:pointer;font-size:11px;white-space:nowrap;">${h} <input type="checkbox" value="${h}" ${chk} onchange="updateFeeRow('${rowId}')"></label>`;
     });
     return html;
 }
