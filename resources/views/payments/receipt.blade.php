@@ -390,7 +390,6 @@
           
             </div>
             
-            <!-- Payment Section -->
             <div class="fee-section">
                 @php
                     // Get fee details from the payment record in database
@@ -399,47 +398,64 @@
                     // Process and group fees
                     $processedFees = [];
                     $monthlyGroups = [];
-                    $subtotal = 0;
+                    
+                    $totalNet = 0;
+                    $totalOriginal = 0;
+                    $totalDiscount = 0;
 
-                    if (is_array($feeDetails)) {
+                    if (is_array($feeDetails) && count($feeDetails) > 0) {
                         foreach ($feeDetails as $fee) {
-                            $subtotal += $fee['amount'] ?? 0;
+                            $net = floatval($fee['amount'] ?? 0);
+                            $orig = floatval($fee['original_amount'] ?? $net);
+                            $disc = floatval($fee['discount'] ?? ($orig - $net));
+                            
+                            $totalNet += $net;
+                            $totalOriginal += $orig;
+                            $totalDiscount += $disc;
 
                             // Check if this is a monthly fee that should be grouped
                             if (isset($fee['type']) && $fee['type'] === 'Monthly' && isset($fee['month'])) {
-                                // Extract base name by splitting " - "
-                                // Example: "Tuition Fee - February 26" -> ["Tuition Fee", "February 26"]
+                                // Extract base name logic
                                 $nameParts = explode(' - ', $fee['name']);
                                 $baseName = count($nameParts) > 1 ? trim($nameParts[0]) : $fee['name'];
                                 
-                                // Construct month label with year if available
                                 $monthLabel = $fee['month'];
-                                if (isset($fee['year'])) {
-                                    // If month doesn't already have the year (check loosely)
-                                    if (strpos($monthLabel, $fee['year']) === false) {
-                                        $monthLabel .= ' ' . $fee['year'];
-                                    }
+                                if (isset($fee['year']) && strpos($monthLabel, $fee['year']) === false) {
+                                    $monthLabel .= ' ' . $fee['year'];
                                 } elseif (isset($nameParts[1])) {
-                                    // Fallback: use the part from suffix if year not in dedicated field
                                     $monthLabel = trim($nameParts[1]);
                                 }
 
                                 if (!isset($monthlyGroups[$baseName])) {
                                     $monthlyGroups[$baseName] = [
                                         'months' => [],
-                                        'total_amount' => 0
+                                        'net' => 0,
+                                        'original' => 0,
+                                        'discount' => 0
                                     ];
                                 }
                                 $monthlyGroups[$baseName]['months'][] = $monthLabel;
-                                $monthlyGroups[$baseName]['total_amount'] += $fee['amount'];
+                                $monthlyGroups[$baseName]['net'] += $net;
+                                $monthlyGroups[$baseName]['original'] += $orig;
+                                $monthlyGroups[$baseName]['discount'] += $disc;
                             } else {
-                                // Not a monthly fee, keep as is
-                                $processedFees[] = $fee;
+                                // Non-grouped fee
+                                $processedFees[] = [
+                                    'name' => $fee['name'],
+                                    'amount' => $net,
+                                    'original_amount' => $orig,
+                                    'discount' => $disc
+                                ];
                             }
                         }
+                    } else {
+                        // Legacy fallback if fee_details empty but amount exists
+                        $totalNet = $payment->amount;
+                        $totalOriginal = $payment->amount;
+                        $totalDiscount = 0;
                     }
 
-                    // Process the groups into displayable fees
+                    // Process groups
                     foreach ($monthlyGroups as $baseName => $group) {
                         $months = $group['months']; 
                         $count = count($months);
@@ -457,81 +473,102 @@
 
                         $processedFees[] = [
                             'name' => $description,
-                            'amount' => $group['total_amount']
+                            'amount' => $group['net'],
+                            'original_amount' => $group['original'],
+                            'discount' => $group['discount']
                         ];
                     }
 
-                    $totalPaid = $payment->amount ?? 0;
-                    $discount = max(0, $subtotal - $totalPaid);
+                    // Reconcile Manual/Global Discount
+                    // If the sum of fee items (Net) is greater than the actual Payment Amount, 
+                    // it means a global discount was applied (e.g. manual entry)
+                    $actualPaid = floatval($payment->amount);
+                    $manualDiscount = max(0, $totalNet - $actualPaid);
+
+                    if ($manualDiscount > 0.01) {
+                         $processedFees[] = [
+                             'name' => 'Additional Discount',
+                             'amount' => -$manualDiscount,
+                             'original_amount' => 0,
+                             'discount' => $manualDiscount
+                         ];
+                         $totalDiscount += $manualDiscount;
+                         $totalNet -= $manualDiscount; // Should match actualPaid now
+                    }
+                    
+                    // Show discount columns if Total Discount > 0
+                    $showDiscountCol = $totalDiscount > 0;
                 @endphp
                 
                 <table class="fee-table">
                     <thead>
                         <tr>
                             <th>Description</th>
-                            <th style="text-align: right;">Amount (Tk)</th>
+                            @if($showDiscountCol)
+                                <th style="text-align: right;">Amount (Tk)</th>
+                                <th style="text-align: right;">Discount</th>
+                                <th style="text-align: right;">Net Payable</th>
+                            @else
+                                <th style="text-align: right;">Amount (Tk)</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody>
                         @if(count($processedFees) > 0)
-                            {{-- Display processed fees --}}
                             @foreach($processedFees as $fee)
                                 <tr>
                                     <td>{{ $fee['name'] ?? 'Fee' }}</td>
-                                    <td class="amount-cell">{{ number_format($fee['amount'] ?? 0, 2) }}</td>
+                                    @if($showDiscountCol)
+                                        <td class="amount-cell">{{ number_format($fee['original_amount'], 2) }}</td>
+                                        <td class="amount-cell">{{ number_format($fee['discount'], 2) }}</td>
+                                        <td class="amount-cell">{{ number_format($fee['amount'], 2) }}</td>
+                                    @else
+                                        <td class="amount-cell">{{ number_format($fee['amount'], 2) }}</td>
+                                    @endif
                                 </tr>
                             @endforeach
                             
-                            {{-- Fill remaining rows --}}
-                            @php
-                                $emptyRows = max(0, 4 - count($feeDetails));
-                            @endphp
+                            {{-- Fill empty rows --}}
+                            @php $emptyRows = max(0, 4 - count($processedFees)); @endphp
                             @for($i = 0; $i < $emptyRows; $i++)
                                 <tr class="empty-row">
                                     <td>&nbsp;</td>
-                                    <td>&nbsp;</td>
+                                    @if($showDiscountCol)
+                                        <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
+                                    @else
+                                        <td>&nbsp;</td>
+                                    @endif
                                 </tr>
                             @endfor
                         @else
-                            {{-- Fallback: Show simple payment (for old records without fee_details) --}}
+                            {{-- Legacy Fallback Row --}}
                             <tr>
-                                <td>
-                                    @php
-                                        $description = $payment->payment_type;
-                                        
-                                        // For admission without details, just show "Admission Fee"
-                                        if ($payment->payment_type === 'Admission') {
-                                            $description = 'Admission Fee';
-                                        } else {
-                                            $months = explode(',', $payment->month);
-                                            $monthCount = count($months);
-                                            
-                                            if ($monthCount > 1) {
-                                                $description .= ' (' . trim($months[0]) . ' - ' . trim(end($months)) . ')';
-                                            } else {
-                                                $description .= ' - ' . $payment->month;
-                                            }
-                                        }
-                                    @endphp
-                                    {{ $description }}
-                                </td>
+                                <td>{{ $payment->payment_type }} - {{ $payment->month }}</td>
+                                @if($showDiscountCol)
+                                    <td class="amount-cell">{{ number_format($payment->amount, 2) }}</td>
+                                    <td class="amount-cell">0.00</td>
+                                @endif
                                 <td class="amount-cell">{{ number_format($payment->amount, 2) }}</td>
                             </tr>
-                            
-                            {{-- Add empty rows --}}
-                            @for($i = 0; $i < 3; $i++)
-                                <tr class="empty-row">
-                                    <td>&nbsp;</td>
-                                    <td>&nbsp;</td>
-                                </tr>
-                            @endfor
                         @endif
+                        
+                        {{-- Total Row --}}
+                        <tr class="total-row" style="background-color: #f5f5f5; border-top: 2px solid #51272f;">
+                            <td style="text-align: right; font-weight: bold;">Total:</td>
+                            @if($showDiscountCol)
+                                <td class="amount-cell" style="font-weight: bold;">{{ number_format($totalOriginal, 2) }}</td>
+                                <td class="amount-cell" style="font-weight: bold;">{{ number_format($totalDiscount, 2) }}</td>
+                                <td class="amount-cell" style="font-weight: bold;">{{ number_format($totalNet, 2) }}</td>
+                            @else
+                                <td class="amount-cell" style="font-weight: bold;">{{ number_format($totalNet, 2) }}</td>
+                            @endif
+                        </tr>
                     </tbody>
                 </table>
                 
                 <div style="display: flex; justify-content: space-between; margin-top: 10px; align-items: flex-start;">
                     <!-- Left Side: Payment Method & In Word -->
-                    <div style="width: 55%;">
+                    <div style="width: 100%;">
                         <div class="payment-method">
                             <div class="payment-method-label"><label>Payment Method:</label> {{ $payment->payment_mode ?? 'Cash' }}</div>
                         </div>
@@ -544,23 +581,6 @@
                         
                         <div class="payment-method">
                             <div class="payment-method-label"><label>In Word:</label> {{ ucwords($amountInWords) }} Taka Only</div>
-                        </div>
-                    </div>
-
-                    <!-- Right Side: Payment Summary -->
-                    <div class="payment-summary" style="width: 40%; margin-top: 0;">
-                        @if($discount > 0)
-                        <div class="payment-row">
-                            <div class="amount-box"><span style="float:left;">Subtotal:</span>{{ number_format($subtotal, 2) }}</div>
-                        </div>
-                        
-                        <div class="payment-row">
-                            <div class="amount-box"><span style="float:left;">Discount:</span>{{ number_format($discount, 2) }}</div>
-                        </div>
-                        @endif
-                        
-                        <div class="payment-row">
-                            <div class="amount-box"><span style="float:left;">Total:</span>{{ number_format($totalPaid, 2) }}</div>
                         </div>
                     </div>
                 </div>

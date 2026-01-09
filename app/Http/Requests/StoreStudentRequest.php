@@ -63,6 +63,9 @@ class StoreStudentRequest extends FormRequest
             // Fee months for monthly fees
             'fee_months' => 'nullable|array',
             'fee_months.*' => 'nullable|string|max:20',
+            // Partial payment fields
+            'is_partial_payment' => 'nullable|boolean',
+            'partial_amount' => 'nullable|numeric|min:0',
         ];
     }
 }

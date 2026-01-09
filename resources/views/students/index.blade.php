@@ -149,12 +149,12 @@
                 foreach($student->payments as $payment) {
                     if($payment->fee_details && is_array($payment->fee_details)) {
                         foreach($payment->fee_details as $feeDetail) {
-                            if(isset($feeDetail['type']) && strtolower($feeDetail['type']) === 'monthly') {
+                            $fType = strtolower($feeDetail['type'] ?? '');
+                            if($fType === 'monthly') {
                                 // Build month key in format "MonthName, YY"
                                 $monthName = $feeDetail['month'] ?? '';
                                 $year = $feeDetail['year'] ?? date('y');
                                 
-                                // Fix: If month name already contains the year (common in admission payments), don't append it again
                                 if (strpos($monthName, ', ') !== false) {
                                   $monthKey = $monthName;
                                 } else {
@@ -163,7 +163,7 @@
                                 
                                 if(!isset($paidFeeTracker[$monthKey])) $paidFeeTracker[$monthKey] = [];
                                 
-                                // Extract simple fee name (remove " - Month YY" suffix if present)
+                                // Extract simple fee name
                                 $name = $feeDetail['name'];
                                 if(strpos($name, ' - ') !== false) {
                                   $parts = explode(' - ', $name);
@@ -171,6 +171,34 @@
                                 }
                                 
                                 $paidFeeTracker[$monthKey][] = $name;
+                            } else {
+                                // For Quarterly/Half/Other
+                                $rawName = $feeDetail['name'] ?? '';
+                                
+                                // Check if name is in "Fee - Parts" format
+                                if (strpos($rawName, ' - ') !== false) {
+                                    // Extract Base Name and Parts String
+                                    // We need to be careful finding the first valid separator that separates Fee from Parts
+                                    // Assuming "Fee Name - Part1, Part2"
+                                    $separatorPos = strpos($rawName, ' - ');
+                                    $baseName = trim(substr($rawName, 0, $separatorPos));
+                                    $partsStr = substr($rawName, $separatorPos + 3);
+                                    
+                                    $parts = explode(',', $partsStr);
+                                    foreach($parts as $p) {
+                                        $p = trim($p);
+                                        if(!empty($p)) {
+                                            $paidFeeTracker[$baseName . ' - ' . $p] = true;
+                                        }
+                                    }
+                                } else {
+                                    // Fallback for simple names
+                                    $names = explode(',', $rawName);
+                                    foreach($names as $n) {
+                                        $prioritizedKey = trim($n);
+                                        $paidFeeTracker[$prioritizedKey] = true;
+                                    }
+                                }
                             }
                         }
                     } 
@@ -187,7 +215,7 @@
                 }
             }
           @endphp
-          <button type="button" class="action-btn" onclick="openPayModal({{ $student->id }}, '{{ $student->name }} ({{ $className }})', '{{ $student->father_name }}', {{ json_encode($recurringFees) }}, {{ json_encode($student->discounts ?? []) }}, {{ json_encode($paidFeeTracker) }}, {{ json_encode($allClassFees ?? []) }})" title="Pay Fees">Fees</button>
+          <button type="button" class="action-btn" onclick="openPayModal({{ $student->id }}, '{{ $student->name }} ({{ $className }})', '{{ $student->father_name }}', {{ json_encode($recurringFees) }}, {{ json_encode($student->discounts ?? []) }}, {{ json_encode($paidFeeTracker) }}, {{ json_encode($allClassFees ?? []) }}, {{ json_encode($student->partial_payments ?? []) }})" title="Pay Fees">Fees</button>
           <a href="{{ route('students.show', $student) }}" class="action-btn" title="View Details">View</a>
           <a href="{{ route('students.receipt.confirm', $student) }}" class="action-btn receipt" title="View Receipt">Receipt</a>
           <button type="button" class="action-btn delete" onclick="confirmDelete('{{ route('students.destroy', $student) }}')" title="Delete Student">Delete</button>
@@ -259,7 +287,7 @@
 
       <div style="margin-bottom:16px">
         <label>Fees</label>
-        <div style="border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; overflow: hidden;">
+        <div style="border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; overflow: visible;">
             <table style="width:100%; margin:0;">
                 <thead style="background:rgba(255,255,255,0.05)">
                     <tr>
@@ -466,18 +494,26 @@ let currentPaidFeeTracker = {};
 
 let availableClassFees = [];
 
-function openPayModal(id, name, fatherName, selectedFees, discounts, paidFeeTracker, classFees) {
+function openPayModal(id, name, fatherName, selectedFees, discounts, paidFeeTracker, classFees, partialPayments) {
   // fees = selectedFees (what student has subscribed to)
   // classFees = all available fees for the class
+  // partialPayments = fees with remaining balance
   
   // Store subscriptions globally - these are the 'defaults' 
   currentSubscribedFees = selectedFees || [];
   
-  // Initialize 'allFees' (Active Payment Fees) with ONLY the default category (Monthly)
-  // This prevents non-Monthly fees from automatically appearing in the payment table.
-  allFees = currentSubscribedFees.filter(f => (f.type || 'Monthly').toLowerCase() === 'monthly');
+  // Initialize 'allFees' (Active Payment Fees)
+  // By default, only show Monthly fees in the main table.
+  // Other fees (Admission, Quarterly, etc.) will appear in the "Other Fees" section.
+  allFees = (selectedFees || []).filter(f => (f.type || 'Monthly').toLowerCase() === 'monthly');
   
-  availableClassFees = classFees || [];
+  // Ensure all subscribed fees are available in the pool even if not active in table
+  availableClassFees = [...(classFees || [])];
+  (selectedFees || []).forEach(sf => {
+      if(!availableClassFees.some(af => af.name === sf.name)) {
+          availableClassFees.push(sf);
+      }
+  });
   
   currentDiscounts = discounts || {};
   currentPaidFeeTracker = paidFeeTracker || {};
@@ -485,6 +521,27 @@ function openPayModal(id, name, fatherName, selectedFees, discounts, paidFeeTrac
   console.log('=== Payment Modal Debug ===');
   console.log('Subscribed Fees:', currentSubscribedFees);
   console.log('Initial Active Fees:', allFees);
+  console.log('Partial Payments:', partialPayments);
+  
+  // Add unpaid admission fees to availableClassFees
+  if (partialPayments && typeof partialPayments === 'object') {
+    for (let feeName in partialPayments) {
+      const partial = partialPayments[feeName];
+      if (partial.remaining && partial.remaining > 0) {
+        // Add to available fees with remaining amount
+        availableClassFees.push({
+          name: feeName + ' (Remaining)',
+          type: 'One Time',
+          amount: partial.remaining,
+          is_partial_completion: true,
+          original_total: partial.total,
+          already_paid: partial.paid
+        });
+        
+        console.log(`Added partial fee: ${feeName} - Remaining: ${partial.remaining}`);
+      }
+    }
+  }
   
   document.getElementById('payStudentId').value = id;
   document.getElementById('payStudentName').value = name;
@@ -530,6 +587,120 @@ function handleCategoryChange() {
     updateFeeViews();
 }
 
+// Toggle custom part dropdown
+function togglePartDropdown(id) {
+    const menu = document.getElementById('menu_' + id);
+    if(menu) menu.style.display = (menu.style.display === 'none' ? 'block' : 'none');
+}
+
+// Global click to close
+document.addEventListener('click', function(e) {
+    if(!e.target.closest('.part-dropdown-container')) {
+        document.querySelectorAll('.part-dropdown-menu').forEach(m => m.style.display = 'none');
+    }
+});
+
+// Update selection from checkboxes
+function updatePartSelection(chk, id) {
+    const container = document.getElementById('part_container_' + id);
+    const tr = container.closest('tr');
+    
+    // Get all checked
+    const menu = document.getElementById('menu_' + id);
+    const checked = menu.querySelectorAll('input[type="checkbox"]:checked');
+    const values = Array.from(checked).map(c => c.value);
+    
+    // Update Display
+    const disp = document.getElementById('disp_' + id);
+    if(values.length === 0) disp.innerText = 'None';
+    else if(values.length === 1) disp.innerText = values[0];
+    else disp.innerText = values.length + ' Selected';
+    
+    // Update Row Data
+    tr.dataset.partName = values.join(', '); // Comma separated for display/storage
+    
+    // Update Amount logic (Multiply unit amount)
+    const unitAmount = parseFloat(tr.dataset.unitAmount) || parseFloat(tr.dataset.actual) || 0;
+    // ensure unitAmount is saved if missing
+    if(!tr.dataset.unitAmount) tr.dataset.unitAmount = unitAmount;
+    
+    const count = Math.max(0, values.length); // Allow 0 to remove fee effectively?
+    const newTotal = unitAmount * count;
+    
+    tr.dataset.actual = newTotal; // Update actual so calculateTotal picks it up
+    
+    // Update Text in Row (Actual Fee)
+    const tds = tr.querySelectorAll('td');
+    if(tds[1]) tds[1].innerText = '৳' + newTotal.toFixed(2);
+    
+    // Update Discounted Column (3rd TD)
+    const discount = parseFloat(tr.dataset.discount) || 0;
+    const discounted = Math.max(0, newTotal - discount);
+    if(tds[2]) {
+        // The display structure is <div><span>Amount</span><button>...</div>
+        const span = tds[2].querySelector('span');
+        if(span) span.innerText = '৳' + discounted.toFixed(2);
+    }
+    
+    // Recalculate totals
+    calculateTotal();
+}
+
+// Helper to generate dropdown for split fees (Checkbox Version)
+function generatePartDropdown(type, feeName) {
+    let options = [];
+    const t = (type || '').toLowerCase();
+    
+    if(t.includes('quarterly')) {
+        options = ['1st Quater', '2nd Quater', '3rd Quater', '4th Quater'];
+    } else if (t.includes('half')) {
+        options = ['1st Half', '2nd Half'];
+    } else {
+        return null;
+    }
+
+    const uniqueId = 'pdd_' + Math.floor(Math.random() * 100000);
+    
+    let html = `<div id="part_container_${uniqueId}" class="part-dropdown-container" style="position:relative; display:inline-block; margin-left:12px;">
+        <div onclick="togglePartDropdown('${uniqueId}')" style="background:#2b2f33; border:1px solid #444; color:white; padding:4px 8px; font-size:11px; border-radius:4px; cursor:pointer; min-width:110px; display:flex; justify-content:space-between; align-items:center;">
+            <span id="disp_${uniqueId}">Select Part</span>
+            <span>▼</span>
+        </div>
+        <div id="menu_${uniqueId}" class="part-dropdown-menu" style="display:none; position:absolute; top:100%; left:0; width:100%; min-width:120px; background:#252629; border:1px solid #444; z-index:99999; max-height:150px; overflow-y:auto; box-shadow:0 4px 12px rgba(0,0,0,0.5);">`;
+    
+    let firstUnpaid = null;
+
+    options.forEach(opt => {
+        // Scoped check: Fee Name - Part
+        // Use exact key created by PHP parser (with trims)
+        const key = feeName.trim() + ' - ' + opt;
+        let isPaid = !!currentPaidFeeTracker[key];
+        
+        // Default select logic: select the first unpaid one
+        let checked = '';
+        if(!isPaid && !firstUnpaid) {
+            firstUnpaid = opt;
+            checked = 'checked';
+        }
+        
+        html += `<label style="display:block; padding:6px 8px; cursor:pointer; font-size:11px; border-bottom:1px solid #333; margin:0;">
+            <input type="checkbox" value="${opt}" onchange="updatePartSelection(this, '${uniqueId}')" ${isPaid ? 'disabled' : ''} ${checked}> 
+            <span style="opacity:${isPaid ? 0.5 : 1}">${opt} ${isPaid ? '(Paid)' : ''}</span>
+        </label>`;
+    });
+    
+    html += `</div></div>`;
+    
+    // We need to inject a script to set initial text logic? 
+    // Or we return the default text.
+    const defaultText = firstUnpaid || 'Select Part';
+    
+    // Hack: Replace the placeholder text in the html string
+    html = html.replace('Select Part', defaultText);
+    
+    return { html: html, default: firstUnpaid || '' };
+}
+
 function updateFeeViews() {
   const category = document.getElementById('feeCategorySelect').value;
   document.getElementById('paymentType').value = category;
@@ -537,8 +708,13 @@ function updateFeeViews() {
   // Update Period based on date and category
   updatePeriod();
   
-  // Split fees
-  const activeMainFees = allFees.filter(f => (f.type || '').toLowerCase() === category.toLowerCase());
+  // 1. Determine which fees match the PRIMARY selected category
+  let activeMainFees;
+  if (category === 'Monthly') {
+      activeMainFees = allFees.filter(f => (f.type || 'Monthly').toLowerCase() === 'monthly');
+  } else {
+      activeMainFees = allFees.filter(f => (f.type || '').toLowerCase() === category.toLowerCase());
+  }
   
   // Render Table with Remove buttons for monthly fees (ACTIVE only)
   const tbody = document.getElementById('monthlyFeeTableBody');
@@ -550,15 +726,30 @@ function updateFeeViews() {
       const actual = parseFloat(fee.amount) || 0;
       const discounted = Math.max(0, actual - discount);
       
+      // Check for split fee dropdown
+      const splitData = generatePartDropdown(fee.type, fee.name);
+      const dropdownHtml = splitData ? splitData.html : '';
+      const initialPart = splitData ? splitData.default : '';
+      
       const tr = document.createElement('tr');
       tr.className = 'main-fee-row';
+      tr.dataset.type = fee.type || category; // Critical for distinguishing logic
       tr.dataset.actual = actual;
+      tr.dataset.unitAmount = actual;
       tr.dataset.discount = discount;
       tr.dataset.feeName = fee.name;
+      // Set initial part name if applicable
+      if(initialPart) tr.dataset.partName = initialPart;
+      
       tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
       tr.style.transition = 'all 0.3s ease';
       tr.innerHTML = `
-        <td style="text-align:left; padding: 10px;">${fee.name}</td>
+        <td style="text-align:left; padding: 10px;">
+            <div style="display:flex; align-items:center; justify-content:flex-start; gap:15px; flex-wrap:nowrap;">
+                <span style="font-weight:500;">${fee.name}</span>
+                ${dropdownHtml}
+            </div>
+        </td>
         <td style="text-align:right; padding: 10px;">৳${actual.toFixed(2)}</td>
         <td style="text-align:right; padding: 10px;">
           <div style="display:flex; align-items:center; justify-content:flex-end; gap:8px;">
@@ -579,20 +770,45 @@ function updateFeeViews() {
       const actual = parseFloat(fee.amount) || 0;
       const discounted = Math.max(0, actual - discount);
       
+      const isPartial = fee.is_partial_completion === true;
+      
+      // Check for split fee dropdown
+      const splitData = generatePartDropdown(fee.type, fee.name);
+      const dropdownHtml = splitData ? splitData.html : '';
+      const initialPart = splitData ? splitData.default : '';
+      
       const tr = document.createElement('tr');
       tr.className = 'added-other-fee';
       tr.setAttribute('data-fee-name', fee.name);
+      tr.dataset.actual = actual;
+      tr.dataset.discount = discount;
+      tr.dataset.unitAmount = actual;
+      tr.dataset.isPartial = isPartial ? 'true' : 'false';
+      if(initialPart) tr.dataset.partName = initialPart;
+      
       tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
       
+      const amountDisplay = isPartial 
+        ? `<input type="number" value="${discounted}" 
+                  oninput="updatePartialAmount(this)" 
+                  style="width:80px; background:#1b1f22; color:white; border:1px solid #444; border-radius:4px; padding:4px; text-align:right;"
+                  step="0.01" min="0" max="${actual}">`
+        : `৳${discounted.toFixed(2)}`;
+
       tr.innerHTML = `
         <td style="text-align:left; padding: 10px;">
-          ${fee.name} (${fee.type})
-          <span style="background:rgba(227,120,20,0.3); color:var(--accent); padding:2px 6px; border-radius:3px; font-size:11px; margin-left:8px;">ADDED</span>
+           <div style="display:flex; align-items:center; justify-content:flex-start; gap:15px; flex-wrap:nowrap;">
+               <div>
+                  ${fee.name} (${fee.type})
+                  <span style="background:rgba(227,120,20,0.3); color:var(--accent); padding:2px 6px; border-radius:3px; font-size:11px; margin-left:8px;">ADDED</span>
+               </div>
+               ${dropdownHtml}
+           </div>
         </td>
         <td style="text-align:right; padding: 10px;">৳${actual.toFixed(2)}</td>
         <td style="text-align:right; padding: 10px;">
           <div style="display:flex; align-items:center; justify-content:flex-end; gap:8px;">
-            <span>৳${discounted.toFixed(2)}</span>
+            <span style="font-weight:bold; color:var(--text);">${amountDisplay}</span>
             <button type="button" onclick="removeAddedFee('${fee.name}')" 
                     class="action-btn delete" style="padding:4px 8px; font-size:11px;">✕ Remove</button>
           </div>
@@ -629,11 +845,14 @@ function updateFeeViews() {
       const div = document.createElement('div');
       div.style.marginBottom = '8px';
       div.className = 'other-fee-item';
+      const isPartialFee = fee.is_partial_completion === true;
+      
       div.setAttribute('data-fee-name', fee.name);
       div.setAttribute('data-actual', actual);
       div.setAttribute('data-discount', discount);
       div.setAttribute('data-discounted', discounted);
       div.setAttribute('data-type', fee.type);
+      div.setAttribute('data-is-partial', isPartialFee ? 'true' : 'false');
       
       // HIDE if active (because it's in the table)
       if (isChecked) {
@@ -643,25 +862,42 @@ function updateFeeViews() {
           visibleCount++;
       }
       
+      // Check if this is a partial payment fee
+      const partialBadge = isPartialFee ? `<span style="background:rgba(255,193,7,0.3); color:#ffc107; padding:2px 6px; border-radius:3px; font-size:10px; margin-left:4px; font-weight:600;">DUE</span>` : '';
+      
       div.innerHTML = `
-        <div style="display:flex; align-items:center; gap: 8px; cursor:pointer; padding: 6px 8px; border-radius: 4px; background:${isChecked ? 'rgba(227,120,20,0.15)' : 'rgba(255,255,255,0.02)'}; user-select:none;"
+        <div style="display:flex; align-items:center; gap: 8px; cursor:pointer; padding: 6px 8px; border-radius: 4px; background:${isChecked ? 'rgba(227,120,20,0.15)' : (isPartialFee ? 'rgba(255,193,7,0.08)' : 'rgba(255,255,255,0.02)')}; ${isPartialFee ? 'border: 1px solid rgba(255,193,7,0.3);' : ''} user-select:none;"
              onclick="toggleOtherFee(this)">
             <input type="checkbox" class="fee-checkbox other-fee-checkbox" 
                    data-fee-name="${fee.name}"
                    ${isChecked ? 'checked' : ''}
                    style="opacity:0; position:absolute; pointer-events:none;">
-            <span style="font-size:13px; flex:1;">${fee.name} (${fee.type})</span>
-            <span style="font-size:13px; color:var(--accent); font-weight:500;">৳${discounted.toFixed(2)}</span>
+            <span style="font-size:13px; flex:1;">${fee.name} (${fee.type})${partialBadge}</span>
+            <span style="font-size:13px; color:${isPartialFee ? '#ffc107' : 'var(--accent)'}; font-weight:500;">৳${discounted.toFixed(2)}</span>
         </div>
       `;
       
       div.onmouseover = function() { 
         const input = this.querySelector('input');
-        if(!input.checked) this.querySelector('div').style.background = 'rgba(255,255,255,0.05)'; 
+        const innerDiv = this.querySelector('div');
+        if(!input.checked) {
+          if (isPartialFee) {
+            innerDiv.style.background = 'rgba(255,193,7,0.15)';
+          } else {
+            innerDiv.style.background = 'rgba(255,255,255,0.05)';
+          }
+        }
       };
       div.onmouseout = function() { 
         const input = this.querySelector('input');
-        if(!input.checked) this.querySelector('div').style.background = 'rgba(255,255,255,0.02)'; 
+        const innerDiv = this.querySelector('div');
+        if(!input.checked) {
+          if (isPartialFee) {
+            innerDiv.style.background = 'rgba(255,193,7,0.08)';
+          } else {
+            innerDiv.style.background = 'rgba(255,255,255,0.02)';
+          }
+        }
       };
       
       otherContainer.appendChild(div);
@@ -805,11 +1041,14 @@ function toggleOtherFee(container) {
     const feeType = (feeItem.getAttribute('data-type') || 'Other');
     const currentCategory = (document.getElementById('feeCategorySelect').value || '').toLowerCase();
 
+    const isPartial = feeItem.getAttribute('data-is-partial') === 'true';
+    
     // 1. Update State
     allFees.push({
         name: feeName,
         amount: actual,
-        type: feeType
+        type: feeType,
+        is_partial_completion: isPartial
     });
 
     // 2. Update UI (Check)
@@ -821,12 +1060,25 @@ function toggleOtherFee(container) {
     tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
 
     if (feeType.toLowerCase() === currentCategory) {
+      // Check for split fee dropdown
+      const splitData = generatePartDropdown(feeType, feeName);
+      const dropdownHtml = splitData ? splitData.html : '';
+      const initialPart = splitData ? splitData.default : '';
+
       tr.className = 'main-fee-row'; 
       tr.dataset.actual = actual;
+      tr.dataset.unitAmount = actual;
       tr.dataset.discount = discount;
       tr.dataset.feeName = feeName;
+      if(initialPart) tr.dataset.partName = initialPart;
+
       tr.innerHTML = `
-        <td style="text-align:left; padding: 10px;">${feeName}</td>
+        <td style="text-align:left; padding: 10px;">
+            <div style="display:flex; align-items:center; justify-content:flex-start; gap:15px; flex-wrap:nowrap;">
+                <span style="font-weight:500;">${feeName}</span>
+                ${dropdownHtml}
+            </div>
+        </td>
         <td style="text-align:right; padding: 10px;">৳${actual.toFixed(2)}</td>
         <td style="text-align:right; padding: 10px;">
           <div style="display:flex; align-items:center; justify-content:flex-end; gap:8px;">
@@ -837,16 +1089,36 @@ function toggleOtherFee(container) {
         </td>
       `;
     } else {
+      const splitData = generatePartDropdown(feeType, feeName);
+      const dropdownHtml = splitData ? splitData.html : '';
+      const initialPart = splitData ? splitData.default : '';
+
       tr.className = 'added-other-fee';
+      tr.dataset.actual = actual;
+      tr.dataset.discount = discount;
+      tr.dataset.isPartial = isPartial ? 'true' : 'false';
+
+      const amountDisplay = isPartial 
+        ? `<input type="number" value="${discounted}" 
+                  oninput="updatePartialAmount(this)" 
+                  style="width:80px; background:#1b1f22; color:white; border:1px solid #444; border-radius:4px; padding:4px; text-align:right;"
+                  step="0.01" min="0" max="${actual}">`
+        : `৳${discounted.toFixed(2)}`;
+
       tr.innerHTML = `
         <td style="text-align:left; padding: 10px;">
-          ${feeName} (${feeType})
-          <span style="background:rgba(227,120,20,0.3); color:var(--accent); padding:2px 6px; border-radius:3px; font-size:11px; margin-left:8px;">ADDED</span>
+           <div style="display:flex; align-items:center; justify-content:flex-start; gap:15px; flex-wrap:nowrap;">
+               <div>
+                  ${feeName} (${feeType})
+                  <span style="background:rgba(227,120,20,0.3); color:var(--accent); padding:2px 6px; border-radius:3px; font-size:11px; margin-left:8px;">ADDED</span>
+               </div>
+               ${dropdownHtml}
+           </div>
         </td>
         <td style="text-align:right; padding: 10px;">৳${actual.toFixed(2)}</td>
         <td style="text-align:right; padding: 10px;">
           <div style="display:flex; align-items:center; justify-content:flex-end; gap:8px;">
-            <span>৳${discounted.toFixed(2)}</span>
+            <span style="font-weight:bold; color:var(--text);">${amountDisplay}</span>
             <button type="button" onclick="removeAddedFee('${feeName}')" 
                     class="action-btn delete" style="padding:4px 8px; font-size:11px;">✕ Remove</button>
           </div>
@@ -1044,6 +1316,12 @@ function updateSelectedMonths() {
     calculateTotal();
 }
 
+function updatePartialAmount(input) {
+    const tr = input.closest('tr');
+    tr.dataset.actual = input.value;
+    calculateTotal();
+}
+
 function calculateTotal() {
     let subtotal = 0;
     const category = document.getElementById('feeCategorySelect').value;
@@ -1069,20 +1347,27 @@ function calculateTotal() {
             let validMonthCount = 0;
             const targetFeeName = feeName.toLowerCase();
             
-            selectedMonthTexts.forEach(monthText => {
-                const paidFees = currentPaidFeeTracker[monthText] || [];
-                const isPaid = paidFees.some(pf => pf.toLowerCase() === targetFeeName) || paidFees.includes('__ALL__');
-                
-                console.log(`Checking status of ${feeName} for ${monthText}:`, isPaid ? 'PAID' : 'UNPAID');
-                
-                if (!isPaid) {
-                    validMonthCount++;
-                }
-            });
+            // NEW: Only use month loop for fees that are actually type 'Monthly'
+            // Non-monthly fees (e.g. Admission, Quarterly) should not depend on month selection
+            const feeType = (row.dataset.type || 'Monthly').toLowerCase();
+            let totalForThisFee = 0;
             
-            console.log(`${feeName}: ${validMonthCount} unpaid months out of ${selectedMonthTexts.length} selected`);
+            if (feeType === 'monthly') {
+                selectedMonthTexts.forEach(monthText => {
+                    const paidFees = currentPaidFeeTracker[monthText] || [];
+                    const isPaid = paidFees.some(pf => pf.toLowerCase() === targetFeeName) || paidFees.includes('__ALL__');
+                    
+                    if (!isPaid) {
+                        validMonthCount++;
+                    }
+                });
+                totalForThisFee = discountedFee * validMonthCount;
+            } else {
+                // Non-monthly fee: just use the discounted fee amount as is
+                totalForThisFee = discountedFee;
+                validMonthCount = 1; // Used for UI below
+            }
             
-            const totalForThisFee = discountedFee * validMonthCount;
             subtotal += totalForThisFee;
             
             // Store calculated amount for submission
@@ -1091,21 +1376,21 @@ function calculateTotal() {
             // Update Row UI to reflect status (Paid vs Amount)
             const actionCell = row.querySelector('td:nth-child(3)');
             if(actionCell) {
-                if(selectedMonthTexts.length > 0) {
-                     if(validMonthCount === 0) {
+                if(feeType !== 'monthly' || selectedMonthTexts.length > 0) {
+                     if(feeType === 'monthly' && validMonthCount === 0) {
                          // Fully paid for all selected months
                          actionCell.innerHTML = '<span style="color:#4caf50; font-weight:bold; background:rgba(76,175,80,0.1); padding:4px 8px; border-radius:4px; border:1px solid #4caf50;">Paid</span>';
                          row.style.opacity = '0.5'; // Visually dim the row
                      } else {
                          // Available to pay (Partially or Fully)
                          row.style.opacity = '1';
-                         const isPartial = validMonthCount < selectedMonthTexts.length;
+                         const isPartial = feeType === 'monthly' && validMonthCount < selectedMonthTexts.length;
                          
                          let badgeHtml = '';
                          if (isPartial) {
                              badgeHtml += `<span style="font-size:10px; background:rgba(255,193,7,0.2); color:#ffc107; padding:1px 4px; border-radius:3px; margin-right:4px; border:1px solid rgba(255,193,7,0.3);">Partial</span>`;
                          }
-                         if (validMonthCount > 1) {
+                         if (feeType === 'monthly' && validMonthCount > 1) {
                              badgeHtml += `<span style="font-size:11px; color:var(--muted); margin-right:4px;">(x${validMonthCount})</span>`;
                          }
                          
@@ -1120,12 +1405,12 @@ function calculateTotal() {
                          actionCell.innerHTML = `
                             <div style="display:flex; align-items:center; justify-content:flex-end; gap:8px;">
                                 ${badgeHtml}
-                                <span style="font-weight:bold; color:var(--text);">৳${totalForThisFee.toFixed(2)}</span>
+                                <span style="font-weight:bold; color:var(--text);">${totalForThisFee > 0 ? '৳'+totalForThisFee.toFixed(2) : ''}</span>
                                 ${removeBtnHtml}
                             </div>`;
                      }
                 } else {
-                    // No months selected
+                    // Monthly fee with no months selected
                      actionCell.innerHTML = '<span style="color:var(--muted)">Select Month</span>';
                      row.dataset.calculatedAmount = 0;
                      row.style.opacity = '1';
@@ -1149,17 +1434,21 @@ function calculateTotal() {
     }
 
     // Dynamically Added Other Fees
+    // Dynamically Added Other Fees
     document.querySelectorAll('.added-other-fee').forEach(row => {
-        // Other fees are usually one-time unless we strictly implement monthly check.
-        // For now, assume 1x unless user explicitly demands recursive add.
-        // We trust the value derived from the item list.
         const feeName = row.getAttribute('data-fee-name');
         const feeItem = document.querySelector(`.other-fee-item[data-fee-name="${feeName}"]`);
         
-        if (feeItem) {
-            const discounted = parseFloat(feeItem.getAttribute('data-discounted')) || 0;
-            subtotal += discounted;
+        let amount = 0;
+        // Prefer row dataset if updated by multi-select
+        if (row.dataset.actual) {
+             const actual = parseFloat(row.dataset.actual) || 0;
+             const discount = parseFloat(row.dataset.discount) || 0;
+             amount = Math.max(0, actual - discount);
+        } else if (feeItem) {
+            amount = parseFloat(feeItem.getAttribute('data-discounted')) || 0;
         }
+        subtotal += amount;
     });
     
     // Get manual discount
@@ -1201,56 +1490,103 @@ function preparePaymentDetails() {
   
   // 1. Process Main Fees (Subscriptions)
   document.querySelectorAll('.main-fee-row').forEach(row => {
-    const feeName = row.dataset.feeName || row.querySelector('td').textContent.trim();
+    let feeName = row.dataset.feeName || row.querySelector('td').textContent.trim();
+    if (row.dataset.partName) {
+        feeName = feeName + ' - ' + row.dataset.partName;
+    }
     const actual = parseFloat(row.dataset.actual) || 0;
     const discount = parseFloat(row.dataset.discount) || 0;
     const discountedAmount = Math.max(0, actual - discount);
     const targetFeeName = feeName.toLowerCase();
 
     if (isMonthly) {
-        // Find which selected months are unpaid for THIS specific fee
-        document.querySelectorAll('.month-checkbox:checked').forEach(cb => {
-            const monthText = cb.dataset.displayText;
-            const paidFees = currentPaidFeeTracker[monthText] || [];
-            const isPaid = paidFees.some(pf => pf.toLowerCase() === targetFeeName) || paidFees.includes('__ALL__');
+        const rowType = (row.dataset.type || 'Monthly').toLowerCase();
+        
+        if (rowType !== 'monthly') {
+            // Non-monthly fees in monthly view (e.g. Admission, Quarterly)
+            // They don't need month suffixes or looping
+            paymentDetails.fee_details.push({
+                name: feeName,
+                type: row.dataset.type || 'Other',
+                amount: discountedAmount,
+                original_amount: actual,
+                discount: discount
+            });
+        } else {
+            // Real Monthly fees: Find which selected months are unpaid for THIS specific fee
+            document.querySelectorAll('.month-checkbox:checked').forEach(cb => {
+                const monthText = cb.dataset.displayText;
+                const paidFees = currentPaidFeeTracker[monthText] || [];
+                const isPaid = paidFees.some(pf => pf.toLowerCase() === targetFeeName) || paidFees.includes('__ALL__');
 
-            if (!isPaid) {
-                paymentDetails.fee_details.push({
-                    name: feeName + ' - ' + monthText,
-                    type: 'Monthly',
-                    amount: discountedAmount,
-                    month: cb.value,
-                    year: cb.dataset.year
-                });
-            }
-        });
+                if (!isPaid) {
+                    paymentDetails.fee_details.push({
+                        name: feeName + ' - ' + monthText,
+                        type: 'Monthly',
+                        amount: discountedAmount,
+                        original_amount: actual,
+                        discount: discount,
+                        month: cb.value,
+                        year: cb.dataset.year
+                    });
+                }
+            });
+        }
     } else {
         // Non-monthly fees (Quarterly, Yearly, etc.)
         paymentDetails.fee_details.push({
             name: feeName,
             type: category,
-            amount: discountedAmount
+            amount: discountedAmount,
+            original_amount: actual,
+            discount: discount
         });
     }
   });
   
   // 2. Process Dynamically Added "Other Fees"
   document.querySelectorAll('.added-other-fee').forEach(row => {
-    const feeName = row.getAttribute('data-fee-name');
-    const feeItem = document.querySelector(`.other-fee-item[data-fee-name="${feeName}"]`);
+    const originalFeeName = row.getAttribute('data-fee-name');
+    let feeName = originalFeeName;
+    if (row.dataset.partName) {
+        feeName = originalFeeName + ' - ' + row.dataset.partName;
+    }
+    const feeItem = document.querySelector(`.other-fee-item[data-fee-name="${originalFeeName}"]`);
     
-    if (feeItem) {
-        const discounted = parseFloat(feeItem.getAttribute('data-discounted')) || 0;
-        const type = feeItem.getAttribute('data-type') || 'Other';
+    let actual = 0;
+    let discount = 0;
+    let valid = false;
+
+    if (row.dataset.actual) {
+        actual = parseFloat(row.dataset.actual) || 0;
+        discount = parseFloat(row.dataset.discount) || 0;
+        valid = true;
+    } else if (feeItem) {
+        actual = parseFloat(feeItem.getAttribute('data-actual')) || 0;
+        discount = parseFloat(feeItem.getAttribute('data-discount')) || 0;
+        valid = true;
+    }
+
+    if (valid) {
+        const discountedAmount = Math.max(0, actual - discount);
+        const type = (feeItem ? feeItem.getAttribute('data-type') : '') || row.dataset.type || 'Other';
         paymentDetails.fee_details.push({
             name: feeName,
             type: type,
-            amount: discounted
+            amount: discountedAmount,
+            original_amount: actual,
+            discount: discount
         });
     }
   });
 
   // Update hidden input for backend consumption
+  // Fix for validation error when paying only Other Fees (e.g. Quarterly) without selecting month
+  const hiddenMonth = document.getElementById('hiddenMonthInput');
+  if (hiddenMonth && !hiddenMonth.value && paymentDetails.fee_details.length > 0) {
+      hiddenMonth.value = 'Other Fees'; // Placeholder to satisfy required validation
+  }
+
   document.getElementById('paymentDetailsInput').value = JSON.stringify(paymentDetails);
   
   console.log('Prepared Payment Details:', paymentDetails);

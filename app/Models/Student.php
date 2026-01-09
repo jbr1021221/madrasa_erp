@@ -41,12 +41,14 @@ class Student extends Model
         'guardian_email',
         'guardian_nid',
         'selected_fees', // Stores the list of fees the student is subscribed to
+        'partial_payments', // Stores partial payment tracking for admission fees
     ];
 
     protected $casts = [
         'dob' => 'date',
         'discounts' => 'array',
         'selected_fees' => 'array',
+        'partial_payments' => 'array',
     ];
     public function classroom()
     {

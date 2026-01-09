@@ -165,8 +165,9 @@ class StudentController extends Controller
             $validated['program_type'] = implode(', ', $validated['program_type']);
         }
 
-        // Create the student
-        $student = Student::create($validated);
+        
+        // Student will be created later after fee processing and ID generation
+
 
         // Create admission payment record
     // Build fee details array from ONLY the fees that were selected (checked) in the form
@@ -176,19 +177,35 @@ class StudentController extends Controller
     if ($request->has('selected_admission_fees') && !empty($request->selected_admission_fees)) {
         $selectedFees = json_decode($request->selected_admission_fees, true);
         
+        // Debug logging
+        \Log::info('=== STUDENT CREATION DEBUG ===');
+        \Log::info('Selected Admission Fees JSON:', ['data' => $request->selected_admission_fees]);
+        \Log::info('Decoded Fees:', ['fees' => $selectedFees]);
+        
         if (is_array($selectedFees)) {
             foreach ($selectedFees as $fee) {
                 $feeName = $fee['name'] ?? '';
                 $feeAmount = floatval($fee['amount'] ?? 0);
                 $feeType = $fee['type'] ?? 'Admission';
                 $feeMonth = $fee['month'] ?? null;
+                $originalAmount = floatval($fee['original_amount'] ?? $feeAmount);
+                $discount = floatval($fee['discount'] ?? 0);
+                
+                \Log::info('Processing Fee:', [
+                    'name' => $feeName,
+                    'amount' => $feeAmount,
+                    'original_amount' => $originalAmount,
+                    'discount' => $discount
+                ]);
                 
                 // The amount from JavaScript is already after discount, so use it directly
                 if ($feeAmount > 0 && !empty($feeName)) {
                     $feeDetail = [
                         'name' => $feeName,
                         'type' => $feeType,
-                        'amount' => $feeAmount
+                        'amount' => $feeAmount,
+                        'original_amount' => $originalAmount,
+                        'discount' => $discount
                     ];
                     
                     // Add month information if it's a monthly fee
@@ -200,6 +217,9 @@ class StudentController extends Controller
                 }
             }
         }
+        
+        \Log::info('Final Fee Details:', ['fee_details' => $feeDetails]);
+        \Log::info('=============================');
     }
     
     // Add first month fee to fee_details if selected (legacy support)
@@ -220,15 +240,147 @@ class StudentController extends Controller
         }
     }
         
-        $admissionPayment = $student->payments()->create([
-            'amount' => $validated['total_admission_fee'],
-            'payment_type' => 'Admission',
-            'payment_mode' => $validated['payment_mode'],
-            'month' => 'Admission',
-            'note' => $validated['payment_note'] ?? null,
-            'payment_date' => now(),
-            'fee_details' => $feeDetails,
+    // Handle partial payment for admission fees ONLY (not monthly fees)
+    $isPartialPayment = $request->has('is_partial_payment') && $request->is_partial_payment == '1';
+    $partialAmount = $isPartialPayment ? floatval($request->partial_amount ?? 0) : 0;
+    $totalAdmissionFee = floatval($request->total_admission_fee ?? 0);
+    
+    // Separate admission fees from monthly fees
+    $admissionFeeDetails = [];
+    $monthlyFeeDetails = [];
+    $totalAdmissionAmount = 0;
+    
+    foreach ($feeDetails as $fee) {
+        $feeType = $fee['type'] ?? 'Admission';
+        if (in_array(strtolower($feeType), ['monthly', 'quarterly', 'half yearly', 'half-yearly', 'half_yearly'])) {
+            $monthlyFeeDetails[] = $fee;
+        } else {
+            $admissionFeeDetails[] = $fee;
+            $totalAdmissionAmount += $fee['amount'];
+        }
+    }
+    
+    $actualPaymentAmount = $totalAdmissionAmount;
+    $finalFeeDetails = [];
+    
+    if ($isPartialPayment && $partialAmount > 0 && $partialAmount < $totalAdmissionAmount) {
+        $actualPaymentAmount = $partialAmount;
+        $remainingAmount = $totalAdmissionAmount - $partialAmount;
+        
+        // Adjust ONLY admission fee_details to reflect partial payment
+        $distributedAmount = 0;
+        $admissionFeesCount = count($admissionFeeDetails);
+        
+        // Store original fee details for partial_payments tracking
+        $partialPaymentFees = [];
+        
+        foreach ($admissionFeeDetails as $key => $fee) {
+            // Calculate proportional amount for this fee
+            if ($totalAdmissionAmount > 0) {
+                 $ratio = $fee['amount'] / $totalAdmissionAmount;
+                 $paidAmount = $ratio * $partialAmount;
+                 $remainingForThisFee = $fee['amount'] - $paidAmount;
+                 
+                 // Fix rounding issues on the last item
+                 if ($key === $admissionFeesCount - 1) {
+                     $paidAmount = $partialAmount - $distributedAmount;
+                     $remainingForThisFee = $fee['amount'] - $paidAmount;
+                 }
+                 
+                 // Add to final fee details with partial amount
+                 $finalFeeDetails[] = [
+                     'name' => $fee['name'] . ' (Partial)',
+                     'type' => $fee['type'],
+                     'amount' => $paidAmount,
+                     'month' => $fee['month'] ?? null
+                 ];
+                 
+                 $distributedAmount += $paidAmount;
+                 
+                 // Track this fee for partial payments
+                 $partialPaymentFees[$fee['name']] = [
+                     'total' => $fee['amount'],
+                     'paid' => $paidAmount,
+                     'remaining' => $remainingForThisFee,
+                     'payment_ids' => []
+                 ];
+            }
+        }
+        
+        // Add monthly fees as-is (not affected by partial payment)
+        $finalFeeDetails = array_merge($finalFeeDetails, $monthlyFeeDetails);
+        
+        // Store partial payment info in student record
+        $validated['partial_payments'] = $partialPaymentFees;
+        
+        \Log::info('Partial Payment:', [
+            'total_admission' => $totalAdmissionAmount,
+            'paying_now' => $partialAmount,
+            'remaining' => $remainingAmount,
+            'fees' => $partialPaymentFees
         ]);
+    } else {
+        // No partial payment - use all fees as-is
+        $finalFeeDetails = $feeDetails;
+        $actualPaymentAmount = array_sum(array_column($feeDetails, 'amount'));
+    }
+    
+    // Replace feeDetails with the final version
+    $feeDetails = $finalFeeDetails;
+
+    // Create the student with retry logic for duplicate ID
+    $maxRetries = 5;
+    $retryCount = 0;
+    $student = null;
+    $created = false;
+    
+    do {
+        try {
+            // Re-check uniqueness before attempting insert
+            while (Student::where('student_id', $validated['student_id'])->exists()) {
+                $validated['student_id'] = $originalId + $counter;
+                $counter++;
+            }
+            
+            $student = Student::create($validated);
+            $created = true;
+        } catch (\Illuminate\Database\QueryException $e) {
+            $errorCode = $e->errorInfo[1];
+            if ($errorCode == 1062) { // Duplicate entry
+                $retryCount++;
+                // Increment counter and loop again
+                $validated['student_id'] = $originalId + $counter;
+                $counter++;
+                
+                if ($retryCount >= $maxRetries) {
+                    throw $e; // Give up after max retries
+                }
+            } else {
+                throw $e; // Throw other errors
+            }
+        }
+    } while (!$created && $retryCount < $maxRetries);
+
+    // Create admission payment record
+    $admissionPayment = $student->payments()->create([
+        'amount' => $actualPaymentAmount,
+        'payment_type' => 'Admission',
+        'payment_mode' => $validated['payment_mode'],
+        'month' => 'Admission',
+        'note' => $validated['payment_note'] ?? null,
+        'payment_date' => now(),
+        'fee_details' => $feeDetails,
+    ]);
+    
+    
+    // Update partial_payments with payment ID for each fee
+    if ($isPartialPayment && $partialAmount > 0 && $partialAmount < $totalAdmissionAmount) {
+        $partialPayments = $student->partial_payments ?? [];
+        foreach ($partialPayments as $feeName => $feeData) {
+            $partialPayments[$feeName]['payment_ids'][] = $admissionPayment->id;
+        }
+        $student->update(['partial_payments' => $partialPayments]);
+    }
 
         // Redirect to receipt confirmation page with success message
         return redirect()->route('students.receipt.confirm', $student)

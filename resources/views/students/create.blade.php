@@ -542,10 +542,28 @@ label{display:block;margin-bottom:6px;margin-top:16px;font-size:14px;color:var(-
                     <span style="font-weight:600;">Total Payable</span>
                     <span id="studentFeesTotal" style="font-size:18px;font-weight:bold;color:var(--accent)">৳ 0.00</span>
                 </div>
+                
+                <!-- Partial Payment Option -->
+                <div style="margin-top:16px;padding:16px;background:rgba(255,193,7,0.1);border:1px solid rgba(255,193,7,0.3);border-radius:8px;">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:12px;">
+                        <input type="checkbox" id="partialPaymentCheck" onchange="togglePartialPayment()" style="width:18px;height:18px;cursor:pointer;">
+                        <span style="font-weight:600;color:var(--text);">Pay Partial Admission Fee (Remaining will be due)</span>
+                    </label>
+                    
+                    <div id="partialPaymentInput" style="display:none;">
+                        <label style="display:block;margin-bottom:4px;font-size:13px;color:var(--muted);">Amount Paying Now</label>
+                        <input type="number" id="partialAmount" name="partial_amount" min="0" step="0.01" 
+                               placeholder="Enter amount" 
+                               oninput="updatePartialPayment()"
+                               style="width:100%;padding:8px;background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.1);color:var(--text);border-radius:4px;font-size:14px;">
+                        <div id="remainingAmount" style="margin-top:8px;font-size:13px;color:var(--muted);"></div>
+                    </div>
+                </div>
             </div>
           </div>
        </div>
        <input type="hidden" id="total_admission_fee" name="total_admission_fee" value="0">
+       <input type="hidden" id="is_partial_payment" name="is_partial_payment" value="0">
 
 
 
@@ -582,7 +600,7 @@ label{display:block;margin-bottom:6px;margin-top:16px;font-size:14px;color:var(-
       <div style="margin-top:24px;display:flex;gap:10px;justify-content:flex-end">
         <a href="{{ route('students.index') }}" class="btn ghost">Cancel</a>
         <button type="button" class="btn" id="reviewBtn" onclick="showReview()">Preview</button>
-        <button type="submit" class="btn" id="savePayBtn" style="display:none" onclick="collectAdmissionFees(event)">Save and Pay</button>
+        <button type="submit" class="btn" id="savePayBtn" style="display:none">Save and Pay</button>
       </div>
 
     </form>
@@ -857,9 +875,10 @@ function addFeeToStudent(feeIndex) {
     const emptyMsg = document.getElementById('emptyStudentFeesMsg');
     if (emptyMsg) emptyMsg.style.display = 'none';
 
-    const isMonthly = fee.type === 'Monthly';
-    const isQuarterly = fee.type === 'Quarterly';
-    const isHalfYearly = ['Half Yearly', 'Half-Yearly', 'Half_Yearly'].includes(fee.type);
+    const type = (fee.type || '').toLowerCase();
+    const isMonthly = type === 'monthly';
+    const isQuarterly = type === 'quarterly';
+    const isHalfYearly = ['half yearly', 'half-yearly', 'half_yearly'].includes(type);
     const isPeriodic = isMonthly || isQuarterly || isHalfYearly;
 
     if (isPeriodic) {
@@ -898,23 +917,27 @@ function addFeeToStudent(feeIndex) {
             const mIdx = d.getMonth();
             const yr = d.getFullYear();
             optionsHtml = generateMonthOptions(rowId, mIdx, yr);
-        } else if (isQuarterly) {
-            optionsHtml = generateQuarterOptions(rowId);
-        } else if (isHalfYearly) {
-            optionsHtml = generateHalfYearlyOptions(rowId);
+            
+            monthHtml = `
+                <div style="position:relative;">
+                    <div onclick="toggleFeeMonth('${rowId}')" style="background:rgba(0,0,0,0.2);padding:4px 8px;border-radius:3px;font-size:11px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border:1px solid rgba(255,255,255,0.1);user-select:none;">
+                        <span class="month-display" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px;">...</span>
+                        <span>▼</span>
+                    </div>
+                    <div id="dd_${rowId}" class="month-dropdown-menu" style="display:none;position:absolute;top:100%;left:0;width:160px;max-height:200px;overflow-y:auto;background:#050607;border:1px solid rgba(255,255,255,0.1);z-index:999;box-shadow:0 4px 12px rgba(0,0,0,0.3);border-radius:4px;padding:4px;">
+                        ${optionsHtml}
+                    </div>
+                </div>
+            `;
+        } else {
+            // Quarterly or Half-Yearly -> Visible Select
+            if (isQuarterly) {
+                optionsHtml = generateQuarterOptions(rowId);
+            } else if (isHalfYearly) {
+                optionsHtml = generateHalfYearlyOptions(rowId);
+            }
+            monthHtml = `<div style="width:100%;">${optionsHtml}</div>`;
         }
-
-        monthHtml = `
-            <div style="position:relative;">
-                <div onclick="toggleFeeMonth('${rowId}')" style="background:rgba(0,0,0,0.2);padding:4px 8px;border-radius:3px;font-size:11px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border:1px solid rgba(255,255,255,0.1);user-select:none;">
-                    <span class="month-display" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px;">...</span>
-                    <span>▼</span>
-                </div>
-                <div id="dd_${rowId}" class="month-dropdown-menu" style="display:none;position:absolute;top:100%;left:0;width:160px;max-height:200px;overflow-y:auto;background:#050607;border:1px solid rgba(255,255,255,0.1);z-index:999;box-shadow:0 4px 12px rgba(0,0,0,0.3);border-radius:4px;padding:4px;">
-                    ${optionsHtml}
-                </div>
-            </div>
-        `;
     }
 
     row.innerHTML = `
@@ -964,21 +987,25 @@ function generateMonthOptions(rowId, startM, startY) {
 
 function generateQuarterOptions(rowId) {
     const quarters = ['1st Quater', '2nd Quater', '3rd Quater', '4th Quater'];
-    let html = '';
+    let html = '<select class="form-control" onchange="updateFeeRow(\'' + rowId + '\')" style="width:100%;padding:4px;background:#2b2f33;color:#fff;border:1px solid #444;border-radius:4px;font-size:11px;">';
+    html += '<option value="">Select Part</option>';
     quarters.forEach((q, i) => {
-        let chk = (i === 0) ? 'checked' : '';
-        html += `<label style="display:flex;align-items:center;justify-content:space-between;padding:4px;cursor:pointer;font-size:11px;white-space:nowrap;">${q} <input type="checkbox" value="${q}" ${chk} onchange="updateFeeRow('${rowId}')"></label>`;
+        let sel = (i === 0) ? 'selected' : ''; // Default select 1st
+        html += `<option value="${q}" ${sel}>${q}</option>`;
     });
+    html += '</select>';
     return html;
 }
 
 function generateHalfYearlyOptions(rowId) {
     const halves = ['1st Half', '2nd Half'];
-    let html = '';
+    let html = '<select class="form-control" onchange="updateFeeRow(\'' + rowId + '\')" style="width:100%;padding:4px;background:#2b2f33;color:#fff;border:1px solid #444;border-radius:4px;font-size:11px;">';
+    html += '<option value="">Select Part</option>';
     halves.forEach((h, i) => {
-        let chk = (i === 0) ? 'checked' : '';
-        html += `<label style="display:flex;align-items:center;justify-content:space-between;padding:4px;cursor:pointer;font-size:11px;white-space:nowrap;">${h} <input type="checkbox" value="${h}" ${chk} onchange="updateFeeRow('${rowId}')"></label>`;
+        let sel = (i === 0) ? 'selected' : ''; // Default select 1st
+        html += `<option value="${h}" ${sel}>${h}</option>`;
     });
+    html += '</select>';
     return html;
 }
 
@@ -1032,19 +1059,32 @@ function updateFeeRow(rowId) {
     
     let mul = 1;
     if(isPeriodic) {
-        const chk = row.querySelectorAll('.month-dropdown-menu input[type="checkbox"]:checked');
-        mul = chk.length;
-        const disp = row.querySelector('.month-display');
-        
-        let label = 'Months';
-        if (row.dataset.type === 'Quarterly') label = 'Qtrs';
-        if (['Half Yearly', 'Half-Yearly', 'Half_Yearly'].includes(row.dataset.type)) label = 'Halves';
+        // Check for Select element (direct child of 3rd div or inside menu)
+        // Since we are changing structure, let's look for select anywhere in the row
+        const select = row.querySelector('select'); // Simplest check
+        if (select) {
+            const val = select.value;
+            mul = val ? 1 : 0;
+            // No display element to update for select
+            row.dataset.selectedMonths = val;
+        } else {
+            // Checkboxes logic (legacy/monthly)
+            const chk = row.querySelectorAll('.month-dropdown-menu input[type="checkbox"]:checked');
+            mul = chk.length;
+            const disp = row.querySelector('.month-display');
+            
+            let label = 'Months';
+            if (row.dataset.type === 'Quarterly') label = 'Qtrs';
+            if (['Half Yearly', 'Half-Yearly', 'Half_Yearly'].includes(row.dataset.type)) label = 'Halves';
 
-        if(mul === 0) disp.innerText = 'None';
-        else if(mul === 1) disp.innerText = chk[0].value.split(',')[0];
-        else disp.innerText = `${mul} ${label}`;
-        
-        row.dataset.selectedMonths = Array.from(chk).map(c => c.value).join('|');
+            if (disp) {
+                if(mul === 0) disp.innerText = 'None';
+                else if(mul === 1) disp.innerText = chk[0].value.split(',')[0];
+                else disp.innerText = `${mul} ${label}`;
+            }
+            
+            row.dataset.selectedMonths = Array.from(chk).map(c => c.value).join('|');
+        }
     }
     
     const discInput = row.querySelector('.fee-discount-input');
@@ -1065,22 +1105,83 @@ function updateFeeRow(rowId) {
     updateTotal();
 }
 
-function updateTotal(val) {
-    if(typeof val !== 'undefined') {
-        document.getElementById('studentFeesTotal').innerText = '৳ ' + val.toFixed(2);
-        document.getElementById('total_admission_fee').value = val;
+function updateTotal(override) {
+    if(override !== undefined) {
+        document.getElementById('studentFeesTotal').innerText = '৳ ' + override.toFixed(2);
+        document.getElementById('total_admission_fee').value = override;
+        updatePartialPayment(); // Update partial payment display
         return;
     }
     let t = 0;
+    let admissionFeesTotal = 0; // Track admission fees separately
+    
     document.querySelectorAll('.student-fee-row').forEach(r => {
         // Only include if "Pay Now" is checked
         if (r.querySelector('.pay-now-check').checked) {
-            t += parseFloat(r.dataset.finalAmount)||0;
+            const amount = parseFloat(r.dataset.finalAmount) || 0;
+            t += amount;
+            
+            // Track admission fees (One Time fees) separately for partial payment
+            const feeType = r.dataset.type;
+            if (feeType && !['Monthly', 'Quarterly', 'Half Yearly', 'Half-Yearly', 'Half_Yearly'].includes(feeType)) {
+                admissionFeesTotal += amount;
+            }
         }
     });
+    
     document.getElementById('studentFeesTotal').innerText = '৳ ' + t.toFixed(2);
-    document.getElementById('total_admission_fee').value = t;
+    document.getElementById('total_admission_fee').value = admissionFeesTotal; // Store only admission fees for partial payment
+    updatePartialPayment(); // Update partial payment display
 }
+
+function togglePartialPayment() {
+    const checkbox = document.getElementById('partialPaymentCheck');
+    const inputDiv = document.getElementById('partialPaymentInput');
+    const isPartialInput = document.getElementById('is_partial_payment');
+    
+    if (checkbox.checked) {
+        inputDiv.style.display = 'block';
+        isPartialInput.value = '1';
+        updatePartialPayment();
+    } else {
+        inputDiv.style.display = 'none';
+        isPartialInput.value = '0';
+        document.getElementById('partialAmount').value = '';
+        document.getElementById('remainingAmount').innerHTML = '';
+    }
+}
+
+function updatePartialPayment() {
+    const checkbox = document.getElementById('partialPaymentCheck');
+    if (!checkbox.checked) return;
+    
+    const totalAmount = parseFloat(document.getElementById('total_admission_fee').value) || 0;
+    const partialAmount = parseFloat(document.getElementById('partialAmount').value) || 0;
+    const remainingDiv = document.getElementById('remainingAmount');
+    
+    if (partialAmount > totalAmount) {
+        document.getElementById('partialAmount').value = totalAmount;
+        remainingDiv.innerHTML = '<span style="color:#4caf50;">✓ Full payment</span>';
+        return;
+    }
+    
+    if (partialAmount > 0) {
+        const remaining = totalAmount - partialAmount;
+        remainingDiv.innerHTML = `
+            <div style="display:flex;justify-content:space-between;padding:8px;background:rgba(0,0,0,0.2);border-radius:4px;">
+                <span>Paying Now:</span>
+                <span style="color:#4caf50;font-weight:600;">৳${partialAmount.toFixed(2)}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:8px;background:rgba(255,78,78,0.1);border-radius:4px;margin-top:4px;">
+                <span>Remaining Due:</span>
+                <span style="color:#ff4e4e;font-weight:600;">৳${remaining.toFixed(2)}</span>
+            </div>
+        `;
+    } else {
+        remainingDiv.innerHTML = '';
+    }
+}
+
 
 function collectAdmissionFees(event) {
     const paymentFees = [];
@@ -1138,6 +1239,20 @@ function collectAdmissionFees(event) {
     
     // Save payment fees for receipt
     document.getElementById('selectedAdmissionFees').value = JSON.stringify(paymentFees);
+    
+    // Debug: Log what's being saved
+    console.log('=== ADMISSION FEE DEBUG ===');
+    console.log('Payment Fees JSON:', JSON.stringify(paymentFees, null, 2));
+    console.log('Total fees to pay:', paymentFees.length);
+    paymentFees.forEach((fee, idx) => {
+        console.log(`Fee ${idx + 1}:`, {
+            name: fee.name,
+            amount: fee.amount,
+            original_amount: fee.original_amount,
+            discount: fee.discount
+        });
+    });
+    console.log('=========================');
     
     // Create/Update hidden input for assigned fees (Student Subscription)
     let assignedInput = document.getElementById('studentAssignedFees');
@@ -1297,7 +1412,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// Prevent duplicate submissions
+let isSubmitting = false;
+
 function confirmAndSubmit() {
+    // Prevent duplicate submissions
+    if (isSubmitting) {
+        console.log('Form is already being submitted, ignoring duplicate request');
+        return;
+    }
+    
     // Collect admission fees BEFORE closing modal
     collectAdmissionFees();
     
@@ -1335,67 +1459,20 @@ function confirmAndSubmit() {
         return;
     }
     
-    // Debug logging
-    console.log('=== Form Submission Debug ===');
-    console.log('Form action:', form.action);
-    console.log('Form method:', form.method);
-    console.log('CSRF Token:', csrfToken.value);
-    console.log('Form data count:', new FormData(form).entries().length);
-    console.log('Selected Admission Fees (hidden field):', document.getElementById('selectedAdmissionFees').value);
-    console.log('============================');
-    
-    // Show loading indicator
-    Swal.fire({
-        title: 'Submitting...',
-        text: 'Please wait while we process your request.',
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-        showConfirmButton: false,
-        didOpen: () => {
-            Swal.showLoading();
-        }
-    });
-    
-    // Verify authentication before submitting
-    fetch('/students', {
-        method: 'HEAD',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': csrfToken.value
-        }
-    })
-    .then(response => {
-        if (response.status === 401 || response.status === 419) {
-            // User is not authenticated or session expired
-            Swal.fire({
-                icon: 'error',
-                title: 'Session Expired',
-                text: 'Your session has expired. Please log in again.',
-                confirmButtonColor: '#e37814',
-                confirmButtonText: 'Go to Login'
-            }).then(() => {
-                window.location.href = '/login';
-            });
-        } else if (response.ok || response.status === 200) {
-            // User is authenticated, proceed with form submission
-            console.log('Authentication verified, submitting form...');
-            form.submit();
-        } else {
-            // Other error
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'An error occurred. Please try again or refresh the page.',
-                confirmButtonColor: '#e37814'
-            });
-        }
-    })
-    .catch(error => {
-        console.error('Authentication check failed:', error);
-        // If the check fails, try submitting anyway
-        console.log('Proceeding with form submission despite check failure...');
+    // Trigger the actual submission flow via the submit button
+    // This ensures the 'submit' event listener is fired, which handles:
+    // 1. Duplicate prevention
+    // 2. Fee collection
+    // 3. UI feedback
+    const submitBtn = document.getElementById('savePayBtn');
+    if (submitBtn) {
+        console.log('Triggering submit button click...');
+        submitBtn.click();
+    } else {
+        // Fallback (should not happen)
+        console.error('Submit button not found, falling back to unsafe submit');
         form.submit();
-    });
+    }
 }
 
 // Close modal when clicking outside
@@ -1406,6 +1483,50 @@ document.addEventListener('DOMContentLoaded', function() {
             if (e.target === modal) {
                 closeModal();
             }
+        });
+    }
+    
+    // Unified Form Submit Handler
+    const form = document.getElementById('studentForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            // 1. Check if already submitting (Prevent Duplicate)
+            if (isSubmitting) {
+                console.log('Preventing duplicate submission');
+                e.preventDefault();
+                return false;
+            }
+            
+            // 2. Set Flag Immediately
+            isSubmitting = true;
+            
+            // 3. Collect Data
+            collectAdmissionFees();
+            
+            // 4. UI Feedback
+            // Disable button
+            const submitBtn = document.getElementById('savePayBtn');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.style.opacity = '0.5';
+                submitBtn.style.cursor = 'not-allowed';
+            }
+            
+            // Show Loading Spinner
+            Swal.fire({
+                title: 'Submitting...',
+                text: 'Please wait while we process your request.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            console.log('Form submission pipeline active. Sending request...');
+            // Allow default submission to proceed
+            return true;
         });
     }
 });

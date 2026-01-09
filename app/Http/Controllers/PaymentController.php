@@ -150,7 +150,30 @@ class PaymentController extends Controller
             
             // Check if flat fee details are provided directly (more accurate for partial months)
             if (isset($paymentDetails['fee_details']) && is_array($paymentDetails['fee_details'])) {
-                $feeDetails = $paymentDetails['fee_details'];
+                // Preserve all fields including original_amount and discount
+                foreach ($paymentDetails['fee_details'] as $fee) {
+                    $feeDetail = [
+                        'name' => $fee['name'] ?? 'Fee',
+                        'type' => $fee['type'] ?? 'Other',
+                        'amount' => $fee['amount'] ?? 0
+                    ];
+                    
+                    // Preserve original_amount and discount if present
+                    if (isset($fee['original_amount'])) {
+                        $feeDetail['original_amount'] = $fee['original_amount'];
+                    }
+                    if (isset($fee['discount'])) {
+                        $feeDetail['discount'] = $fee['discount'];
+                    }
+                    if (isset($fee['month'])) {
+                        $feeDetail['month'] = $fee['month'];
+                    }
+                    if (isset($fee['year'])) {
+                        $feeDetail['year'] = $fee['year'];
+                    }
+                    
+                    $feeDetails[] = $feeDetail;
+                }
             } else {
                 // Add monthly fees for each selected month (Fallback cross-product logic)
                 if (isset($paymentDetails['monthlyFees']) && count($selectedMonths) > 0) {
@@ -189,6 +212,53 @@ class PaymentController extends Controller
         $validated['fee_details'] = $feeDetails;
 
         $payment = Payment::create($validated);
+        
+        // Handle partial payment completion
+        $student = Student::find($validated['student_id']);
+        if ($student && $student->partial_payments) {
+            $partialPayments = $student->partial_payments;
+            $updated = false;
+            
+            // Check if any fee in this payment is completing a partial payment
+            foreach ($feeDetails as $fee) {
+                $feeName = $fee['name'];
+                
+                // Check if this is a partial payment completion (name ends with " (Remaining)")
+                if (str_ends_with($feeName, ' (Remaining)')) {
+                    $originalName = str_replace(' (Remaining)', '', $feeName);
+                    
+                    if (isset($partialPayments[$originalName])) {
+                        $partial = $partialPayments[$originalName];
+                        $paidAmount = $fee['amount'];
+                        
+                        // Update partial payment record
+                        $partial['paid'] += $paidAmount;
+                        $partial['remaining'] = max(0, $partial['total'] - $partial['paid']);
+                        $partial['payment_ids'][] = $payment->id;
+                        
+                        // If fully paid, remove from partial_payments
+                        if ($partial['remaining'] <= 0) {
+                            unset($partialPayments[$originalName]);
+                        } else {
+                            $partialPayments[$originalName] = $partial;
+                        }
+                        
+                        $updated = true;
+                        
+                        \Log::info('Partial Payment Updated:', [
+                            'fee' => $originalName,
+                            'paid_now' => $paidAmount,
+                            'total_paid' => $partial['paid'],
+                            'remaining' => $partial['remaining']
+                        ]);
+                    }
+                }
+            }
+            
+            if ($updated) {
+                $student->update(['partial_payments' => $partialPayments]);
+            }
+        }
 
         // If show_receipt is true, the form submission has already opened the receipt 
         // in a new tab (target="_blank"). We just need to redirect the main window back.
