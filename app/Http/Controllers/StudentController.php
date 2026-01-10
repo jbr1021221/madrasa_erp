@@ -49,7 +49,7 @@ class StudentController extends Controller
             });
         }
 
-        $students = $query->orderBy('name')->get();
+        $students = $query->latest()->get();
     $classrooms = Classroom::all();
     
     if ($request->filled('class_id')) {
@@ -264,7 +264,7 @@ class StudentController extends Controller
     $finalFeeDetails = [];
     
     if ($isPartialPayment && $partialAmount > 0 && $partialAmount < $totalAdmissionAmount) {
-        $actualPaymentAmount = $partialAmount;
+        $actualPaymentAmount = $partialAmount + array_sum(array_column($monthlyFeeDetails, 'amount'));
         $remainingAmount = $totalAdmissionAmount - $partialAmount;
         
         // Adjust ONLY admission fee_details to reflect partial payment
@@ -290,10 +290,12 @@ class StudentController extends Controller
                  // Add to final fee details with partial amount
                  $finalFeeDetails[] = [
                      'name' => $fee['name'] . ' (Partial)',
-                     'type' => $fee['type'],
-                     'amount' => $paidAmount,
-                     'month' => $fee['month'] ?? null
-                 ];
+                    'type' => $fee['type'],
+                    'amount' => $paidAmount,
+                    'original_amount' => $fee['original_amount'] ?? $fee['amount'],
+                    'discount' => $fee['discount'] ?? 0,
+                    'month' => $fee['month'] ?? null
+                ];
                  
                  $distributedAmount += $paidAmount;
                  
@@ -732,17 +734,17 @@ private function generateStudentIdInternal($classId = null)
         $student->load(['classroom', 'payments']);
         
         // Get the most recent payment (admission or latest payment)
-        $payment = $student->payments()
+        $admissionPayment = $student->payments()
             ->latest('payment_date')
             ->first();
             
-        $amountInWords = $this->numberToWords($payment->amount ?? 0);
+        $amountInWords = $this->numberToWords($admissionPayment->amount ?? 0);
         
         // Generate Receipt No
-        $receiptNo = ($payment->payment_date ? \Carbon\Carbon::parse($payment->payment_date) : now())->format('ymd') . str_pad($payment->id, 3, '0', STR_PAD_LEFT);
+        $receiptNo = ($admissionPayment->payment_date ? \Carbon\Carbon::parse($admissionPayment->payment_date) : now())->format('ymd') . str_pad($admissionPayment->id, 3, '0', STR_PAD_LEFT);
 
         // Return HTML view for printing instead of PDF
-        return view('payments.receipt', compact('student', 'payment', 'amountInWords', 'receiptNo'));
+        return view('students.receipt', compact('student', 'admissionPayment', 'amountInWords', 'receiptNo'));
     }
 
     /**

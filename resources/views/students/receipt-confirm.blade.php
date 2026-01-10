@@ -65,6 +65,113 @@
                 <h3 style="color:var(--text);margin:0 0 16px 0;font-size:18px">Payment Details</h3>
                 
                 @if(count($feeDetails) > 0)
+                    @php
+                        // Process and group fees (ROBUST LOGIC from students/receipt.blade.php)
+                        $processedFees = [];
+                        $monthlyGroups = [];
+                        
+                        $totalNet = 0;
+                        $totalOriginal = 0;
+                        $totalDiscount = 0;
+
+                        if (is_array($feeDetails)) {
+                            foreach ($feeDetails as $fee) {
+                                // Net Amount (Paid Amount)
+                                $net = floatval($fee['amount'] ?? 0);
+                                
+                                // Discount
+                                $disc = floatval($fee['discount'] ?? 0);
+                                
+                                // Original Amount
+                                // Check for Partial Payment (Suffix added by controller)
+                                $isPartial = (strpos($fee['name'], '(Partial)') !== false);
+
+                                if ($isPartial) {
+                                    // For receipt math, we only consider the portion processed now (Paid + Discount)
+                                    // This prevents "Unpaid Due" from being calculated as a Discount
+                                    $orig = $net + $disc;
+                                } elseif (isset($fee['original_amount']) && $fee['original_amount'] > 0) {
+                                    $orig = floatval($fee['original_amount']);
+                                } elseif ($disc > 0) {
+                                    $orig = $net + $disc;
+                                } else {
+                                    $orig = $net;
+                                }
+                                
+                                // Double check discount
+                                if ($disc <= 0 && $orig > $net) {
+                                    $disc = $orig - $net;
+                                }
+
+                                // Accumulate Totals
+                                $totalNet += $net;
+                                $totalOriginal += $orig;
+                                $totalDiscount += $disc;
+
+                                // Check if this is a monthly fee that should be grouped
+                                if (isset($fee['type']) && $fee['type'] === 'Monthly' && isset($fee['month'])) {
+                                    $nameParts = explode(' - ', $fee['name']);
+                                    $baseName = count($nameParts) > 1 ? trim($nameParts[0]) : $fee['name'];
+                                    
+                                    $monthLabel = $fee['month'];
+                                    if (isset($fee['year']) && strpos($monthLabel, $fee['year']) === false) {
+                                        $monthLabel .= ' ' . $fee['year'];
+                                    } elseif (!isset($fee['year']) && isset($nameParts[1])) {
+                                        $monthLabel = trim($nameParts[1]);
+                                    }
+
+                                    if (!isset($monthlyGroups[$baseName])) {
+                                        $monthlyGroups[$baseName] = [
+                                            'months' => [],
+                                            'total_amount' => 0,
+                                            'total_original' => 0
+                                        ];
+                                    }
+                                    $monthlyGroups[$baseName]['months'][] = $monthLabel;
+                                    $monthlyGroups[$baseName]['total_amount'] += $net;
+                                    $monthlyGroups[$baseName]['total_original'] += $orig;
+                                } else {
+                                    $processedFees[] = [
+                                        'name' => $fee['name'],
+                                        'amount' => $net
+                                    ];
+                                }
+                            }
+                        }
+
+                        // Process the groups
+                        foreach ($monthlyGroups as $baseName => $group) {
+                            $months = $group['months'];
+                            $count = count($months);
+                            
+                            $monthRange = '';
+                            if ($count === 1) {
+                                $monthRange = $months[0];
+                            } elseif ($count === 2) {
+                                $monthRange = $months[0] . ' & ' . $months[1];
+                            } elseif ($count >= 3) {
+                                $monthRange = $months[0] . ' - ' . end($months);
+                            }
+                            
+                            $processedFees[] = [
+                                'name' => $baseName . ' (' . $monthRange . ')',
+                                'amount' => $group['total_amount']
+                            ];
+                        }
+                        
+                        $totalPaid = $latestPayment->amount ?? 0;
+                        
+                        // Final Calculation
+                        $subtotal = $totalOriginal;
+                        $discount = $totalDiscount;
+                        
+                        if ($totalPaid < $totalNet - 0.01) {
+                             $manualDiscount = $totalNet - $totalPaid;
+                             $discount += $manualDiscount;
+                             // $subtotal += $manualDiscount; // Optional based on manual logic
+                        }
+                    @endphp
+
                     <!-- Detailed Payment Breakdown from Database -->
                     <div style="background:rgba(255,255,255,0.03);border-radius:6px;padding:16px;margin-bottom:16px">
                         <table style="width:100%;border-collapse:collapse">
@@ -75,7 +182,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($feeDetails as $fee)
+                                @foreach($processedFees as $fee)
                                     <tr style="border-bottom:1px solid rgba(255,255,255,0.05)">
                                         <td style="padding:10px;font-size:14px">{{ $fee['name'] ?? 'Fee' }}</td>
                                         <td style="text-align:right;padding:10px;font-size:14px">
@@ -84,9 +191,20 @@
                                     </tr>
                                 @endforeach
                                 
+                                @if($discount > 0)
+                                <tr style="border-bottom:1px solid rgba(255,255,255,0.05)">
+                                    <td style="padding:10px;font-weight:600;font-size:14px;color:var(--text)">Subtotal</td>
+                                    <td style="text-align:right;padding:10px;font-weight:600;font-size:14px;color:var(--text)">৳{{ number_format($subtotal, 2) }}</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid rgba(255,255,255,0.05)">
+                                    <td style="padding:10px;font-weight:600;font-size:14px;color:var(--text)">Discount</td>
+                                    <td style="text-align:right;padding:10px;font-weight:600;font-size:14px;color:var(--text)">৳{{ number_format($discount, 2) }}</td>
+                                </tr>
+                                @endif
+                                
                                 <tr style="background:rgba(227,120,20,0.1)">
                                     <td style="padding:12px;font-weight:700;font-size:16px;color:var(--text)">Total Amount</td>
-                                    <td style="text-align:right;padding:12px;font-weight:700;font-size:18px;color:#4caf50">৳{{ number_format($latestPayment->amount, 2) }}</td>
+                                    <td style="text-align:right;padding:12px;font-weight:700;font-size:18px;color:#4caf50">৳{{ number_format($totalPaid, 2) }}</td>
                                 </tr>
                             </tbody>
                         </table>

@@ -448,6 +448,7 @@ table.dataTable tbody tr {background-color: transparent;}
 <!-- jQuery and DataTables JS -->
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
 $(document).ready(function() {
@@ -1622,19 +1623,8 @@ function toggleSelectAll() {
 }
 
 function updateBulkAction() {
-  const checkboxes = document.getElementsByClassName('student-checkbox');
-  const bulkActions = document.getElementById('bulkActions');
-  let checkedCount = 0;
-  
-  for(let checkbox of checkboxes) {
-    if(checkbox.checked) checkedCount++;
-  }
-  
-  if(checkedCount > 0) {
-    bulkActions.style.display = 'block';
-  } else {
-    bulkActions.style.display = 'none';
-  }
+  // Optional: You can enable/disable the dropdown based on selection if needed
+  // For now, we just keep tracking handled by the dropdown's onchange
 }
 
 function confirmBulkDelete() {

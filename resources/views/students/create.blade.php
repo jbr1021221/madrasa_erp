@@ -544,7 +544,7 @@ label{display:block;margin-bottom:6px;margin-top:16px;font-size:14px;color:var(-
                 </div>
                 
                 <!-- Partial Payment Option -->
-                <div style="margin-top:16px;padding:16px;background:rgba(255,193,7,0.1);border:1px solid rgba(255,193,7,0.3);border-radius:8px;">
+                <div id="partialPaymentBox" style="margin-top:16px;padding:16px;background:rgba(255,193,7,0.1);border:1px solid rgba(255,193,7,0.3);border-radius:8px;">
                     <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:12px;">
                         <input type="checkbox" id="partialPaymentCheck" onchange="togglePartialPayment()" style="width:18px;height:18px;cursor:pointer;">
                         <span style="font-weight:600;color:var(--text);">Pay Partial Admission Fee (Remaining will be due)</span>
@@ -987,26 +987,44 @@ function generateMonthOptions(rowId, startM, startY) {
 
 function generateQuarterOptions(rowId) {
     const quarters = ['1st Quater', '2nd Quater', '3rd Quater', '4th Quater'];
-    let html = '<select class="form-control" onchange="updateFeeRow(\'' + rowId + '\')" style="width:100%;padding:4px;background:#2b2f33;color:#fff;border:1px solid #444;border-radius:4px;font-size:11px;">';
-    html += '<option value="">Select Part</option>';
+    let optionsHtml = '';
     quarters.forEach((q, i) => {
-        let sel = (i === 0) ? 'selected' : ''; // Default select 1st
-        html += `<option value="${q}" ${sel}>${q}</option>`;
+        let chk = (i === 0) ? 'checked' : ''; // Default select 1st
+        optionsHtml += `<label style="display:flex;align-items:center;justify-content:space-between;padding:4px;cursor:pointer;font-size:11px;white-space:nowrap;">${q} <input type="checkbox" value="${q}" ${chk} onchange="updateFeeRow('${rowId}')"></label>`;
     });
-    html += '</select>';
-    return html;
+
+    return `
+        <div style="position:relative;">
+            <div onclick="toggleFeeMonth('${rowId}')" style="background:rgba(0,0,0,0.2);padding:4px 8px;border-radius:3px;font-size:11px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border:1px solid rgba(255,255,255,0.1);user-select:none;">
+                <span class="month-display" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px;">1st Quater</span>
+                <span>▼</span>
+            </div>
+            <div id="dd_${rowId}" class="month-dropdown-menu" style="display:none;position:absolute;top:100%;left:0;width:160px;max-height:200px;overflow-y:auto;background:#050607;border:1px solid rgba(255,255,255,0.1);z-index:999;box-shadow:0 4px 12px rgba(0,0,0,0.3);border-radius:4px;padding:4px;">
+                ${optionsHtml}
+            </div>
+        </div>
+    `;
 }
 
 function generateHalfYearlyOptions(rowId) {
     const halves = ['1st Half', '2nd Half'];
-    let html = '<select class="form-control" onchange="updateFeeRow(\'' + rowId + '\')" style="width:100%;padding:4px;background:#2b2f33;color:#fff;border:1px solid #444;border-radius:4px;font-size:11px;">';
-    html += '<option value="">Select Part</option>';
+    let optionsHtml = '';
     halves.forEach((h, i) => {
-        let sel = (i === 0) ? 'selected' : ''; // Default select 1st
-        html += `<option value="${h}" ${sel}>${h}</option>`;
+        let chk = (i === 0) ? 'checked' : ''; // Default select 1st
+        optionsHtml += `<label style="display:flex;align-items:center;justify-content:space-between;padding:4px;cursor:pointer;font-size:11px;white-space:nowrap;">${h} <input type="checkbox" value="${h}" ${chk} onchange="updateFeeRow('${rowId}')"></label>`;
     });
-    html += '</select>';
-    return html;
+
+    return `
+        <div style="position:relative;">
+            <div onclick="toggleFeeMonth('${rowId}')" style="background:rgba(0,0,0,0.2);padding:4px 8px;border-radius:3px;font-size:11px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border:1px solid rgba(255,255,255,0.1);user-select:none;">
+                <span class="month-display" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px;">1st Half</span>
+                <span>▼</span>
+            </div>
+            <div id="dd_${rowId}" class="month-dropdown-menu" style="display:none;position:absolute;top:100%;left:0;width:160px;max-height:200px;overflow-y:auto;background:#050607;border:1px solid rgba(255,255,255,0.1);z-index:999;box-shadow:0 4px 12px rgba(0,0,0,0.3);border-radius:4px;padding:4px;">
+                ${optionsHtml}
+            </div>
+        </div>
+    `;
 }
 
 function toggleFeeMonth(rowId) {
@@ -1122,8 +1140,8 @@ function updateTotal(override) {
             t += amount;
             
             // Track admission fees (One Time fees) separately for partial payment
-            const feeType = r.dataset.type;
-            if (feeType && !['Monthly', 'Quarterly', 'Half Yearly', 'Half-Yearly', 'Half_Yearly'].includes(feeType)) {
+            const feeType = (r.dataset.type || '').trim().toLowerCase();
+            if (feeType && !['monthly', 'quarterly', 'half yearly', 'half-yearly', 'half_yearly'].includes(feeType)) {
                 admissionFeesTotal += amount;
             }
         }
@@ -1131,6 +1149,19 @@ function updateTotal(override) {
     
     document.getElementById('studentFeesTotal').innerText = '৳ ' + t.toFixed(2);
     document.getElementById('total_admission_fee').value = admissionFeesTotal; // Store only admission fees for partial payment
+    
+    // Hide partial payment box if no admission fees are selected
+    const partialBox = document.getElementById('partialPaymentBox');
+    if (partialBox) {
+        if (admissionFeesTotal <= 0) {
+            partialBox.style.display = 'none';
+            document.getElementById('partialPaymentCheck').checked = false;
+            togglePartialPayment();
+        } else {
+            partialBox.style.display = 'block';
+        }
+    }
+    
     updatePartialPayment(); // Update partial payment display
 }
 
@@ -1173,7 +1204,7 @@ function updatePartialPayment() {
                 <span style="color:#4caf50;font-weight:600;">৳${partialAmount.toFixed(2)}</span>
             </div>
             <div style="display:flex;justify-content:space-between;padding:8px;background:rgba(255,78,78,0.1);border-radius:4px;margin-top:4px;">
-                <span>Remaining Due:</span>
+                <span>Remaining Due (Total ৳${totalAmount.toFixed(0)}):</span>
                 <span style="color:#ff4e4e;font-weight:600;">৳${remaining.toFixed(2)}</span>
             </div>
         `;
@@ -1339,8 +1370,17 @@ function showReview() {
     
     // Add info about UNCHECKED fees? No, preview usually shows what you are paying.
     
-    const total = document.getElementById('total_admission_fee').value;
-    feeItems.push({l:'TOTAL PAYABLE', v: '<strong style="color:var(--accent)">৳ '+parseFloat(total).toFixed(2)+'</strong>'});
+    const totalAmount = parseFloat(document.getElementById('studentFeesTotal').innerText.replace('৳ ', '')) || 0;
+    const isPartial = document.getElementById('partialPaymentCheck').checked;
+    const partialAmount = parseFloat(document.getElementById('partialAmount').value) || 0;
+    
+    if (isPartial && partialAmount > 0 && partialAmount < totalAmount) {
+        feeItems.push({l:'TOTAL AMOUNT', v: '৳ ' + totalAmount.toFixed(2)});
+        feeItems.push({l:'PAYING NOW', v: '<strong style="color:#4caf50">৳ ' + partialAmount.toFixed(2) + '</strong>'});
+        feeItems.push({l:'REMAINING DUE', v: '<strong style="color:#ff4e4e">৳ ' + (totalAmount - partialAmount).toFixed(2) + '</strong>'});
+    } else {
+        feeItems.push({l:'TOTAL PAYABLE', v: '<strong style="color:var(--accent)">৳ ' + totalAmount.toFixed(2) + '</strong>'});
+    }
     
     html += section('Fees Breakdown', feeItems);
 

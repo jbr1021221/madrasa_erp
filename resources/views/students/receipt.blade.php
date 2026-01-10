@@ -14,34 +14,42 @@
         body {
             font-family: Arial;
             background-color: #fff;
-            padding: 2px;
-            font-size: 10px;
-            line-height: 1.1;
+            padding: 8px;
+            font-size: 12px;
+            line-height: 1.2;
         }
         
         .receipt-container {
-            max-width: 1100px;
+            max-width: 900px;
             margin: 0 auto;
             background: white;
-            padding: 6px;
+            padding: 12px;
             border: 1px solid #51272f;
             position: relative;
+        }
+
+        /* ... other styles ... */
+
+        @page {
+            size: A4 landscape;
+            margin: 10mm;
+            /* Hide browser default headers and footers */
+            @top-left { content: none; }
         }
         
         .header-container {
             position: relative;
-            min-height: 80px;
+            min-height: 130px;
             max-width: 95%;
-            margin: 0px 0px 0px 10px;
-
+            margin: 0px 0px 0px 15px;
         }
 
         .logo-left {
             position: absolute;
             top: 0;
             left: 0;
-            width: 60px;
-            height: 60px;
+            width: 100px;
+            height: 100px;
         }
         
         .logo-left img {
@@ -128,13 +136,12 @@
         
         h1 {
             text-align: center;
-            font-size: 12px;
-            margin-bottom: 5px;
+            font-size: 18px;
+            margin-bottom: 10px;
             text-transform: uppercase;
             color: #51272f;
-            border-bottom: 2px solid #51272f;
-            padding-bottom: 3px;
-        
+            border-bottom: 4px solid #51272f;
+            padding-bottom: 5px;
         }
         
         .content {
@@ -185,22 +192,22 @@
         .fee-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 5px;
-            font-size: 9px;
+            margin-bottom: 15px;
+            font-size: 12px;
         }
         
         .fee-table th {
             background-color: #f5f5f5;
-            padding: 4px;
+            padding: 8px;
             text-align: left;
             font-weight: bold;
             border: 1px solid #51272f;
             color: #51272f;
-            font-size: 9px;
+            font-size: 12px;
         }
         
         .fee-table td {
-            padding: 4px;
+            padding: 8px;
             border: 1px solid #51272f;
             background-color: white;
         }
@@ -211,7 +218,7 @@
         }
         
         .empty-row {
-            height: 15px;
+            height: 35px;
             background-color: #fafafa;
         }
         
@@ -268,8 +275,8 @@
         }
         
         .footer {
-            margin-top: 10px;
-            padding-top: 5px;
+            margin-top: 30px;
+            padding-top: 15px;
             border-top: 1px solid #51272f;
             text-align: center;
         }
@@ -332,7 +339,7 @@
 </div>
 
         
-        <h1>PAYMENT RECEIPT</h1>
+        <h1>PAYMENT RECEIPT(Admission)</h1>
 
         <!-- Main Content -->
         <div class="content">
@@ -380,11 +387,43 @@
                     // Process and group fees
                     $processedFees = [];
                     $monthlyGroups = [];
-                    $subtotal = 0;
+                    
+                    $totalNet = 0;
+                    $totalOriginal = 0;
+                    $totalDiscount = 0;
 
                     if (is_array($feeDetails)) {
                         foreach ($feeDetails as $fee) {
-                            $subtotal += $fee['amount'] ?? 0;
+                            // Net Amount (Paid Amount)
+                            $net = floatval($fee['amount'] ?? 0);
+                            
+                            // Discount
+                            $disc = floatval($fee['discount'] ?? 0);
+                            
+                            // Original Amount
+                            // Check for Partial Payment (Suffix added by controller)
+                            $isPartial = (strpos($fee['name'], '(Partial)') !== false);
+
+                            if ($isPartial) {
+                                // For receipt math, we only consider the portion processed now (Paid + Discount)
+                                $orig = $net + $disc;
+                            } elseif (isset($fee['original_amount']) && $fee['original_amount'] > 0) {
+                                $orig = floatval($fee['original_amount']);
+                            } elseif ($disc > 0) {
+                                $orig = $net + $disc;
+                            } else {
+                                $orig = $net;
+                            }
+                            
+                            // Double check discount
+                            if ($disc <= 0 && $orig > $net) {
+                                $disc = $orig - $net;
+                            }
+
+                            // Accumulate Totals
+                            $totalNet += $net;
+                            $totalOriginal += $orig;
+                            $totalDiscount += $disc;
 
                             // Check if this is a monthly fee that should be grouped
                             if (isset($fee['type']) && $fee['type'] === 'Monthly' && isset($fee['month'])) {
@@ -392,7 +431,6 @@
                                 $nameParts = explode(' - ', $fee['name']);
                                 $baseName = count($nameParts) > 1 ? trim($nameParts[0]) : $fee['name'];
                                 
-                                // Construct month label
                                 $monthLabel = $fee['month'];
                                 if (isset($fee['year']) && strpos($monthLabel, $fee['year']) === false) {
                                     $monthLabel .= ' ' . $fee['year'];
@@ -403,13 +441,19 @@
                                 if (!isset($monthlyGroups[$baseName])) {
                                     $monthlyGroups[$baseName] = [
                                         'months' => [],
-                                        'total_amount' => 0
+                                        'total_amount' => 0,
+                                        'total_original' => 0  // Track original for groups
                                     ];
                                 }
                                 $monthlyGroups[$baseName]['months'][] = $monthLabel;
-                                $monthlyGroups[$baseName]['total_amount'] += $fee['amount'];
+                                $monthlyGroups[$baseName]['total_amount'] += $net;
+                                $monthlyGroups[$baseName]['total_original'] += $orig;
                             } else {
-                                $processedFees[] = $fee;
+                                // Store original amount for display if needed, but for now we list explicit items
+                                $processedFees[] = [
+                                    'name' => $fee['name'],
+                                    'amount' => $net
+                                ];
                             }
                         }
                     }
@@ -437,7 +481,21 @@
                     }
                     
                     $totalPaid = $admissionPayment->amount ?? 0;
-                    $discount = max(0, $subtotal - $totalPaid);
+                    
+                    // Final Calculation for Display
+                    $subtotal = $totalOriginal;
+                    $discount = $totalDiscount;
+                    
+                    // Fallback: If no discount data found at all, but totalPaid < subtotal (from loop), recalculate
+                    // (This handles cases where the loop calculates subtotal based on net only if orig is missing)
+                    // But our robust logic above handles orig defaulting to net.
+                    // If manual global discount exists (payment amount < sum of items)
+                    if ($totalPaid < $totalNet - 0.01) {
+                         $manualDiscount = $totalNet - $totalPaid;
+                         $discount += $manualDiscount;
+                         $subtotal += $manualDiscount; // If we consider the list items as "after discount", this logic might be complex.
+                         // Let's trust the fee_details logic primarily.
+                    }
                 @endphp
                 
                 <table class="fee-table">
