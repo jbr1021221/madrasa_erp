@@ -60,46 +60,47 @@
 
         .banner-center {
             text-align: center;
-            padding: 0 90px; /* Space for logo and date */
-            padding-top: 5px;
+            padding: 0 110px;
+            padding-top: 10px;
         }
         
         .banner-center img {
             max-width: 100%;
             height: auto;
-            max-height: 50px;
+            max-height: 90px;
             display: block;
+            margin: 0 auto;
         }
 
         .academy-info {
             font-family: 'Century Gothic', 'CenturyGothic', 'AppleGothic', sans-serif;
-            margin-top: 3px;
+            margin-top: 8px;
             width: 100%;
         }
 
         .academy-subtitle {
             font-family: 'Century Gothic', 'CenturyGothic', 'AppleGothic', sans-serif;
-            font-size: 11px;
+            font-size: 16px;
             font-weight: bold;
             color: #51272f;
-            letter-spacing: 0.5px;
-            margin-bottom: 2px;
+            letter-spacing: 4px;
+            margin-bottom: 6px;
             text-transform: uppercase;
         }
 
         .academy-address {
-            font-size: 8px;
+            font-size: 10px;
             color: #333;
-            margin-bottom: 2px;
+            margin-bottom: 4px;
             font-weight: 500;
         }
 
         .academy-contacts {
-            font-size: 7px;
+            font-size: 9px;
             color: #333;
             display: flex;
             justify-content: center;
-            gap: 8px;
+            gap: 15px;
             flex-wrap: wrap;
         }
 
@@ -329,54 +330,54 @@
                 </div>
             </div>
       <!-- Date Right -->
-<div class="date-wrapper">
-     <div class="date-box">
-                    Receipt No: {{ $receiptNo }}
+            <div class="date-wrapper">
+                <div class="date-box">
+                                Receipt No: {{ $receiptNo }}
+                            </div>
+                <div class="date-box">
+                    Date: {{ $student->created_at->format('d/m/Y') }}
                 </div>
-    <div class="date-box">
-        Date: {{ $student->created_at->format('d/m/Y') }}
-    </div>
-</div>
-
-        
-        <h1>PAYMENT RECEIPT(Admission)</h1>
-
-        <!-- Main Content -->
-        <div class="content">
-            <!-- Student Details -->
-            <div class="student-details">
-                <div class="detail-row">
-                    <span class="detail-label">Student Name:</span>
-                    <span class="detail-value">{{ $student->name }}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Student ID:</span>
-                    <span class="detail-value">{{ $student->student_id }}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Class:</span>
-                    <span class="detail-value">{{ $student->classroom->name ?? '' }}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Section:</span>
-                    <span class="detail-value">{{ $student->section }}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Father Name:</span>
-                    <span class="detail-value">{{ $student->father_name }}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Mother Name:</span>
-                    <span class="detail-value">{{ $student->mother_name }}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Phone:</span>
-                    <span class="detail-value">{{ $student->mobile }}</span>
-                </div>
-
-                
-                
             </div>
+
+                    
+                    <h1>PAYMENT RECEIPT(Admission)</h1>
+
+                    <!-- Main Content -->
+                    <div class="content">
+                        <!-- Student Details -->
+                        <div class="student-details">
+                            <div class="detail-row">
+                                <span class="detail-label">Student Name:</span>
+                                <span class="detail-value">{{ $student->name }}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Student ID:</span>
+                                <span class="detail-value">{{ $student->student_id }}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Class:</span>
+                                <span class="detail-value">{{ $student->classroom->name ?? '' }}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Section:</span>
+                                <span class="detail-value">{{ $student->section }}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Father Name:</span>
+                                <span class="detail-value">{{ $student->father_name }}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Mother Name:</span>
+                                <span class="detail-value">{{ $student->mother_name }}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Phone:</span>
+                                <span class="detail-value">{{ $student->mobile }}</span>
+                            </div>
+
+                
+                
+</div>
             
             <!-- Fee Section -->
             <div class="fee-section">

@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Fee;
 use App\Models\Payment;
 use App\Models\Student;
 use App\Models\Classroom;
@@ -14,51 +13,87 @@ class PaymentTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_can_record_payment_and_update_fee_status()
+    public function test_can_record_payment()
     {
-        $student = Student::factory()->create();
+        $user = \App\Models\User::factory()->create(['role' => 'admin']);
+        $classroom = Classroom::factory()->create();
+        $student = Student::factory()->create(['class_id' => $classroom->id]);
 
-        $fee = Fee::create([
+        $data = [
             'student_id' => $student->id,
-            'type' => 'Monthly',
-            'amount' => 1000,
-            'due_date' => now()->addDays(10),
-            'status' => 'pending'
-        ]);
-
-        $response = $this->post(route('payments.store'), [
-            'student_id' => $student->id,
-            'fee_id' => $fee->id,
             'amount' => 500,
             'payment_date' => now()->format('Y-m-d'),
-            'payment_mode' => 'cash',
-            'payment_type' => 'Monthly',
-            'month' => 'January'
-        ]);
+            'month' => 'January',
+            'payment_type' => 'Monthly Fee',
+            'payment_mode' => 'Cash',
+            'note' => 'Test payment',
+        ];
+
+        $response = $this->actingAs($user)->post(route('payments.store'), $data);
 
         $response->assertRedirect(route('payments.index'));
-        
         $this->assertDatabaseHas('payments', [
+            'student_id' => $student->id,
             'amount' => 500,
-            'student_id' => $student->id,
-            // 'fee_id' => $fee->id // fee_id is not in validation, so it won't be saved via controller
+            'month' => 'January',
+            'payment_type' => 'Monthly Fee',
         ]);
+    }
 
-        // $fee->refresh();
-        // $this->assertEquals('partial', $fee->status); // This logic depends on observers or controller logic which might be missing
+    public function test_can_update_payment()
+    {
+        $user = \App\Models\User::factory()->create(['role' => 'admin']);
+        $classroom = Classroom::factory()->create();
+        $student = Student::factory()->create(['class_id' => $classroom->id]);
 
-        // Pay remaining amount
-        $this->post(route('payments.store'), [
+        $payment = Payment::create([
             'student_id' => $student->id,
-            'fee_id' => $fee->id,
             'amount' => 500,
             'payment_date' => now()->format('Y-m-d'),
-            'payment_mode' => 'cash',
-            'payment_type' => 'Monthly',
-            'month' => 'January'
+            'month' => 'January',
+            'payment_type' => 'Monthly Fee',
+            'payment_mode' => 'Cash',
         ]);
 
-        // $fee->refresh();
-        // $this->assertEquals('paid', $fee->status);
+        $data = [
+            'student_id' => $student->id,
+            'amount' => 600,
+            'payment_date' => now()->addDay()->format('Y-m-d'),
+            'month' => 'February',
+            'payment_type' => 'Exam Fee',
+            'payment_mode' => 'Bank',
+            'note' => 'Updated payment',
+        ];
+
+        $response = $this->actingAs($user)->put(route('payments.update', $payment), $data);
+
+        $response->assertRedirect(route('payments.index'));
+        $this->assertDatabaseHas('payments', [
+            'id' => $payment->id,
+            'amount' => 600,
+            'month' => 'February',
+            'payment_type' => 'Exam Fee',
+        ]);
+    }
+
+    public function test_can_delete_payment()
+    {
+        $user = \App\Models\User::factory()->create(['role' => 'admin']);
+        $classroom = Classroom::factory()->create();
+        $student = Student::factory()->create(['class_id' => $classroom->id]);
+
+        $payment = Payment::create([
+            'student_id' => $student->id,
+            'amount' => 500,
+            'payment_date' => now()->format('Y-m-d'),
+            'month' => 'January',
+            'payment_type' => 'Monthly Fee',
+            'payment_mode' => 'Cash',
+        ]);
+
+        $response = $this->actingAs($user)->delete(route('payments.destroy', $payment));
+
+        $response->assertRedirect(route('payments.index'));
+        $this->assertDatabaseMissing('payments', ['id' => $payment->id]);
     }
 }

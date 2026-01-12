@@ -1132,6 +1132,7 @@ function updateTotal(override) {
     }
     let t = 0;
     let admissionFeesTotal = 0; // Track admission fees separately
+    let otherFeesTotal = 0; // Track non-admission fees
     
     document.querySelectorAll('.student-fee-row').forEach(r => {
         // Only include if "Pay Now" is checked
@@ -1139,16 +1140,30 @@ function updateTotal(override) {
             const amount = parseFloat(r.dataset.finalAmount) || 0;
             t += amount;
             
-            // Track admission fees (One Time fees) separately for partial payment
-            const feeType = (r.dataset.type || '').trim().toLowerCase();
-            if (feeType && !['monthly', 'quarterly', 'half yearly', 'half-yearly', 'half_yearly'].includes(feeType)) {
+            // Track ONLY Admission Fee for partial payment (not other one-time fees)
+            const feeName = (r.dataset.name || '').trim();
+            if (feeName === 'Admission Fee') {
                 admissionFeesTotal += amount;
+            } else {
+                otherFeesTotal += amount;
             }
         }
     });
     
-    document.getElementById('studentFeesTotal').innerText = '৳ ' + t.toFixed(2);
-    document.getElementById('total_admission_fee').value = admissionFeesTotal; // Store only admission fees for partial payment
+    // Store admission fee total for partial payment calculation
+    document.getElementById('total_admission_fee').value = admissionFeesTotal;
+    
+    // Check if partial payment is enabled
+    const partialCheckbox = document.getElementById('partialPaymentCheck');
+    const partialAmount = parseFloat(document.getElementById('partialAmount').value) || 0;
+    
+    let displayTotal = t;
+    if (partialCheckbox && partialCheckbox.checked && partialAmount > 0 && partialAmount < admissionFeesTotal) {
+        // If partial payment is active, show: partial amount + other fees
+        displayTotal = partialAmount + otherFeesTotal;
+    }
+    
+    document.getElementById('studentFeesTotal').innerText = '৳ ' + displayTotal.toFixed(2);
     
     // Hide partial payment box if no admission fees are selected
     const partialBox = document.getElementById('partialPaymentBox');
@@ -1179,6 +1194,7 @@ function togglePartialPayment() {
         isPartialInput.value = '0';
         document.getElementById('partialAmount').value = '';
         document.getElementById('remainingAmount').innerHTML = '';
+        updateTotal(); // Recalculate to show full total
     }
 }
 
@@ -1186,28 +1202,30 @@ function updatePartialPayment() {
     const checkbox = document.getElementById('partialPaymentCheck');
     if (!checkbox.checked) return;
     
-    const totalAmount = parseFloat(document.getElementById('total_admission_fee').value) || 0;
+    const admissionFeeTotal = parseFloat(document.getElementById('total_admission_fee').value) || 0;
     const partialAmount = parseFloat(document.getElementById('partialAmount').value) || 0;
     const remainingDiv = document.getElementById('remainingAmount');
     
-    if (partialAmount > totalAmount) {
-        document.getElementById('partialAmount').value = totalAmount;
-        remainingDiv.innerHTML = '<span style="color:#4caf50;">✓ Full payment</span>';
+    if (partialAmount > admissionFeeTotal) {
+        document.getElementById('partialAmount').value = admissionFeeTotal;
+        remainingDiv.innerHTML = '<span style="color:#4caf50;">✓ Full admission fee paid</span>';
+        updateTotal(); // Recalculate total
         return;
     }
     
     if (partialAmount > 0) {
-        const remaining = totalAmount - partialAmount;
+        const remaining = admissionFeeTotal - partialAmount;
         remainingDiv.innerHTML = `
             <div style="display:flex;justify-content:space-between;padding:8px;background:rgba(0,0,0,0.2);border-radius:4px;">
-                <span>Paying Now:</span>
+                <span>Admission Fee Paying Now:</span>
                 <span style="color:#4caf50;font-weight:600;">৳${partialAmount.toFixed(2)}</span>
             </div>
             <div style="display:flex;justify-content:space-between;padding:8px;background:rgba(255,78,78,0.1);border-radius:4px;margin-top:4px;">
-                <span>Remaining Due (Total ৳${totalAmount.toFixed(0)}):</span>
+                <span>Admission Fee Remaining (of ৳${admissionFeeTotal.toFixed(0)}):</span>
                 <span style="color:#ff4e4e;font-weight:600;">৳${remaining.toFixed(2)}</span>
             </div>
         `;
+        updateTotal(); // Recalculate total with partial amount
     } else {
         remainingDiv.innerHTML = '';
     }
@@ -1373,11 +1391,12 @@ function showReview() {
     const totalAmount = parseFloat(document.getElementById('studentFeesTotal').innerText.replace('৳ ', '')) || 0;
     const isPartial = document.getElementById('partialPaymentCheck').checked;
     const partialAmount = parseFloat(document.getElementById('partialAmount').value) || 0;
+    const admissionFeeTotal = parseFloat(document.getElementById('total_admission_fee').value) || 0;
     
-    if (isPartial && partialAmount > 0 && partialAmount < totalAmount) {
+    if (isPartial && partialAmount > 0 && partialAmount < admissionFeeTotal) {
         feeItems.push({l:'TOTAL AMOUNT', v: '৳ ' + totalAmount.toFixed(2)});
         feeItems.push({l:'PAYING NOW', v: '<strong style="color:#4caf50">৳ ' + partialAmount.toFixed(2) + '</strong>'});
-        feeItems.push({l:'REMAINING DUE', v: '<strong style="color:#ff4e4e">৳ ' + (totalAmount - partialAmount).toFixed(2) + '</strong>'});
+        feeItems.push({l:'ADMISSION FEE REMAINING', v: '<strong style="color:#ff4e4e">৳ ' + (admissionFeeTotal - partialAmount).toFixed(2) + '</strong>'});
     } else {
         feeItems.push({l:'TOTAL PAYABLE', v: '<strong style="color:var(--accent)">৳ ' + totalAmount.toFixed(2) + '</strong>'});
     }

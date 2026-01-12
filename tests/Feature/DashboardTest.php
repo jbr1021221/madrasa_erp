@@ -13,6 +13,13 @@ class DashboardTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $user = \App\Models\User::factory()->create(['role' => 'admin']);
+        $this->actingAs($user);
+    }
+
     public function test_dashboard_displays_correct_total_counts()
     {
         $classroom = Classroom::factory()->create();

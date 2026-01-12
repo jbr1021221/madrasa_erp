@@ -42,6 +42,8 @@ class StudentFactory extends Factory
             'guardian_phone' => '019' . $this->faker->numerify('########'),
             'guardian_email' => $this->faker->safeEmail(),
             'guardian_nid' => $this->faker->numerify('##########'),
+            'shift' => 'Morning',
+            'program_type' => 'Schooling',
         ];
     }
 }

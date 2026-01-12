@@ -49,6 +49,9 @@ Route::middleware(['auth'])->group(function () {
             ->name('payments.student.history');
         Route::get('/payments/{payment}/receipt', [PaymentController::class, 'viewReceipt'])->name('payments.receipt');
         Route::get('/payments/{payment}/receipt/download', [PaymentController::class, 'downloadReceipt'])->name('payments.receipt.download');
+        Route::get('/payments/{payment}/edit', [PaymentController::class, 'edit'])->name('payments.edit');
+        Route::put('/payments/{payment}', [PaymentController::class, 'update'])->name('payments.update');
+        Route::delete('/payments/{payment}', [PaymentController::class, 'destroy'])->name('payments.destroy');
 
         // Classrooms (View Only)
         Route::get('/classrooms', [ClassroomController::class, 'index'])->name('classrooms.index');

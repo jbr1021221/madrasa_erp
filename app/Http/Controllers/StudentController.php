@@ -263,49 +263,43 @@ class StudentController extends Controller
     $actualPaymentAmount = $totalAdmissionAmount;
     $finalFeeDetails = [];
     
-    if ($isPartialPayment && $partialAmount > 0 && $partialAmount < $totalAdmissionAmount) {
-        $actualPaymentAmount = $partialAmount + array_sum(array_column($monthlyFeeDetails, 'amount'));
-        $remainingAmount = $totalAdmissionAmount - $partialAmount;
+    if ($isPartialPayment && $partialAmount > 0 && $partialAmount < $totalAdmissionFee) {
+        // Calculate actual payment: partial admission + monthly fees + other one-time fees
+        $otherOneTimeFees = 0;
+        foreach ($admissionFeeDetails as $fee) {
+            if ($fee['name'] !== 'Admission Fee') {
+                $otherOneTimeFees += $fee['amount'];
+            }
+        }
+        $actualPaymentAmount = $partialAmount + array_sum(array_column($monthlyFeeDetails, 'amount')) + $otherOneTimeFees;
         
-        // Adjust ONLY admission fee_details to reflect partial payment
-        $distributedAmount = 0;
-        $admissionFeesCount = count($admissionFeeDetails);
+        $remainingAmount = $totalAdmissionFee - $partialAmount;
         
         // Store original fee details for partial_payments tracking
         $partialPaymentFees = [];
         
-        foreach ($admissionFeeDetails as $key => $fee) {
-            // Calculate proportional amount for this fee
-            if ($totalAdmissionAmount > 0) {
-                 $ratio = $fee['amount'] / $totalAdmissionAmount;
-                 $paidAmount = $ratio * $partialAmount;
-                 $remainingForThisFee = $fee['amount'] - $paidAmount;
-                 
-                 // Fix rounding issues on the last item
-                 if ($key === $admissionFeesCount - 1) {
-                     $paidAmount = $partialAmount - $distributedAmount;
-                     $remainingForThisFee = $fee['amount'] - $paidAmount;
-                 }
-                 
-                 // Add to final fee details with partial amount
-                 $finalFeeDetails[] = [
-                     'name' => $fee['name'] . ' (Partial)',
+        foreach ($admissionFeeDetails as $fee) {
+            if ($fee['name'] === 'Admission Fee') {
+                // Apply partial payment ONLY to Admission Fee
+                $finalFeeDetails[] = [
+                    'name' => $fee['name'] . ' (Partial)',
                     'type' => $fee['type'],
-                    'amount' => $paidAmount,
-                    'original_amount' => $fee['original_amount'] ?? $fee['amount'],
+                    'amount' => $partialAmount,
+                    'original_amount' => $fee['amount'],
                     'discount' => $fee['discount'] ?? 0,
                     'month' => $fee['month'] ?? null
                 ];
-                 
-                 $distributedAmount += $paidAmount;
-                 
-                 // Track this fee for partial payments
-                 $partialPaymentFees[$fee['name']] = [
-                     'total' => $fee['amount'],
-                     'paid' => $paidAmount,
-                     'remaining' => $remainingForThisFee,
-                     'payment_ids' => []
-                 ];
+                
+                // Track this fee for partial payments
+                $partialPaymentFees[$fee['name']] = [
+                    'total' => $fee['amount'],
+                    'paid' => $partialAmount,
+                    'remaining' => $remainingAmount,
+                    'payment_ids' => []
+                ];
+            } else {
+                // Other one-time fees (Exam Fee, Year Fee, etc.) are paid in full
+                $finalFeeDetails[] = $fee;
             }
         }
         
@@ -409,6 +403,7 @@ class StudentController extends Controller
         $classroomData = $classrooms->mapWithKeys(function($classroom) {
             return [$classroom->id => [
                 'fees' => $classroom->fees,
+                'admission_fee' => $classroom->admission_fee,
                 'total_fee' => $classroom->total_fee,
                 'sections' => $classroom->sections ?? []
             ]];
@@ -433,22 +428,32 @@ class StudentController extends Controller
             $validated['nid_file_path'] = $request->file('nid_file')->store('nid_files', 'public');
         }
 
-        // Process discounts or preserve old ones
+        // Process discounts and selected fees
         if ($request->has('student_assigned_fees') && !empty($request->student_assigned_fees)) {
              $discounts = [];
+             $selectedFees = [];
              $assignedFees = json_decode($request->student_assigned_fees, true);
              if (is_array($assignedFees)) {
                  foreach ($assignedFees as $fee) {
-                     if (!empty($fee['is_permanent']) && !empty($fee['discount'])) {
+                     // Add to selected fees
+                     $selectedFees[] = [
+                         'name' => $fee['name'],
+                         'type' => $fee['type'] ?? 'Other',
+                         'amount' => floatval($fee['amount'] ?? 0)
+                     ];
+                     
+                     // Add to discounts if discount exists (even if 0)
+                     if (isset($fee['discount'])) {
                          $discounts[$fee['name']] = [
                              'amount' => floatval($fee['discount']),
-                             'permanent' => 1
+                             'permanent' => !empty($fee['is_permanent']) ? 1 : 0
                          ];
                      }
                  }
              }
+             $validated['selected_fees'] = $selectedFees;
              $validated['discounts'] = $discounts;
-        } elseif ($request->has('fee_discounts')) {
+         } elseif ($request->has('fee_discounts')) {
             $discounts = [];
             foreach ($request->fee_discounts as $feeName => $amount) {
                 if ($amount > 0) {
@@ -689,7 +694,7 @@ private function generateStudentIdInternal($classId = null)
                 break;
         }
 
-        if (null !== $fraction && is_numeric($fraction)) {
+        if (null !== $fraction && is_numeric($fraction) && (int)$fraction > 0) {
             $string .= $decimal;
             $words = array();
             foreach (str_split((string) $fraction) as $number) {
