@@ -131,10 +131,18 @@
                                     $monthlyGroups[$baseName]['total_amount'] += $net;
                                     $monthlyGroups[$baseName]['total_original'] += $orig;
                                 } else {
-                                    $processedFees[] = [
+                                    $item = [
                                         'name' => $fee['name'],
                                         'amount' => $net
                                     ];
+                                    
+                                    if (strpos($fee['name'], 'Admission Fee (Partial)') !== false && isset($fee['original_amount'])) {
+                                        $item['original'] = floatval($fee['original_amount']);
+                                    } elseif (strpos($fee['name'], 'Admission Fee (Partial)') !== false && $disc > 0) {
+                                         $item['original'] = $net + $disc;
+                                    }
+                                    
+                                    $processedFees[] = $item;
                                 }
                             }
                         }
@@ -184,11 +192,29 @@
                             <tbody>
                                 @foreach($processedFees as $fee)
                                     <tr style="border-bottom:1px solid rgba(255,255,255,0.05)">
-                                        <td style="padding:10px;font-size:14px">{{ $fee['name'] ?? 'Fee' }}</td>
+                                        <td style="padding:10px;font-size:14px">
+                                            @if(strpos($fee['name'], 'Admission Fee (Partial)') !== false && isset($fee['original']) && $fee['original'] > $fee['amount'])
+                                                Admission Fee(<span style="color:#ff4e4e">{{ number_format($fee['original'], 0) }} TK</span>) - Partial
+                                            @else
+                                                {{ $fee['name'] ?? 'Fee' }}
+                                            @endif
+                                        </td>
                                         <td style="text-align:right;padding:10px;font-size:14px">
                                             ৳{{ number_format($fee['amount'] ?? 0, 2) }}
                                         </td>
                                     </tr>
+                                    
+                                    @if(strpos($fee['name'], 'Admission Fee (Partial)') !== false && isset($fee['original']) && $fee['original'] > $fee['amount'])
+                                        @php
+                                            $remainingAdm = $fee['original'] - $fee['amount'];
+                                        @endphp
+                                        <tr style="border-bottom:1px solid rgba(255,255,255,0.05);color:#ff4e4e">
+                                            <td style="padding:10px;font-size:13px;font-style:italic;padding-left:24px">Remaining Admission Fee</td>
+                                            <td style="text-align:right;padding:10px;font-size:13px">
+                                                ৳{{ number_format($remainingAdm, 2) }}
+                                            </td>
+                                        </tr>
+                                    @endif
                                 @endforeach
                                 
                                 @if($discount > 0)

@@ -450,11 +450,21 @@
                                 $monthlyGroups[$baseName]['total_amount'] += $net;
                                 $monthlyGroups[$baseName]['total_original'] += $orig;
                             } else {
-                                // Store original amount for display if needed, but for now we list explicit items
-                                $processedFees[] = [
+                                // Store original amount specifically for Admission Fee (Partial) to calculate remaining
+                                $item = [
                                     'name' => $fee['name'],
                                     'amount' => $net
                                 ];
+                                
+                                if (strpos($fee['name'], 'Admission Fee (Partial)') !== false) {
+                                     if (isset($fee['original_amount'])) {
+                                         $item['original'] = floatval($fee['original_amount']);
+                                     } elseif ($disc > 0) {
+                                         $item['original'] = $net + $disc;
+                                     }
+                                }
+                                
+                                $processedFees[] = $item;
                             }
                         }
                     }
@@ -511,7 +521,13 @@
                             {{-- Display processed fees --}}
                             @foreach($processedFees as $fee)
                                 <tr>
-                                    <td>{{ $fee['name'] ?? 'Fee' }}</td>
+                                    <td>
+                                        @if(strpos($fee['name'], 'Admission Fee (Partial)') !== false && isset($fee['original']) && $fee['original'] > $fee['amount'])
+                                            Admission Fee(<span style="color:red">{{ number_format($fee['original'], 0) }} TK</span>) - Partial
+                                        @else
+                                            {{ $fee['name'] ?? 'Fee' }}
+                                        @endif
+                                    </td>
                                     <td class="amount-cell">{{ number_format($fee['amount'] ?? 0, 2) }}</td>
                                 </tr>
                             @endforeach
