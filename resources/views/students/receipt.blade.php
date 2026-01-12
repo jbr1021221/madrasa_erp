@@ -523,7 +523,7 @@
                                 <tr>
                                     <td>
                                         @if(strpos($fee['name'], 'Admission Fee (Partial)') !== false && isset($fee['original']) && $fee['original'] > $fee['amount'])
-                                            Admission Fee(<span style="color:red">{{ number_format($fee['original'], 0) }} TK</span>) - Partial
+                                            Admission Fee (<span style="color:#51272f;">{{ number_format($fee['original'], 0) }} TK</span>) - Partial
                                         @else
                                             {{ $fee['name'] ?? 'Fee' }}
                                         @endif
