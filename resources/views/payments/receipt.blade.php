@@ -342,6 +342,8 @@
                     </div>
                 </div>
             </div>
+
+            
             <!-- Date Right -->
 <div class="date-wrapper">
  <div class="date-box">

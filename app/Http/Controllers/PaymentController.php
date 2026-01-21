@@ -69,7 +69,41 @@ class PaymentController extends Controller
         }
 
         $payments = $query->latest('id')->get();
-        $totalEarnings = $payments->sum('amount');
+
+        
+        if ($request->filled('fee_name')) {
+            $filterName = $request->fee_name;
+            $totalEarnings = 0;
+            
+            foreach ($payments as $payment) {
+                $matchedAmount = 0;
+                $details = $payment->fee_details;
+                $matchFoundInDetails = false;
+
+                if (is_array($details)) {
+                    foreach ($details as $itm) {
+                        // Case-insensitive check
+                        if (stripos($itm['name'] ?? '', $filterName) !== false) {
+                            $matchedAmount += ($itm['amount'] ?? 0);
+                            $matchFoundInDetails = true;
+                        }
+                    }
+                }
+
+                // Fallback to full amount if payment_type matches but no details matched
+                if (!$matchFoundInDetails && stripos($payment->payment_type, $filterName) !== false) {
+                    $matchedAmount = $payment->amount;
+                }
+
+                $payment->amount_display = $matchedAmount;
+                $totalEarnings += $matchedAmount;
+            }
+        } else {
+            $totalEarnings = $payments->sum('amount');
+            foreach ($payments as $payment) {
+                $payment->amount_display = $payment->amount;
+            }
+        }
 
         // Get filter options
         $classrooms = Classroom::all();
