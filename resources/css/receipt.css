@@ -1,0 +1,302 @@
+@page {
+    size: A4 landscape;
+    margin: 10mm;
+
+    @top-left {
+        content: none;
+    }
+
+    @top-center {
+        content: none;
+    }
+
+    @top-right {
+        content: none;
+    }
+
+    @bottom-left {
+        content: none;
+    }
+
+    @bottom-center {
+        content: none;
+    }
+
+    @bottom-right {
+        content: none;
+    }
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Instrument Sans', Arial, sans-serif;
+    background-color: #fff;
+    padding: 8px;
+    font-size: 12px;
+    line-height: 1.2;
+    color: #000;
+}
+
+.receipt-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    background: white;
+    padding: 15px;
+    border: 1px solid #51272f;
+    position: relative;
+}
+
+.header-container {
+    position: relative;
+    min-height: 130px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.logo-left {
+    width: 100px;
+    height: 100px;
+}
+
+.logo-left img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.banner-center {
+    flex: 1;
+    text-align: center;
+    padding: 0 20px;
+}
+
+.banner-center img {
+    height: 80px;
+    width: auto;
+    margin: 0 auto;
+    display: block;
+}
+
+.academy-info {
+    margin-top: 5px;
+}
+
+.academy-subtitle {
+    font-family: 'Century Gothic', sans-serif;
+    font-size: 14px;
+    font-weight: bold;
+    color: #51272f;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.academy-address,
+.academy-contacts {
+    font-size: 10px;
+    color: #333;
+}
+
+.academy-contacts {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.date-right {
+    width: 120px;
+    text-align: right;
+}
+
+.date-box {
+    font-size: 11px;
+    font-weight: bold;
+    color: #51272f;
+    margin-bottom: 4px;
+}
+
+h1.receipt-title {
+    text-align: center;
+    font-size: 18px;
+    margin: 10px 0 20px;
+    text-transform: uppercase;
+    color: #51272f;
+    border-bottom: 3px solid #51272f;
+    padding-bottom: 5px;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.content {
+    display: flex;
+    gap: 20px;
+}
+
+.student-section {
+    flex: 0 0 35%;
+}
+
+.fee-section {
+    flex: 1;
+}
+
+.detail-row {
+    display: flex;
+    margin-bottom: 6px;
+    font-size: 12px;
+}
+
+.detail-label {
+    width: 100px;
+    font-weight: 600;
+    color: #51272f;
+}
+
+.detail-value {
+    flex: 1;
+    font-weight: 500;
+}
+
+table.fee-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 15px;
+}
+
+table.fee-table th,
+table.fee-table td {
+    border: 1px solid #51272f;
+    padding: 6px 8px;
+    text-align: left;
+}
+
+table.fee-table th {
+    background-color: #f5f5f5;
+    color: #51272f;
+    font-weight: bold;
+}
+
+table.fee-table td.amount {
+    text-align: right;
+    font-family: monospace;
+}
+
+tr.empty-row td {
+    height: 30px;
+}
+
+tr.total-row td {
+    background-color: #f5f5f5;
+    font-weight: bold;
+    border-top: 2px solid #51272f;
+}
+
+.payment-footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+}
+
+.payment-summary {
+    width: 40%;
+    margin-left: auto;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 4px;
+    align-items: center;
+}
+
+.summary-label {
+    margin-right: 10px;
+    font-weight: bold;
+    color: #51272f;
+}
+
+.summary-value {
+    border: 1px solid #51272f;
+    padding: 4px 8px;
+    min-width: 100px;
+    text-align: right;
+    background: #fff;
+}
+
+.accountant-sig {
+    margin-top: 40px;
+    width: 150px;
+    text-align: center;
+    border-top: 1px solid #000;
+    font-size: 11px;
+    padding-top: 4px;
+}
+
+.footer-logos {
+    margin-top: 30px;
+    padding-top: 15px;
+    border-top: 1px solid #51272f;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    align-items: center;
+}
+
+.footer-logos img {
+    height: 30px;
+    width: auto;
+}
+
+.no-print {
+    background: #f1f5f9;
+    padding: 15px;
+    text-align: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.btn-print {
+    background: #51272f;
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.btn-download {
+    background: #e37814;
+    color: white;
+    padding: 8px 16px;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+@media print {
+    .no-print {
+        display: none;
+    }
+
+    body {
+        padding: 0;
+        background: white;
+    }
+
+    .receipt-container {
+        border: 1px solid #51272f;
+        max-width: none;
+        width: 100%;
+        border-radius: 0;
+    }
+}

@@ -61,10 +61,13 @@ class PaymentController extends Controller
 
         // Filter by fee name (payment type or content in fee_details)
         if ($request->filled('fee_name')) {
-            $feeName = $request->fee_name;
-            $query->where(function($q) use ($feeName) {
-                $q->where('payment_type', 'like', "%{$feeName}%")
-                  ->orWhere('fee_details', 'like', "%{$feeName}%");
+            $feeNames = is_array($request->fee_name) ? $request->fee_name : [$request->fee_name];
+            
+            $query->where(function($q) use ($feeNames) {
+                foreach ($feeNames as $feeName) {
+                    $q->orWhere('payment_type', 'like', "%{$feeName}%")
+                      ->orWhere('fee_details', 'like', "%{$feeName}%");
+                }
             });
         }
 
@@ -72,27 +75,37 @@ class PaymentController extends Controller
 
         
         if ($request->filled('fee_name')) {
-            $filterName = $request->fee_name;
+            $filterNames = is_array($request->fee_name) ? $request->fee_name : [$request->fee_name];
             $totalEarnings = 0;
             
             foreach ($payments as $payment) {
                 $matchedAmount = 0;
                 $details = $payment->fee_details;
-                $matchFoundInDetails = false;
+                $matchedItems = []; // Track which items matched to avoid double counting
 
                 if (is_array($details)) {
-                    foreach ($details as $itm) {
-                        // Case-insensitive check
-                        if (stripos($itm['name'] ?? '', $filterName) !== false) {
-                            $matchedAmount += ($itm['amount'] ?? 0);
-                            $matchFoundInDetails = true;
+                    foreach ($details as $index => $itm) {
+                        foreach ($filterNames as $filterName) {
+                            // Case-insensitive check
+                            if (stripos($itm['name'] ?? '', $filterName) !== false) {
+                                if (!in_array($index, $matchedItems)) {
+                                    $matchedAmount += ($itm['amount'] ?? 0);
+                                    $matchedItems[] = $index;
+                                }
+                            }
                         }
                     }
                 }
 
                 // Fallback to full amount if payment_type matches but no details matched
-                if (!$matchFoundInDetails && stripos($payment->payment_type, $filterName) !== false) {
-                    $matchedAmount = $payment->amount;
+                // Only if NO items matched inside details (or details was empty/invalid)
+                if (empty($matchedItems)) {
+                    foreach ($filterNames as $filterName) {
+                        if (stripos($payment->payment_type, $filterName) !== false) {
+                            $matchedAmount = $payment->amount;
+                            break; 
+                        }
+                    }
                 }
 
                 $payment->amount_display = $matchedAmount;

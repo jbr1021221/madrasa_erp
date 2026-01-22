@@ -27,14 +27,55 @@
   </select> -->
 
   {{-- Fee Type Dropdown --}}
-  <select name="fee_name" onchange="this.form.submit()" style="background:#1b1f22;color:var(--text);border:1px solid rgba(255,255,255,0.15);padding:6px 10px;border-radius:var(--radius);font-size:14px;width:180px">
-    <option value="">All Fee Types</option>
-    @foreach($feeTypes as $ft)
-      <option value="{{ $ft }}" {{ request('fee_name') == $ft ? 'selected' : '' }}>
-        {{ $ft }}
-      </option>
-    @endforeach
-  </select>
+  {{-- Custom Multi-select Checkbox Dropdown --}}
+  <div style="position:relative;display:inline-block;">
+    <button type="button" onclick="toggleFeeDropdown()" id="feeDropdownBtn" style="background:#1b1f22;color:var(--text);border:1px solid rgba(255,255,255,0.15);padding:6px 10px;border-radius:var(--radius);font-size:14px;width:180px;text-align:left;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+      @php
+        $selectedFees = (array)request('fee_name', []);
+        $count = count($selectedFees);
+      @endphp
+      @if($count > 0)
+        {{ $count }} Selected
+      @else
+        All Fee Types
+      @endif
+    </button>
+    
+    <div id="feeDropdownContent" style="display:none;position:absolute;top:100%;left:0;background:#1b1f22;border:1px solid rgba(255,255,255,0.15);border-radius:var(--radius);z-index:1000;padding:10px;width:220px;max-height:300px;overflow-y:auto;box-shadow:0 4px 6px rgba(0,0,0,0.3);">
+      @foreach($feeTypes as $ft)
+        <label style="display:flex;align-items:center;margin-bottom:8px;cursor:pointer;font-size:13px;color:var(--text);">
+          <input type="checkbox" name="fee_name[]" value="{{ $ft }}" {{ in_array($ft, $selectedFees) ? 'checked' : '' }} style="margin-right:8px;accent-color:var(--primary);">
+          {{ $ft }}
+        </label>
+      @endforeach
+      
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.1);display:flex;justify-content:flex-end;gap:8px;">
+        <button type="button" onclick="clearFeeSelection()" style="background:transparent;border:none;color:var(--muted);font-size:12px;cursor:pointer;">Clear</button>
+        <button type="submit" style="background:var(--primary, #4caf50);color:#fff;border:none;padding:4px 12px;border-radius:4px;font-size:12px;cursor:pointer;">Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleFeeDropdown() {
+      const dropdown = document.getElementById('feeDropdownContent');
+      dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+    }
+    
+    function clearFeeSelection() {
+      const inputs = document.querySelectorAll('#feeDropdownContent input[type="checkbox"]');
+      inputs.forEach(input => input.checked = false);
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+      const dropdown = document.getElementById('feeDropdownContent');
+      const button = document.getElementById('feeDropdownBtn');
+      if (!dropdown.contains(event.target) && !button.contains(event.target)) {
+        dropdown.style.display = 'none';
+      }
+    });
+  </script>
 
   <select name="class_id" id="class_id" onchange="updateSections(); this.form.submit()" style="background:#1b1f22;color:var(--text);border:1px solid rgba(255,255,255,0.15);padding:6px 10px;border-radius:var(--radius);font-size:14px;width:180px">
     <option value="">All Classes</option>
