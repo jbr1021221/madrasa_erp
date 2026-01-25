@@ -33,7 +33,31 @@ class PaymentController extends Controller
 
         // Filter by month
         if ($request->filled('month')) {
-            $query->where('month', $request->month);
+            $monthName = $request->month;
+            try {
+                $monthIndex = Carbon::parse($monthName)->month;
+            } catch (\Exception $e) {
+                $monthIndex = null;
+            }
+
+            $query->where(function($q) use ($monthName, $monthIndex) {
+                // 1. The payment is explicitly for this month (Billing Month)
+                $q->where('month', $monthName);
+
+                if ($monthIndex) {
+                    // 2. OR The payment is an Admission fee (or similar non-standard month) PAID in this month
+                    $q->orWhere(function($sq) use ($monthIndex) {
+                        $sq->where('month', 'Admission')
+                           ->whereMonth('payment_date', $monthIndex);
+                    });
+                    
+                    // 3. OR It's inside fee_details (bundled fees) - using LIKE for JSON search
+                    $q->orWhere('fee_details', 'LIKE', '%"month":"' . $monthName . '%')
+                      ->orWhere('fee_details', 'LIKE', '%"month": "' . $monthName . '%')
+                      ->orWhere('fee_details', 'LIKE', '%"month":"' . $monthName . ',%')
+                      ->orWhere('fee_details', 'LIKE', '%"month": "' . $monthName . ',%');
+                }
+            });
         }
 
         // Filter by year
