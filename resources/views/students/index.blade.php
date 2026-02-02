@@ -551,10 +551,8 @@ function openPayModal(id, name, fatherName, selectedFees, discounts, paidFeeTrac
   document.getElementById('feeCategorySelect').setAttribute('onchange', 'handleCategoryChange()'); // Ensure we use custom handler
   document.getElementById('manualDiscountInput').value = 0;
   
-  // Set date to today if not set
-  if(!document.getElementById('paymentDateInput').value) {
-      document.getElementById('paymentDateInput').value = new Date().toISOString().split('T')[0];
-  }
+  // Always set date to today when opening the modal
+  document.getElementById('paymentDateInput').value = new Date().toISOString().split('T')[0];
   
   updateFeeViews();
   document.getElementById('payModal').style.display = 'flex';

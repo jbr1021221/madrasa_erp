@@ -312,6 +312,7 @@
 <body>
 
     
+    @if(!isset($isPdf) || !$isPdf)
     <div class="no-print" style="text-align:center; padding:10px; background:#f0f0f0; border-bottom:1px solid #ccc; margin-bottom:20px;">
         <button onclick="window.print()" style="padding:8px 16px; background:#51272f; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; margin-right:10px;">
             Print Receipt
@@ -320,6 +321,7 @@
             Download PDF
         </a>
     </div>
+    @endif
 
     <div class="receipt-container">
         
@@ -350,7 +352,7 @@
                     Receipt No: {{ $receiptNo }}
                 </div>
     <div class="date-box">
-        Date: {{ $student->created_at->format('d/m/Y') }}
+        Date: {{ $payment->created_at->format('d/m/Y') }}
     </div>
 </div>
 

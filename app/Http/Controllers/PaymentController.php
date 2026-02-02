@@ -452,8 +452,14 @@ class PaymentController extends Controller
         // Generate Receipt No
         $receiptNo = ($payment->payment_date ? \Carbon\Carbon::parse($payment->payment_date) : now())->format('ymd') . str_pad($payment->id, 3, '0', STR_PAD_LEFT);
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('payments.receipt', compact('payment', 'student', 'amountInWords', 'receiptNo'))
-            ->setPaper('a4', 'landscape');
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('payments.receipt', [
+        'payment' => $payment,
+        'student' => $student,
+        'amountInWords' => $amountInWords,
+        'receiptNo' => $receiptNo,
+        'isPdf' => true
+    ])
+        ->setPaper('a4', 'landscape');
         
         $filename = 'payment_receipt_' . $student->student_id . '_' . $payment->id . '.pdf';
         
