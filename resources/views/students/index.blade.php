@@ -358,7 +358,7 @@ window.addEventListener("pageshow", function(event) {
 });
 
 
-}
+
 
 function closePayModal() {
   document.getElementById('payModal').style.display = 'none';
