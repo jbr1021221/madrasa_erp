@@ -447,6 +447,25 @@ class PaymentController extends Controller
             $validated['fee_details'] = $feeDetails;
         }
 
+        // Auto-fix Amount: If the user updated fees (sum changes) but the Total Amount sent 
+        // matches the OLD amount (meaning they likely didn't update it manually or JS failed),
+        // we should trust the new Fee Sum.
+        if (isset($validated['fee_details']) && count($validated['fee_details']) > 0) {
+            $newFeeSum = collect($validated['fee_details'])->sum('amount');
+            
+            // If there's a discrepancy between Sent Amount and Fee Sum
+            if (abs($validated['amount'] - $newFeeSum) > 0.01) {
+                // And the Sent Amount is exactly the same as the Old DB Amount (Stale)
+                if (abs($validated['amount'] - $payment->amount) < 0.01) {
+                     // And the New Fee Sum IS different from the Old DB Amount (So changes happened)
+                     if (abs($newFeeSum - $payment->amount) > 0.01) {
+                         \Log::info("Auto-correcting Payment Amount from {$validated['amount']} to {$newFeeSum} because fees changed.");
+                         $validated['amount'] = $newFeeSum;
+                     }
+                }
+            }
+        }
+
         $payment->update($validated);
 
         if ($request->has('show_receipt') && $request->show_receipt) {

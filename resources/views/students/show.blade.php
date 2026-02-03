@@ -334,16 +334,90 @@ function openEditPaymentModal(payment) {
     });
 
     // 2. Initialize Base State with Clean Tracker
+    // Edit Mode: Need to extract the SPECIFIC discounts saved in this transaction,
+    // otherwise the modal defaults to the student's current global discounts.
+    const editDiscounts = {};
+    let totalDetailsAmount = 0;
+    
+    details.forEach(d => {
+        // Map discount to fee (base name logic handled inside modal usually, but here we prep specific keys)
+        // If the fee has a discount value > 0, we record it.
+        // For monthly fees like "Tuition Fee - January", the modal expects "Tuition Fee".
+        // If different months have different discounts, the modal UI only supports one per row (base name).
+        // We will take the first non-zero discount we find for a base name.
+        
+        // Extract base name logic (similar to cleanTracker above)
+        let baseName = d.name;
+        if(d.month && d.name.includes(d.month)) {
+             // likely "Tuition Fee - January 2026" or similar
+             // We can try splitting by " - "
+             const parts = d.name.split(' - ');
+             if(parts.length > 1) {
+                 // Check if suffix matches month
+                 const suffix = parts[parts.length-1];
+                 if(suffix.includes(',') || d.month.includes(suffix)) {
+                     parts.pop();
+                     baseName = parts.join(' - ');
+                 }
+             }
+        } else if (d.name.includes(' - ')) {
+              // Check for quarter/half parts
+              const parts = d.name.split(' - ');
+              if(parts.length > 1) {
+                  const suffix = parts[parts.length-1];
+                  if(['1st Quater', '2nd Quater', '3rd Quater', '4th Quater', '1st Half', '2nd Half'].some(s => suffix.includes(s))) {
+                       parts.pop();
+                       baseName = parts.join(' - ');
+                  }
+              }
+        }
+        
+        if (d.discount > 0) {
+            if (!editDiscounts[baseName]) {
+                 editDiscounts[baseName] = parseFloat(d.discount);
+            }
+            // Also store exact name just in case
+            editDiscounts[d.name] = parseFloat(d.discount);
+        }
+        
+        // Sum up net amount for manual discount calc
+        const amt = parseFloat(d.amount) || 0;
+        totalDetailsAmount += amt;
+    });
+    
+    // Merge defaults? No, if we are editing, we usually want exactly what was saved.
+    // However, if the user adds a NEW fee during edit, they might expect the default discount.
+    // Let's merge: editDiscounts takes precedence.
+    const mergedDiscounts = { ...studentData.discounts, ...editDiscounts };
+
     openPayModal(
         studentData.id, 
         studentData.name, 
         studentData.fatherName, 
         studentData.fees, 
-        studentData.discounts, 
-        cleanTracker, // <--- Modified Tracker
+        mergedDiscounts, // <--- Pass Merged Discounts
+        cleanTracker, 
         studentData.classFees, 
         studentData.partialPayments
     );
+    
+    // Check for Manual Global Discount (Payment Amount < Sum of Details)
+    const storedTotal = parseFloat(payment.amount) || 0;
+    // Note: totalDetailsAmount is sum of fee item Net Amounts.
+    // If storedTotal < totalDetailsAmount, difference is Manual Discount.
+    
+    // Slight tolerance for float precision
+    if (totalDetailsAmount - storedTotal > 0.01) {
+        const manualDisc = totalDetailsAmount - storedTotal;
+        setTimeout(() => {
+             const input = document.getElementById('manualDiscountInput');
+             if(input) {
+                 input.value = manualDisc.toFixed(0); // Usually integer
+                 // Trigger recalc
+                 if(typeof calculateTotal === 'function') calculateTotal();
+             }
+        }, 500); // reduced timeout slightly
+    }
     
     // 3. Override Form Action for UPDATE
     const form = document.getElementById('paymentForm');
