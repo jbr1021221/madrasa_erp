@@ -383,11 +383,80 @@ class PaymentController extends Controller
             'payment_type' => 'required|string',
             'payment_mode' => 'required|string',
             'note' => 'nullable|string',
+            'payment_details' => 'nullable|string',
+            'selected_months' => 'nullable|string',
+            'added_fees' => 'nullable|string',
+            'redirect_to' => 'nullable|string',
         ]);
+
+        // Build fee details array from the payment details if provided
+        if ($request->has('payment_details')) {
+            $feeDetails = [];
+            $paymentDetails = json_decode($request->payment_details, true);
+            $selectedMonths = $request->has('selected_months') ? json_decode($request->selected_months, true) : [];
+            $addedFees = $request->has('added_fees') ? json_decode($request->added_fees, true) : [];
+            
+            // Check if flat fee details are provided directly (more accurate for partial months)
+            if (isset($paymentDetails['fee_details']) && is_array($paymentDetails['fee_details'])) {
+                // Preserve all fields including original_amount and discount
+                foreach ($paymentDetails['fee_details'] as $fee) {
+                    $feeDetail = [
+                        'name' => $fee['name'] ?? 'Fee',
+                        'type' => $fee['type'] ?? 'Other',
+                        'amount' => $fee['amount'] ?? 0
+                    ];
+                    
+                    // Preserve original_amount and discount if present
+                    if (isset($fee['original_amount'])) $feeDetail['original_amount'] = $fee['original_amount'];
+                    if (isset($fee['discount'])) $feeDetail['discount'] = $fee['discount'];
+                    if (isset($fee['month'])) $feeDetail['month'] = $fee['month'];
+                    if (isset($fee['year'])) $feeDetail['year'] = $fee['year'];
+                    
+                    $feeDetails[] = $feeDetail;
+                }
+            } else {
+                // Add monthly fees for each selected month (Fallback cross-product logic)
+                if (isset($paymentDetails['monthlyFees']) && count($selectedMonths) > 0) {
+                    foreach ($selectedMonths as $month) {
+                        $monthName = $month['name'] ?? 'N/A';
+                        $year = $month['year'] ?? date('y');
+                        $displayMonth = $monthName . ', ' . $year;
+                        
+                        foreach ($paymentDetails['monthlyFees'] as $fee) {
+                            $feeDetails[] = [
+                                'name' => ($fee['name'] ?? 'Monthly Fee') . ' - ' . $displayMonth,
+                                'type' => 'Monthly',
+                                'amount' => $fee['amount'],
+                                'month' => $monthName,
+                                'year' => $year
+                            ];
+                        }
+                    }
+                }
+                // Add other fees
+                if (count($addedFees) > 0) {
+                    foreach ($addedFees as $fee) {
+                        $feeDetails[] = [
+                            'name' => $fee['name'],
+                            'type' => $fee['type'] ?? 'Other',
+                            'amount' => $fee['amount']
+                        ];
+                    }
+                }
+            }
+            $validated['fee_details'] = $feeDetails;
+        }
 
         $payment->update($validated);
 
-        return redirect()->route('payments.index')
+        if ($request->has('show_receipt') && $request->show_receipt) {
+             return redirect()->route('payments.receipt', $payment->id);
+        }
+
+        // Handle Redirect
+        $redirectRoute = $request->input('redirect_to', 'payments.index');
+        
+        return redirect()->route($redirectRoute, $payment->student_id)
             ->with('success', 'Payment updated successfully.');
     }
 

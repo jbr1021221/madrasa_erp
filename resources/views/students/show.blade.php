@@ -3,12 +3,65 @@
 @section('title', 'Student Details - Madrasa ERP')
 
 @section('content')
+@php
+    $className = $student->classroom->name ?? 'N/A';
+    $allClassFees = $student->classroom->fees ?? [];
+    $recurringFees = $student->selected_fees ?? ($student->fees ?? []);
+    
+    // Calculate Paid Fees Tracker for this student
+    $paidFeeTracker = [];
+    foreach($student->payments as $payment) {
+        if($payment->fee_details && is_array($payment->fee_details)) {
+             foreach($payment->fee_details as $feeDetail) {
+                 $fType = strtolower($feeDetail['type'] ?? '');
+                 if($fType === 'monthly') {
+                     $monthName = $feeDetail['month'] ?? '';
+                     $year = $feeDetail['year'] ?? date('y');
+                     $monthKey = (strpos($monthName, ', ') !== false) ? $monthName : ($monthName . ', ' . $year);
+                     
+                     if(!isset($paidFeeTracker[$monthKey])) $paidFeeTracker[$monthKey] = [];
+                     
+                     $name = $feeDetail['name'];
+                     if(strpos($name, ' - ') !== false) {
+                         $parts = explode(' - ', $name);
+                         $name = trim($parts[0]);
+                     }
+                     $paidFeeTracker[$monthKey][] = $name;
+                 } else {
+                     $rawName = $feeDetail['name'] ?? '';
+                     if (strpos($rawName, ' - ') !== false) {
+                        $separatorPos = strpos($rawName, ' - ');
+                        $baseName = trim(substr($rawName, 0, $separatorPos));
+                        $partsStr = substr($rawName, $separatorPos + 3);
+                        $parts = explode(',', $partsStr);
+                        foreach($parts as $p) {
+                            $p = trim($p);
+                            if(!empty($p)) $paidFeeTracker[$baseName . ' - ' . $p] = true;
+                        }
+                     } else {
+                        $names = explode(',', $rawName);
+                        foreach($names as $n) $paidFeeTracker[trim($n)] = true;
+                     }
+                 }
+             }
+        } elseif ($payment->month && strtolower($payment->payment_type) === 'monthly') {
+             preg_match_all('/([A-Za-z]+,\s*\d{2})/', $payment->month, $matches);
+             if(!empty($matches[0])) {
+                 foreach($matches[0] as $m) {
+                     if(!isset($paidFeeTracker[$m])) $paidFeeTracker[$m] = ['__ALL__'];
+                 }
+             }
+        }
+    }
+@endphp
+
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
   <div>
     <h2 style="margin:0">{{ $student->name }}</h2>
     <p style="margin:4px 0 0 0;color:var(--muted);font-size:14px">Student ID: {{ $student->student_id }}</p>
   </div>
   <div>
+     <button onclick='openPayModal({{ $student->id }}, "{{ $student->name }} ({{ $className }})", "{{ $student->father_name }}", @json($recurringFees), @json($student->discounts ?? []), @json($paidFeeTracker), @json($allClassFees ?? []), @json($student->partial_payments ?? []))' class="btn" style="margin-right:8px;">Make Payment</button>
     <a href="{{ route('students.edit', $student) }}" class="btn" style="margin-right:8px">Edit Student</a>
     <a href="{{ route('students.index') }}" class="btn ghost">Back to List</a>
   </div>
@@ -118,7 +171,8 @@
   </div>
 </div>
 
-<h3 style="margin-top:30px;margin-bottom:10px">Payment History</h3>
+<div style="background:var(--card);border-radius:var(--radius);padding:24px;border:1px solid rgba(255,255,255,0.1);margin-bottom:30px">
+  <h3 style="margin:0 0 20px 0;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.1)">Payment History</h3>
 <table id="paymentTable">
   <thead>
     <tr>
@@ -130,7 +184,7 @@
       <th>Mode</th>
       <th>Note</th>
       <th>Receipt</th>
-      <th>Created At</th>
+      <th>Actions</th>
     </tr>
   </thead>
   <tbody>
@@ -148,7 +202,9 @@
            View
         </a>
       </td>
-      <td>{{ $payment->created_at->format('d M, Y h:i A') }}</td>
+      <td style="display:flex;gap:6px;justify-content:center">
+        <button type="button" class="action-btn edit" onclick='openEditPaymentModal(@json($payment))' title="Edit Payment">Edit</button>
+      </td>
     </tr>
     @empty
     <tr>
@@ -156,7 +212,11 @@
     </tr>
     @endforelse
   </tbody>
-</table>
+  </table>
+</div>
+
+<!-- PAYMENT MODAL PARTIAL -->
+@include('students.partials.payment-modal')
 @endsection
 
 @section('extra-styles')
@@ -206,6 +266,18 @@ table.dataTable tbody tr {background-color: transparent;}
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 
 <script>
+// Global Student Data for Payment Modal
+const studentData = {
+    id: {{ $student->id }},
+    name: '{{ $student->name }} ({{ $className }})',
+    fatherName: '{{ $student->father_name }}',
+    fees: @json($recurringFees),
+    discounts: @json($student->discounts ?? []),
+    paidTracker: @json($paidFeeTracker),
+    classFees: @json($allClassFees ?? []),
+    partialPayments: @json($student->partial_payments ?? [])
+};
+
 $(document).ready(function() {
     $('#paymentTable').DataTable({
         "stateSave": true,
@@ -216,17 +288,221 @@ $(document).ready(function() {
         "info": true,
         "autoWidth": false,
         "responsive": true,
-        "order": [[7, "desc"]], // Sort by Created At (newest first)
-        "dom": '<"top"f>rt<"bottom"lip><"clear">', // Search top, table, then length/info/pagination at bottom
+        "order": [[7, "desc"]], 
+        "dom": '<"top"f>rt<"bottom"lip><"clear">',
         "language": {
             "search": "_INPUT_",
             "searchPlaceholder": "Search payments...",
-            "paginate": {
-                "previous": "Prev",
-                "next": "Next"
-            }
+            "paginate": { "previous": "Prev", "next": "Next" }
         }
     });
 });
+
+function openEditPaymentModal(payment) {
+    // Set Redirect to current student page
+    const redirectInput = document.querySelector('input[name="redirect_to"]');
+    if(redirectInput) redirectInput.value = 'students.show';
+
+    // 0. Parse Details
+    let details = payment.fee_details;
+    if (typeof details === 'string') {
+        try { details = JSON.parse(details); } catch(e) { details = []; }
+    }
+    if (details && !Array.isArray(details) && details.fee_details) details = details.fee_details;
+    details = details || [];
+
+    // 1. Clean Paid Tracker (Unlock edited fees so they are selectable)
+    const cleanTracker = JSON.parse(JSON.stringify(studentData.paidTracker));
+    
+    details.forEach(d => {
+         // Non-Monthly Keys check
+         if (cleanTracker[d.name]) delete cleanTracker[d.name];
+         
+         // Monthly Keys check
+         Object.keys(cleanTracker).forEach(key => {
+             if (Array.isArray(cleanTracker[key])) { 
+                 let matchesMonth = false;
+                 if(d.month && key.includes(d.month)) matchesMonth = true;
+                 else if(d.name.includes(key) || d.name.includes(key.split(',')[0])) matchesMonth = true; // Heuristic
+                 
+                 if(matchesMonth) {
+                     const cleanName = d.name.split(' - ')[0]; // Extract base name "Tuition"
+                     cleanTracker[key] = cleanTracker[key].filter(f => f !== cleanName && f !== '__ALL__');
+                 }
+             }
+         });
+    });
+
+    // 2. Initialize Base State with Clean Tracker
+    openPayModal(
+        studentData.id, 
+        studentData.name, 
+        studentData.fatherName, 
+        studentData.fees, 
+        studentData.discounts, 
+        cleanTracker, // <--- Modified Tracker
+        studentData.classFees, 
+        studentData.partialPayments
+    );
+    
+    // 3. Override Form Action for UPDATE
+    const form = document.getElementById('paymentForm');
+    form.action = `/payments/${payment.id}`;
+    
+    // Inject PUT method
+    let methodContainer = document.getElementById('methodSpoofContainer');
+    if(!methodContainer) {
+        methodContainer = document.createElement('div');
+        methodContainer.id = 'methodSpoofContainer';
+        form.appendChild(methodContainer);
+    }
+    methodContainer.innerHTML = '<input type="hidden" name="_method" value="PUT">';
+    
+    // UI Updates
+    document.getElementById('payModalTitle').innerText = 'Edit Payment';
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if(submitBtn) submitBtn.textContent = 'Update Payment';
+
+    // 4. Populate Basic Fields
+    if(payment.payment_date) {
+        document.getElementById('paymentDateInput').value = payment.payment_date.substring(0, 10);
+    }
+    
+    const category = payment.payment_type || 'Monthly';
+    document.getElementById('feeCategorySelect').value = category;
+    document.getElementById('paymentType').value = category;
+    
+    // Note & Mode
+    const modeSelect = document.querySelector('select[name="payment_mode"]');
+    if(modeSelect && payment.payment_mode) modeSelect.value = payment.payment_mode;
+    
+    const noteInput = document.querySelector('input[name="note"]');
+    if(noteInput) noteInput.value = payment.note || '';
+
+    // 5. Hydrate Fees & Months
+    if(category === 'Monthly') {
+        const uniqueMonths = new Set();
+        const baseFeeNames = new Set();
+        
+        details.forEach(d => {
+            if(d.month) {
+                uniqueMonths.add(d.month);
+                let name = d.name;
+                if(name.includes(' - ')) {
+                    const parts = name.split(' - ');
+                    const suffix = parts[parts.length-1];
+                    if(suffix.includes(',') || d.month.includes(suffix)) {
+                        parts.pop();
+                        name = parts.join(' - ');
+                    }
+                }
+                baseFeeNames.add(name);
+            } else {
+                // Fallback parsing
+                const parts = d.name.split(' - ');
+                if(parts.length > 1) {
+                     const suffix = parts[parts.length-1];
+                     if(suffix.match(/[A-Za-z]+, \d{2}/)) {
+                         uniqueMonths.add(suffix);
+                         parts.pop();
+                         baseFeeNames.add(parts.join(' - '));
+                     } else {
+                         baseFeeNames.add(d.name);
+                     }
+                } else {
+                    baseFeeNames.add(d.name);
+                }
+            }
+        });
+        
+        // Reconstruct allFees (Active list)
+        allFees = Array.from(baseFeeNames).map(name => {
+             const sub = studentData.fees.find(f => f.name === name);
+             const det = details.find(d => d.name.includes(name));
+             return {
+                 name: name,
+                 // Prioritize historical amount
+                 amount: parseFloat(det ? (det.original_amount || det.amount) : (sub ? sub.amount : 0)),
+                 type: 'Monthly',
+                 is_partial_completion: false
+             };
+        });
+        
+        updateFeeViews(); 
+        
+        // Tick Months
+        updatePeriod(); 
+        document.querySelectorAll('.month-checkbox').forEach(cb => {
+            if(uniqueMonths.has(cb.dataset.displayText) || uniqueMonths.has(cb.value)) {
+                cb.checked = true;
+                cb.disabled = false; // Should satisfy via cleanTracker, but forcing ensures safety
+                cb.parentElement.style.opacity = '1';
+                cb.parentElement.style.cursor = 'pointer';
+            }
+        });
+        updateSelectedMonths();
+        
+    } else {
+        // Non-Monthly & Parts handling
+        // 1. Set allFees based on base names logic or just raw details?
+        // For Quarterly with parts, the "Base Fee" is "Tuition Fee". The "Detail" is "Tuition Fee - 1st Quater".
+        // updateFeeViews renders "Tuition Fee" with dropdown.
+        // So we need allFees to contain the BASE FEE.
+        
+        const baseFeeNames = new Set();
+        details.forEach(d => {
+             // Try to extract base name if it has a part suffix
+             let name = d.name;
+             // Check common suffixes
+             [' - 1st Quater', ' - 2nd Quater', ' - 3rd Quater', ' - 4th Quater', ' - 1st Half', ' - 2nd Half'].forEach(suffix => {
+                 if(name.includes(suffix)) {
+                     name = name.replace(suffix, '');
+                 }
+             });
+             baseFeeNames.add(name);
+        });
+
+        allFees = Array.from(baseFeeNames).map(name => {
+             const sub = studentData.fees.find(f => f.name === name);
+             const det = details.find(d => d.name.includes(name));
+             return {
+                 name: name,
+                 amount: parseFloat(det ? (det.original_amount || det.amount) : (sub ? sub.amount : 0)),
+                 type: category, // Force category
+                 is_partial_completion: false
+             };
+        });
+        
+        updateFeeViews();
+        
+        // 2. Select the specific parts in Dropdowns
+        details.forEach(d => {
+             const parts = d.name.split(' - ');
+             if(parts.length > 1) {
+                 const partName = parts.pop();
+                 const feeName = parts.join(' - ');
+                 
+                 const tr = document.querySelector(`.main-fee-row[data-fee-name="${feeName}"]`);
+                 if(tr) {
+                     const dropdown = tr.querySelector('.part-dropdown-menu');
+                     if(dropdown) {
+                         const cb = dropdown.querySelector(`input[value="${partName}"]`);
+                         if(cb) {
+                             cb.checked = true;
+                             cb.disabled = false;
+                         }
+                         const anyCb = dropdown.querySelector('input');
+                         if(anyCb) {
+                             const menuId = dropdown.id.replace('menu_', '');
+                             updatePartSelection(anyCb, menuId);
+                         }
+                     }
+                 }
+             }
+        });
+    }
+    
+    calculateTotal();
+}
 </script>
 @endsection
