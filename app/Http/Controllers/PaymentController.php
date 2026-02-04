@@ -199,7 +199,7 @@ class PaymentController extends Controller
         $validated = $request->validate([
             'student_id' => 'required|exists:students,id',
             'amount' => 'required|numeric|min:0',
-            'payment_date' => 'required|date',
+            'payment_date' => 'required',
             'month' => 'required|string',
             'payment_type' => 'required|string',
             'payment_mode' => 'required|string',
@@ -210,6 +210,15 @@ class PaymentController extends Controller
             'selected_months' => 'nullable|string',
             'added_fees' => 'nullable|string',
         ]);
+        
+        // Handle d/m/Y date format
+        if (isset($validated['payment_date']) && preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $validated['payment_date'])) {
+            try {
+                $validated['payment_date'] = \Carbon\Carbon::createFromFormat('d/m/Y', $validated['payment_date'])->format('Y-m-d');
+            } catch (\Exception $e) {
+                // Fallback or handle error if needed, but validation passed 'required'
+            }
+        }
 
         // Build fee details array from the payment details
         $feeDetails = [];

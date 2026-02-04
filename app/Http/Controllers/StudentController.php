@@ -408,6 +408,31 @@ class StudentController extends Controller
                 'sections' => $classroom->sections ?? []
             ]];
         });
+        
+        // Auto-detect Admission Fee discount from payment history if not explicitly saved in student profile
+        $existingDiscounts = $student->discounts ?? [];
+        if (!isset($existingDiscounts['Admission Fee'])) {
+            $admissionPayment = $student->payments()
+                ->where('payment_type', 'Admission')
+                ->latest()
+                ->first();
+                
+            if ($admissionPayment && is_array($admissionPayment->fee_details)) {
+                foreach ($admissionPayment->fee_details as $detail) {
+                    if (($detail['name'] ?? '') === 'Admission Fee') {
+                        $discount = floatval($detail['discount'] ?? 0);
+                        if ($discount > 0) {
+                            $existingDiscounts['Admission Fee'] = [
+                                'amount' => $discount,
+                                'permanent' => 0
+                            ];
+                            $student->discounts = $existingDiscounts;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
 
         return view('students.edit', compact('student', 'classrooms', 'classroomData'));
     }

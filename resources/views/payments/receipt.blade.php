@@ -352,7 +352,7 @@
                     Receipt No: {{ $receiptNo }}
                 </div>
     <div class="date-box">
-        Date: {{ $payment->created_at->format('d/m/Y') }}
+        Date: {{ \Carbon\Carbon::parse($payment->payment_date)->format('d/m/Y') }}
     </div>
 </div>
 
