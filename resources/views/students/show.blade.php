@@ -204,6 +204,13 @@
       </td>
       <td style="display:flex;gap:6px;justify-content:center">
         <button type="button" class="action-btn edit" onclick='openEditPaymentModal(@json($payment))' title="Edit Payment">Edit</button>
+        <form action="{{ route('payments.destroy', $payment) }}" method="POST" style="display:inline-block;margin:0" class="delete-payment-form">
+            @csrf
+            @method('DELETE')
+            <button type="button" class="action-btn delete" title="Delete Payment" style="color:#ef4444;background:transparent;font-size:13px;border:1px solid #ef4444;padding:2px 8px;border-radius:4px;transition:all 0.2s;cursor:pointer" onclick="confirmDelete(this)" onmouseover="this.style.background='#ef4444';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='#ef4444'">
+                Delete
+            </button>
+        </form>
       </td>
     </tr>
     @empty
@@ -577,6 +584,22 @@ function openEditPaymentModal(payment) {
     }
     
     calculateTotal();
+}
+
+function confirmDelete(button) {
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "You won't be able to revert this!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e37814', // Matches accent color
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, delete it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            button.closest('form').submit();
+        }
+    })
 }
 </script>
 @endsection
