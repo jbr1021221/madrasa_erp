@@ -198,7 +198,7 @@
       <td>{{ ucfirst($payment->payment_mode) }}</td>
       <td>{{ $payment->note ?? '-' }}</td>
       <td>
-        <a href="{{ route('payments.receipt', $payment) }}" target="_blank" style="color:var(--accent);text-decoration:none;font-size:13px;border:1px solid var(--accent);padding:2px 8px;border-radius:4px;transition:all 0.2s" onmouseover="this.style.background='rgba(227,120,20,0.1)'" onmouseout="this.style.background='transparent'">
+        <a href="{{ route('payments.receipt', $payment) }}" target="_blank" class="action-btn">
            View
         </a>
       </td>
@@ -207,7 +207,7 @@
         <form action="{{ route('payments.destroy', $payment) }}" method="POST" style="display:inline-block;margin:0" class="delete-payment-form">
             @csrf
             @method('DELETE')
-            <button type="button" class="action-btn delete" title="Delete Payment" style="color:#ef4444;background:transparent;font-size:13px;border:1px solid #ef4444;padding:2px 8px;border-radius:4px;transition:all 0.2s;cursor:pointer" onclick="confirmDelete(this)" onmouseover="this.style.background='#ef4444';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='#ef4444'">
+            <button type="button" class="action-btn delete" title="Delete Payment" onclick="confirmDelete(this)">
                 Delete
             </button>
         </form>
