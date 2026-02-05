@@ -270,20 +270,20 @@ label{display:block;margin-bottom:6px;margin-top:16px;font-size:14px;color:var(-
         </div>
       </div>
 
-      
+
 
       <div class="form-row">
         <div class="form-group">
-          <label>Mobile *</label>
-          <input type="text" name="mobile" placeholder="01XXXXXXXXX" value="{{ old('mobile') }}" required>
-          @error('mobile')
+          <label>Father/Main Mobile *</label>
+          <input type="text" name="father_mobile" placeholder="01XXXXXXXXX" value="{{ old('father_mobile') }}" required>
+          @error('father_mobile')
             <div class="error">{{ $message }}</div>
           @enderror
         </div>
         <div class="form-group">
-          <label>Alt Mobile</label>
-          <input type="text" name="alt_mobile" placeholder="01XXXXXXXXX" value="{{ old('alt_mobile') }}">
-          @error('alt_mobile')
+          <label>Mother/Alt Mobile</label>
+          <input type="text" name="mother_mobile" placeholder="01XXXXXXXXX" value="{{ old('mother_mobile') }}">
+          @error('mother_mobile')
             <div class="error">{{ $message }}</div>
           @enderror
         </div>
@@ -532,7 +532,7 @@ label{display:block;margin-bottom:6px;margin-top:16px;font-size:14px;color:var(-
                     <div style="text-align:right">Amount</div>
                     <div></div>
                 </div>
-                
+
                 <div id="studentFeesContainer">
                    <p style="color:var(--muted);text-align:center;margin-top:20px;" id="emptyStudentFeesMsg"><em>Select a class to load fees</em></p>
                 </div>
@@ -542,18 +542,18 @@ label{display:block;margin-bottom:6px;margin-top:16px;font-size:14px;color:var(-
                     <span style="font-weight:600;">Total Payable</span>
                     <span id="studentFeesTotal" style="font-size:18px;font-weight:bold;color:var(--accent)">৳ 0.00</span>
                 </div>
-                
+
                 <!-- Partial Payment Option -->
                 <div id="partialPaymentBox" style="margin-top:16px;padding:16px;background:rgba(255,193,7,0.1);border:1px solid rgba(255,193,7,0.3);border-radius:8px;">
                     <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:12px;">
                         <input type="checkbox" id="partialPaymentCheck" onchange="togglePartialPayment()" style="width:18px;height:18px;cursor:pointer;">
                         <span style="font-weight:600;color:var(--text);">Pay Partial Admission Fee (Remaining will be due)</span>
                     </label>
-                    
+
                     <div id="partialPaymentInput" style="display:none;">
                         <label style="display:block;margin-bottom:4px;font-size:13px;color:var(--muted);">Amount Paying Now</label>
-                        <input type="number" id="partialAmount" name="partial_amount" min="0" step="0.01" 
-                               placeholder="Enter amount" 
+                        <input type="number" id="partialAmount" name="partial_amount" min="0" step="0.01"
+                               placeholder="Enter amount"
                                oninput="updatePartialPayment()"
                                style="width:100%;padding:8px;background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.1);color:var(--text);border-radius:4px;font-size:14px;">
                         <div id="remainingAmount" style="margin-top:8px;font-size:13px;color:var(--muted);"></div>
@@ -592,7 +592,7 @@ label{display:block;margin-bottom:6px;margin-top:16px;font-size:14px;color:var(-
           @enderror
         </div>
       </div>
-      
+
       <!-- Hidden field to store selected admission fees for receipt -->
       <input type="hidden" name="selected_admission_fees" id="selectedAdmissionFees" value="{{ old('selected_admission_fees') }}">
       <input type="hidden" name="student_assigned_fees" id="studentAssignedFees" value="{{ old('student_assigned_fees') }}">
@@ -609,12 +609,12 @@ label{display:block;margin-bottom:6px;margin-top:16px;font-size:14px;color:var(-
     <div id="reviewModal" class="modal-overlay">
       <div class="modal-content">
         <button class="modal-close" onclick="closeModal()">&times;</button>
-        
+
         <h3 style="margin:0 0 8px 0;color:var(--text);font-size:24px;font-weight:600">Student Information Preview</h3>
         <p style="margin:0 0 25px 0;color:var(--muted);font-size:14px">Please review all information before submitting</p>
-        
+
         <div id="reviewContent"></div>
-        
+
         <div style="margin-top:30px;display:flex;gap:12px;justify-content:center;padding-top:20px;border-top:1px solid rgba(255,255,255,0.1)">
           <button type="button" class="btn ghost" onclick="editForm()">← Edit Information</button>
           <button type="button" class="btn" onclick="confirmAndSubmit()">Confirm and Pay →</button>
@@ -640,7 +640,7 @@ let feeRowCounter = 0;
 // Generate Student ID dynamically
 function generateStudentId(classId) {
     if (!classId) return;
-    
+
     fetch(`/students/generate-id/${classId}`)
         .then(response => response.json())
         .then(data => {
@@ -656,26 +656,26 @@ function updateClassInfo() {
     const classSelect = document.getElementById('class_id');
     const classId = classSelect.value;
     const sectionSelect = document.getElementById('section');
-    
+
     // Reset UI
     sectionSelect.innerHTML = '<option value="">Select Section</option>';
     // Reset UI
     sectionSelect.innerHTML = '<option value="">Select Section</option>';
     const availContainer = document.getElementById('availableFeesContainer');
     if(availContainer) availContainer.innerHTML = '<p style="color:var(--muted);text-align:center;margin-top:20px;"><em>Select a class first</em></p>';
-    
+
     const studentContainer = document.getElementById('studentFeesContainer');
     if(studentContainer) studentContainer.innerHTML = '<p style="color:var(--muted);text-align:center;margin-top:20px;" id="emptyStudentFeesMsg"><em>Select a class to load fees</em></p>';
-    
+
     updateTotal(0);
-    
+
     if (!classId || !classroomData[classId]) {
         sectionSelect.innerHTML = '<option value="">Select Class First</option>';
         return;
     }
-    
+
     const data = classroomData[classId];
-    
+
     // Populate sections
     if (data.sections && data.sections.length > 0) {
         data.sections.forEach(section => {
@@ -690,14 +690,14 @@ function updateClassInfo() {
         option.textContent = "A";
         sectionSelect.appendChild(option);
     }
-    
+
     generateStudentId(classId);
-    
+
     // Prepare Data
     availableClassFees = [];
     const admissionFee = parseFloat(data.admission_fee) || 0;
     const additionalFees = data.fees || [];
-    
+
     if (admissionFee > 0) {
         availableClassFees.push({
             name: "Admission Fee",
@@ -706,7 +706,7 @@ function updateClassInfo() {
             is_admission: true
         });
     }
-    
+
     if (additionalFees.length > 0) {
         additionalFees.forEach(f => {
             availableClassFees.push({
@@ -730,11 +730,11 @@ function updateClassInfo() {
     });
 
     renderAvailableFees();
-    
+
     // Restore logic
     const assignedFeesJson = document.getElementById('studentAssignedFees')?.value;
     const paymentFeesJson = document.getElementById('selectedAdmissionFees')?.value;
-    const feesJsonToRestore = assignedFeesJson || paymentFeesJson; 
+    const feesJsonToRestore = assignedFeesJson || paymentFeesJson;
 
     if (feesJsonToRestore) {
         try {
@@ -749,7 +749,7 @@ function updateClassInfo() {
                 // Handle legacy restoration or mixed sources
                 // Ideally of.name is the base name (no suffix)
                 let baseName = of.name;
-                
+
                 // If we are restoring from paymentFees (fallback), name has suffix
                 if (['Monthly', 'Quarterly', 'Half Yearly', 'Half-Yearly', 'Half_Yearly'].includes(of.type) && of.name.includes(' - ')) {
                     baseName = of.name.split(' - ')[0]; // Approximate base name
@@ -759,7 +759,7 @@ function updateClassInfo() {
                 }
 
                 let matchIndex = availableClassFees.findIndex(af => af.name === baseName);
-                
+
                 if (matchIndex !== -1) {
                     const rowId = addFeeToStudent(matchIndex);
                     const row = document.getElementById(rowId);
@@ -767,9 +767,9 @@ function updateClassInfo() {
                         const payCheck = row.querySelector('.pay-now-check');
                         const discInput = row.querySelector('.fee-discount-input');
                         const permCheck = row.querySelector('.perm-check');
-                        
+
                         let isPaid = false;
-                        
+
                         if (paymentFees.length > 0) {
                             if (['Monthly', 'Quarterly', 'Half Yearly', 'Half-Yearly', 'Half_Yearly'].includes(of.type)) {
                                 // For monthly, check if ANY payment exists starting with "Name - "
@@ -782,17 +782,17 @@ function updateClassInfo() {
                             // If no paymentFees json (legacy), assume true if it was in the list
                             isPaid = true;
                         }
-                        
+
                         // Force check if paying (or uncheck if not)
                         if(payCheck) payCheck.checked = isPaid;
                         if(discInput) discInput.value = of.discount || 0;
                         if(permCheck) permCheck.checked = of.is_permanent || false;
-                        
+
                         // Restore Months if monthly
                         // We must look at paymentFees to find which months were selected
                         if (['Monthly', 'Quarterly', 'Half Yearly', 'Half-Yearly', 'Half_Yearly'].includes(of.type)) {
                              let monthsToSelect = [];
-                             
+
                              if (paymentFees.length > 0) {
                                   // Find all payment entries for this fee
                                   const relatedPayments = paymentFees.filter(pf => pf.name.startsWith(baseName + ' - '));
@@ -801,7 +801,7 @@ function updateClassInfo() {
                                   // Fallback if 'of' came from payment list directly
                                   monthsToSelect.push(of.month);
                              }
-                             
+
                              if(monthsToSelect.length > 0) {
                                   const checkboxes = row.querySelectorAll('.month-dropdown-menu input[type="checkbox"]');
                                   checkboxes.forEach(cb => {
@@ -814,7 +814,7 @@ function updateClassInfo() {
                                   });
                              }
                         }
-                        
+
                         updateFeeRow(rowId);
                     }
                 }
@@ -837,10 +837,10 @@ function renderAvailableFees() {
     const container = document.getElementById('availableFeesContainer');
     if(!container) return;
     container.innerHTML = '';
-    
+
     // Show Monthly, Quarterly, and Half Yearly fees in this list
     const periodicFees = availableClassFees.filter(f => ['Monthly', 'Quarterly', 'Half Yearly', 'Half-Yearly', 'Half_Yearly'].includes(f.type));
-    
+
     if (periodicFees.length === 0) {
         container.innerHTML = '<p style="color:var(--muted);text-align:center;">No periodic fees available</p>';
         return;
@@ -855,7 +855,7 @@ function renderAvailableFees() {
         div.style.cssText = 'background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);margin-bottom:8px;padding:10px;border-radius:4px;display:flex;justify-content:space-between;align-items:center;transition:background 0.2s;';
         div.onmouseover = () => div.style.background = 'rgba(255,255,255,0.06)';
         div.onmouseout = () => div.style.background = 'rgba(255,255,255,0.03)';
-        
+
         div.innerHTML = `
             <div>
                 <div style="font-weight:600;font-size:13px;color:var(--text);">${fee.name}</div>
@@ -870,7 +870,7 @@ function renderAvailableFees() {
 function addFeeToStudent(feeIndex) {
     const fee = availableClassFees[feeIndex];
     if (!fee) return;
-    
+
     const container = document.getElementById('studentFeesContainer');
     const emptyMsg = document.getElementById('emptyStudentFeesMsg');
     if (emptyMsg) emptyMsg.style.display = 'none';
@@ -897,7 +897,7 @@ function addFeeToStudent(feeIndex) {
     }
 
     const rowId = 'fee_row_' + (feeRowCounter++);
-    
+
     const row = document.createElement('div');
     row.className = 'student-fee-row';
     row.id = rowId;
@@ -917,7 +917,7 @@ function addFeeToStudent(feeIndex) {
             const mIdx = d.getMonth();
             const yr = d.getFullYear();
             optionsHtml = generateMonthOptions(rowId, mIdx, yr);
-            
+
             monthHtml = `
                 <div style="position:relative;">
                     <div onclick="toggleFeeMonth('${rowId}')" style="background:rgba(0,0,0,0.2);padding:4px 8px;border-radius:3px;font-size:11px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border:1px solid rgba(255,255,255,0.1);user-select:none;">
@@ -947,7 +947,7 @@ function addFeeToStudent(feeIndex) {
         <div style="font-size:12px;font-weight:500;">${fee.name}</div>
         <div>${monthHtml}</div>
         <div style="display:flex;align-items:center;gap:4px;">
-            <input type="number" class="fee-discount-input" placeholder="0" min="0" max="${fee.amount}" 
+            <input type="number" class="fee-discount-input" placeholder="0" min="0" max="${fee.amount}"
                    style="width:60px;background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:4px;border-radius:3px;font-size:12px;"
                    oninput="updateFeeRow('${rowId}')">
             <label style="font-size:10px;color:var(--muted);display:flex;align-items:center;gap:2px;cursor:pointer;" title="Permanent Discount">
@@ -961,10 +961,10 @@ function addFeeToStudent(feeIndex) {
             ${isPeriodic ? `<button type="button" onclick="removeFeeRow('${rowId}')" style="background:none;border:none;color:#ff4444;cursor:pointer;font-size:16px;line-height:1;">&times;</button>` : ''}
         </div>
     `;
-    
+
     container.appendChild(row);
     updateFeeRow(rowId);
-    
+
     // Hide from available list
     const availDiv = document.getElementById(`avail_fee_div_${feeIndex}`);
     if(availDiv) availDiv.style.display = 'none';
@@ -1051,7 +1051,7 @@ function removeFeeRow(rowId) {
         }
         row.remove();
     }
-    
+
     const c = document.getElementById('studentFeesContainer');
     if(c.children.length === 0 || (c.children.length === 1 && c.children[0].id === 'emptyStudentFeesMsg')) {
         document.getElementById('emptyStudentFeesMsg').style.display = 'block';
@@ -1062,19 +1062,19 @@ function removeFeeRow(rowId) {
 function updateFeeRow(rowId) {
     const row = document.getElementById(rowId);
     if(!row) return;
-    
+
     const base = parseFloat(row.dataset.baseAmount);
     // Use the flag we set on creation to be safe
     const isPeriodic = row.dataset.isPeriodic === 'true';
     const payNow = row.querySelector('.pay-now-check').checked;
-    
+
     // Style update based on checkbox
     if(payNow) {
         row.style.opacity = '1';
     } else {
         row.style.opacity = '0.5';
     }
-    
+
     let mul = 1;
     if(isPeriodic) {
         // Check for Select element (direct child of 3rd div or inside menu)
@@ -1090,7 +1090,7 @@ function updateFeeRow(rowId) {
             const chk = row.querySelectorAll('.month-dropdown-menu input[type="checkbox"]:checked');
             mul = chk.length;
             const disp = row.querySelector('.month-display');
-            
+
             let label = 'Months';
             if (row.dataset.type === 'Quarterly') label = 'Qtrs';
             if (['Half Yearly', 'Half-Yearly', 'Half_Yearly'].includes(row.dataset.type)) label = 'Halves';
@@ -1100,26 +1100,26 @@ function updateFeeRow(rowId) {
                 else if(mul === 1) disp.innerText = chk[0].value.split(',')[0];
                 else disp.innerText = `${mul} ${label}`;
             }
-            
+
             row.dataset.selectedMonths = Array.from(chk).map(c => c.value).join('|');
         }
     }
-    
+
     const discInput = row.querySelector('.fee-discount-input');
     let disc = parseFloat(discInput.value) || 0;
     if(disc > base) { disc = base; discInput.value = disc; }
-    
+
     const perm = row.querySelector('.perm-check').checked;
     discInput.style.background = perm ? 'rgba(0,255,0,0.1)' : 'rgba(0,0,0,0.2)';
     row.dataset.isPermanent = perm;
-    
+
     const finalUnit = base - disc;
-    const total = finalUnit * (mul > 0 ? mul : 0); 
-    
+    const total = finalUnit * (mul > 0 ? mul : 0);
+
     row.querySelector('.fee-row-total').innerText = '৳ ' + total.toFixed(2);
     row.dataset.finalAmount = total;
     row.dataset.unitDiscount = disc;
-    
+
     updateTotal();
 }
 
@@ -1133,13 +1133,13 @@ function updateTotal(override) {
     let t = 0;
     let admissionFeesTotal = 0; // Track admission fees separately
     let otherFeesTotal = 0; // Track non-admission fees
-    
+
     document.querySelectorAll('.student-fee-row').forEach(r => {
         // Only include if "Pay Now" is checked
         if (r.querySelector('.pay-now-check').checked) {
             const amount = parseFloat(r.dataset.finalAmount) || 0;
             t += amount;
-            
+
             // Track ONLY Admission Fee for partial payment (not other one-time fees)
             const feeName = (r.dataset.name || '').trim();
             if (feeName === 'Admission Fee') {
@@ -1149,22 +1149,22 @@ function updateTotal(override) {
             }
         }
     });
-    
+
     // Store admission fee total for partial payment calculation
     document.getElementById('total_admission_fee').value = admissionFeesTotal;
-    
+
     // Check if partial payment is enabled
     const partialCheckbox = document.getElementById('partialPaymentCheck');
     const partialAmount = parseFloat(document.getElementById('partialAmount').value) || 0;
-    
+
     let displayTotal = t;
     if (partialCheckbox && partialCheckbox.checked && partialAmount > 0 && partialAmount < admissionFeesTotal) {
         // If partial payment is active, show: partial amount + other fees
         displayTotal = partialAmount + otherFeesTotal;
     }
-    
+
     document.getElementById('studentFeesTotal').innerText = '৳ ' + displayTotal.toFixed(2);
-    
+
     // Hide partial payment box if no admission fees are selected
     const partialBox = document.getElementById('partialPaymentBox');
     if (partialBox) {
@@ -1176,7 +1176,7 @@ function updateTotal(override) {
             partialBox.style.display = 'block';
         }
     }
-    
+
     updatePartialPayment(); // Update partial payment display
 }
 
@@ -1184,7 +1184,7 @@ function togglePartialPayment() {
     const checkbox = document.getElementById('partialPaymentCheck');
     const inputDiv = document.getElementById('partialPaymentInput');
     const isPartialInput = document.getElementById('is_partial_payment');
-    
+
     if (checkbox.checked) {
         inputDiv.style.display = 'block';
         isPartialInput.value = '1';
@@ -1201,18 +1201,18 @@ function togglePartialPayment() {
 function updatePartialPayment() {
     const checkbox = document.getElementById('partialPaymentCheck');
     if (!checkbox.checked) return;
-    
+
     const admissionFeeTotal = parseFloat(document.getElementById('total_admission_fee').value) || 0;
     const partialAmount = parseFloat(document.getElementById('partialAmount').value) || 0;
     const remainingDiv = document.getElementById('remainingAmount');
-    
+
     if (partialAmount > admissionFeeTotal) {
         document.getElementById('partialAmount').value = admissionFeeTotal;
         remainingDiv.innerHTML = '<span style="color:#4caf50;">✓ Full admission fee paid</span>';
         updateTotal(); // Recalculate total
         return;
     }
-    
+
     if (partialAmount > 0) {
         const remaining = admissionFeeTotal - partialAmount;
         remainingDiv.innerHTML = `
@@ -1235,7 +1235,7 @@ function updatePartialPayment() {
 function collectAdmissionFees(event) {
     const paymentFees = [];
     const assignedFees = [];
-    
+
     document.querySelectorAll('.student-fee-row').forEach(row => {
         const name = row.dataset.name;
         const type = row.dataset.type;
@@ -1244,7 +1244,7 @@ function collectAdmissionFees(event) {
         const perm = row.dataset.isPermanent === 'true';
         const unitAmount = base - disc;
         const isPaying = row.querySelector('.pay-now-check').checked;
-        
+
         // Add to assigned list (All fees in the list)
         assignedFees.push({
             name: name,
@@ -1253,7 +1253,7 @@ function collectAdmissionFees(event) {
             discount: disc,
             is_permanent: perm
         });
-        
+
         if (!isPaying) return;
 
         // Add to payment list (Only checked fees)
@@ -1285,10 +1285,10 @@ function collectAdmissionFees(event) {
 
     console.log('Collecting Payment Fees:', paymentFees);
     console.log('Collecting Assigned Fees:', assignedFees);
-    
+
     // Save payment fees for receipt
     document.getElementById('selectedAdmissionFees').value = JSON.stringify(paymentFees);
-    
+
     // Debug: Log what's being saved
     console.log('=== ADMISSION FEE DEBUG ===');
     console.log('Payment Fees JSON:', JSON.stringify(paymentFees, null, 2));
@@ -1302,7 +1302,7 @@ function collectAdmissionFees(event) {
         });
     });
     console.log('=========================');
-    
+
     // Create/Update hidden input for assigned fees (Student Subscription)
     let assignedInput = document.getElementById('studentAssignedFees');
     if(!assignedInput) {
@@ -1315,7 +1315,7 @@ function collectAdmissionFees(event) {
         if(form) form.appendChild(assignedInput);
     }
     assignedInput.value = JSON.stringify(assignedFees);
-    
+
     return true;
 }
 
@@ -1330,10 +1330,10 @@ function showReview() {
         });
         return;
     }
-    
+
     const reviewContent = document.getElementById('reviewContent');
     let html = '';
-    
+
     function section(title, items) {
         let h = '<div class="review-section"><h4>'+title+'</h4><div class="review-detail-list">';
         items.forEach(i => {
@@ -1342,12 +1342,12 @@ function showReview() {
         h += '</div></div>';
         return h;
     }
-    
+
     function val(name) {
         const el = form.querySelector('[name="'+name+'"]');
         return el ? el.value : '';
     }
-    
+
     html += section('Basic Details', [
         {l:'Student Name', v:val('name')},
         {l:'Student ID', v:document.getElementById('student_id') ? document.getElementById('student_id').value : 'Auto-generated'},
@@ -1379,20 +1379,20 @@ function showReview() {
         {l:'Email', v:val('guardian_email')},
         {l:'NID', v:val('guardian_nid')}
     ]);
-    
+
     collectAdmissionFees();
     const fees = JSON.parse(document.getElementById('selectedAdmissionFees').value || '[]');
     let feeItems = fees.map(f => {
         return {l: f.name, v: '৳ ' + parseFloat(f.amount).toFixed(2)};
     });
-    
+
     // Add info about UNCHECKED fees? No, preview usually shows what you are paying.
-    
+
     const totalAmount = parseFloat(document.getElementById('studentFeesTotal').innerText.replace('৳ ', '')) || 0;
     const isPartial = document.getElementById('partialPaymentCheck').checked;
     const partialAmount = parseFloat(document.getElementById('partialAmount').value) || 0;
     const admissionFeeTotal = parseFloat(document.getElementById('total_admission_fee').value) || 0;
-    
+
     if (isPartial && partialAmount > 0 && partialAmount < admissionFeeTotal) {
         feeItems.push({l:'TOTAL AMOUNT', v: '৳ ' + totalAmount.toFixed(2)});
         feeItems.push({l:'PAYING NOW', v: '<strong style="color:#4caf50">৳ ' + partialAmount.toFixed(2) + '</strong>'});
@@ -1400,14 +1400,14 @@ function showReview() {
     } else {
         feeItems.push({l:'TOTAL PAYABLE', v: '<strong style="color:var(--accent)">৳ ' + totalAmount.toFixed(2) + '</strong>'});
     }
-    
+
     html += section('Fees Breakdown', feeItems);
 
     html += section('Payment Info', [
         {l:'Payment Mode', v:val('payment_mode')},
         {l:'Note', v:val('payment_note')}
     ]);
-    
+
     reviewContent.innerHTML = html;
     document.getElementById('reviewModal').classList.add('active');
 }
@@ -1435,7 +1435,7 @@ function refreshCsrfToken() {
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
         const newToken = doc.querySelector('meta[name="csrf-token"]')?.content;
-        
+
         if (newToken) {
             // Update meta tag
             document.querySelector('meta[name="csrf-token"]').content = newToken;
@@ -1480,15 +1480,15 @@ function confirmAndSubmit() {
         console.log('Form is already being submitted, ignoring duplicate request');
         return;
     }
-    
+
     // Collect admission fees BEFORE closing modal
     collectAdmissionFees();
-    
+
     closeModal();
-    
+
     // Get the form element
     const form = document.querySelector('#studentForm');
-    
+
     if (!form) {
         console.error('Form not found!');
         Swal.fire({
@@ -1499,7 +1499,7 @@ function confirmAndSubmit() {
         });
         return;
     }
-    
+
     // Check CSRF token
     const csrfToken = form.querySelector('input[name="_token"]');
     if (!csrfToken || !csrfToken.value) {
@@ -1517,7 +1517,7 @@ function confirmAndSubmit() {
         });
         return;
     }
-    
+
     // Trigger the actual submission flow via the submit button
     // This ensures the 'submit' event listener is fired, which handles:
     // 1. Duplicate prevention
@@ -1544,7 +1544,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     // Unified Form Submit Handler
     const form = document.getElementById('studentForm');
     if (form) {
@@ -1555,13 +1555,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.preventDefault();
                 return false;
             }
-            
+
             // 2. Set Flag Immediately
             isSubmitting = true;
-            
+
             // 3. Collect Data
             collectAdmissionFees();
-            
+
             // 4. UI Feedback
             // Disable button
             const submitBtn = document.getElementById('savePayBtn');
@@ -1570,7 +1570,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 submitBtn.style.opacity = '0.5';
                 submitBtn.style.cursor = 'not-allowed';
             }
-            
+
             // Show Loading Spinner
             Swal.fire({
                 title: 'Submitting...',
@@ -1582,7 +1582,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     Swal.showLoading();
                 }
             });
-            
+
             console.log('Form submission pipeline active. Sending request...');
             // Allow default submission to proceed
             return true;

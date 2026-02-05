@@ -15,7 +15,7 @@
 </div>
 
 <form method="GET" action="{{ route('payments.index') }}" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
-  
+
   {{-- Student Dropdown --}}
   <!-- <select name="student_search" onchange="this.form.submit()" style="background:#1b1f22;color:var(--text);border:1px solid rgba(255,255,255,0.15);padding:6px 10px;border-radius:var(--radius);font-size:14px;width:180px">
     <option value="">All Students</option>
@@ -40,7 +40,7 @@
         All Fee Types
       @endif
     </button>
-    
+
     <div id="feeDropdownContent" style="display:none;position:absolute;top:100%;left:0;background:#1b1f22;border:1px solid rgba(255,255,255,0.15);border-radius:var(--radius);z-index:1000;padding:10px;width:220px;max-height:300px;overflow-y:auto;box-shadow:0 4px 6px rgba(0,0,0,0.3);">
       @foreach($feeTypes as $ft)
         <label style="display:flex;align-items:center;margin-bottom:8px;cursor:pointer;font-size:13px;color:var(--text);">
@@ -48,7 +48,7 @@
           {{ $ft }}
         </label>
       @endforeach
-      
+
       <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.1);display:flex;justify-content:flex-end;gap:8px;">
         <button type="button" onclick="clearFeeSelection()" style="background:transparent;border:none;color:var(--muted);font-size:12px;cursor:pointer;">Clear</button>
         <button type="submit" style="background:var(--primary, #4caf50);color:#fff;border:none;padding:4px 12px;border-radius:4px;font-size:12px;cursor:pointer;">Apply</button>
@@ -61,7 +61,7 @@
       const dropdown = document.getElementById('feeDropdownContent');
       dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
     }
-    
+
     function clearFeeSelection() {
       const inputs = document.querySelectorAll('#feeDropdownContent input[type="checkbox"]');
       inputs.forEach(input => input.checked = false);
@@ -109,50 +109,85 @@
   </select>
 
   <input type="date" name="start_date" value="{{ request('start_date') }}" onchange="this.form.submit()" style="background:#1b1f22;color:var(--text);border:1px solid rgba(255,255,255,0.15);padding:6px 10px;border-radius:var(--radius);font-size:14px;width:180px">
-  
+
   <input type="date" name="end_date" value="{{ request('end_date') }}" onchange="this.form.submit()" style="background:#1b1f22;color:var(--text);border:1px solid rgba(255,255,255,0.15);padding:6px 10px;border-radius:var(--radius);font-size:14px;width:180px">
-  
-  @if(request()->hasAny(['student_search', 'fee_name', 'class_id', 'section', 'month', 'year', 'start_date', 'end_date']))
+
+  <select name="status" onchange="this.form.submit()" style="background:#1b1f22;color:var(--text);border:1px solid rgba(255,255,255,0.15);padding:6px 10px;border-radius:var(--radius);font-size:14px;width:180px">
+    <option value="paid" {{ request('status') == 'paid' ? 'selected' : '' }}>Status: Paid</option>
+    <option value="unpaid" {{ request('status') == 'unpaid' ? 'selected' : '' }}>Status: Unpaid</option>
+  </select>
+
+  @if(request()->hasAny(['student_search', 'fee_name', 'class_id', 'section', 'month', 'year', 'start_date', 'end_date', 'status']))
     <a href="{{ route('payments.index') }}" class="btn ghost">Clear</a>
   @endif
 </form>
 
 <h3 style="margin:16px 0">
-  Total Earnings: <span style="color:var(--accent)">৳ {{ number_format($totalEarnings, 2) }}</span>
+  @if(request('status') == 'unpaid')
+    Unpaid Students Check
+  @else
+    Total Earnings: <span style="color:var(--accent)">৳ {{ number_format($totalEarnings, 2) }}</span>
+  @endif
 </h3>
 
 <table id="datatable">
   <thead>
     <tr>
-      <th>SL</th>
-      <th>Name</th>
-      <th>ID</th>
-      <th>Class</th>
-      <th>Section</th>
-      <th>Amount</th>
-      <th>Date</th>
-      <th>Receipt No</th>
-      <th class="no-sort">Action</th>
+      @if(request('status') == 'unpaid')
+        <th>SL</th>
+        <th>Name</th>
+        <th>ID</th>
+        <th>Class</th>
+        <th>Section</th>
+        <th>Father Mobile</th>
+        <th>Action</th>
+      @else
+        <th>SL</th>
+        <th>Name</th>
+        <th>ID</th>
+        <th>Class</th>
+        <th>Section</th>
+        <th>Amount</th>
+        <th>Date</th>
+        <th>Receipt No</th>
+        <th class="no-sort">Action</th>
+      @endif
     </tr>
   </thead>
   <tbody id="earnTable">
-    @foreach($payments as $payment)
-    <tr>
-      <td>{{ $loop->iteration }}</td>
-      <td>{{ $payment->student?->name ?? 'Deleted Student' }}</td>
-      <td>{{ $payment->student?->student_id ?? 'N/A' }}</td>
-      <td>{{ $payment->student?->classroom?->name ?? 'N/A' }}</td>
-      <td>{{ $payment->student?->section ?? '-' }}</td>
-      <td>৳ {{ number_format($payment->amount_display ?? $payment->amount, 2) }}</td>
-      <td>{{ \Carbon\Carbon::parse($payment->payment_date)->format('d/m/Y') }}</td>
-      <td>
-        {{ \Carbon\Carbon::parse($payment->payment_date)->format('ymd') . str_pad($payment->id, 3, '0', STR_PAD_LEFT) }}
-      </td>
-      <td>
-          <a href="{{ route('payments.receipt', $payment) }}" target="_blank" class="action-btn">View</a>
-      </td>
-    </tr>
-    @endforeach
+    @if(request('status') == 'unpaid')
+      @foreach($unpaidStudents as $student)
+      <tr>
+        <td>{{ $loop->iteration }}</td>
+        <td>{{ $student->name }}</td>
+        <td>{{ $student->student_id }}</td>
+        <td>{{ $student->classroom->name ?? 'N/A' }}</td>
+        <td>{{ $student->section }}</td>
+        <td>{{ $student->father_mobile }}</td>
+        <td>
+          <a href="{{ route('students.show', $student->id) }}" class="btn" style="padding:4px 10px;font-size:12px">View</a>
+        </td>
+      </tr>
+      @endforeach
+    @else
+      @foreach($payments as $payment)
+      <tr>
+        <td>{{ $loop->iteration }}</td>
+        <td>{{ $payment->student?->name ?? 'Deleted Student' }}</td>
+        <td>{{ $payment->student?->student_id ?? 'N/A' }}</td>
+        <td>{{ $payment->student?->classroom?->name ?? 'N/A' }}</td>
+        <td>{{ $payment->student?->section ?? '-' }}</td>
+        <td>৳ {{ number_format($payment->amount_display ?? $payment->amount, 2) }}</td>
+        <td>{{ \Carbon\Carbon::parse($payment->payment_date)->format('d M, Y') }}</td>
+        <td>
+          {{ \Carbon\Carbon::parse($payment->payment_date)->format('ymd') . str_pad($payment->id, 3, '0', STR_PAD_LEFT) }}
+        </td>
+        <td>
+            <a href="{{ route('payments.receipt', $payment) }}" target="_blank" class="action-btn">View</a>
+        </td>
+      </tr>
+      @endforeach
+    @endif
   </tbody>
 </table>
 
@@ -204,12 +239,12 @@ function updateSections() {
     const classSelect = document.getElementById('class_id');
     const classId = classSelect.value;
     const sectionSelect = document.getElementById('section');
-    
+
     // Reset section dropdown
     sectionSelect.innerHTML = '<option value="">All Sections</option>';
-    
+
     let sectionsToShow = new Set();
-    
+
     if (classId && classroomData[classId]) {
         // Show sections for specific class
         const data = classroomData[classId];
@@ -237,7 +272,7 @@ function updateSections() {
             sectionsToShow.add('B');
         }
     }
-    
+
     // Populate dropdown
     Array.from(sectionsToShow).sort().forEach(section => {
         const option = document.createElement('option');

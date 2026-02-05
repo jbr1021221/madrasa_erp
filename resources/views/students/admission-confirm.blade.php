@@ -81,7 +81,7 @@
                     </div>
                     <div>
                         <label style="display:block;color:var(--muted);font-size:12px;margin-bottom:4px">Mobile</label>
-                        <p style="color:var(--text);font-weight:600;margin:0">{{ $student->mobile }}</p>
+                        <p style="color:var(--text);font-weight:600;margin:0">{{ $student->father_mobile }}</p>
                     </div>
                 </div>
 
@@ -93,7 +93,7 @@
                 @if($admissionPayment)
                 <div style="margin-top:20px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.1)">
                     <h3 style="color:var(--text);margin:0 0 16px 0;font-size:18px">Admission Fee Details</h3>
-                    
+
                     <div style="display:flex;justify-content:space-between;align-items:center">
                         <div>
                             <label style="display:block;color:var(--muted);font-size:12px;margin-bottom:4px">
@@ -106,7 +106,7 @@
                             <p style="color:var(--text);font-weight:600;margin:0">{{ $admissionPayment->payment_mode }}</p>
                         </div>
                     </div>
-                    
+
                     <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.05);display:flex;justify-content:space-between">
                         <div>
                             <label style="display:block;color:var(--muted);font-size:12px;margin-bottom:4px">Payment Date</label>
@@ -134,7 +134,7 @@
                     </svg>
                     Download Admission Form
                 </a>
-                
+
                 @if($admissionPayment)
                 <a href="{{ route('payments.receipt', $admissionPayment->id) }}" target="_blank" class="btn" style="display:inline-flex;align-items:center;gap:8px">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -181,7 +181,7 @@
         function printReceipt(url) {
             // Open receipt in new window
             const printWindow = window.open(url, '_blank');
-            
+
             // Wait for the window to load, then trigger print
             if (printWindow) {
                 printWindow.onload = function() {

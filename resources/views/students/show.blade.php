@@ -7,7 +7,7 @@
     $className = $student->classroom->name ?? 'N/A';
     $allClassFees = $student->classroom->fees ?? [];
     $recurringFees = $student->selected_fees ?? ($student->fees ?? []);
-    
+
     // Calculate Paid Fees Tracker for this student
     $paidFeeTracker = [];
     foreach($student->payments as $payment) {
@@ -18,9 +18,9 @@
                      $monthName = $feeDetail['month'] ?? '';
                      $year = $feeDetail['year'] ?? date('y');
                      $monthKey = (strpos($monthName, ', ') !== false) ? $monthName : ($monthName . ', ' . $year);
-                     
+
                      if(!isset($paidFeeTracker[$monthKey])) $paidFeeTracker[$monthKey] = [];
-                     
+
                      $name = $feeDetail['name'];
                      if(strpos($name, ' - ') !== false) {
                          $parts = explode(' - ', $name);
@@ -69,7 +69,7 @@
 
 <div style="background:var(--card);border-radius:var(--radius);padding:24px;border:1px solid rgba(255,255,255,0.1);margin-bottom:30px">
   <h3 style="margin:0 0 20px 0;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.1)">Student Information</h3>
-  
+
   <h4 style="margin:20px 0 12px 0;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:1px">Basic Details</h4>
   <div class="detail-list">
     <div class="detail-row">
@@ -89,12 +89,12 @@
       <div class="detail-value">{{ $student->mother_name ?? 'N/A' }}</div>
     </div>
     <div class="detail-row">
-      <div class="detail-label">Mobile</div>
-      <div class="detail-value">{{ $student->mobile }}</div>
+      <div class="detail-label">Father Mobile</div>
+      <div class="detail-value">{{ $student->father_mobile }}</div>
     </div>
     <div class="detail-row">
-      <div class="detail-label">Alt Mobile</div>
-      <div class="detail-value">{{ $student->alt_mobile ?? 'N/A' }}</div>
+      <div class="detail-label">Mother Mobile</div>
+      <div class="detail-value">{{ $student->mother_mobile ?? 'N/A' }}</div>
     </div>
   </div>
 
@@ -102,7 +102,7 @@
   <div class="detail-list">
     <div class="detail-row">
       <div class="detail-label">Date of Birth</div>
-      <div class="detail-value">{{ $student->date_of_birth ? \Carbon\Carbon::parse($student->date_of_birth)->format('d M, Y') : 'N/A' }}</div>
+      <div class="detail-value">{{ $student->dob ? \Carbon\Carbon::parse($student->dob)->format('d M, Y') : 'N/A' }}</div>
     </div>
     <div class="detail-row">
       <div class="detail-label">Gender</div>
@@ -177,7 +177,7 @@
   <thead>
     <tr>
       <th>SL</th>
-      <th>Payment Date</th>
+      <th>Date</th>
       <th>Type</th>
       <th>Period</th>
       <th>Amount</th>
@@ -295,7 +295,7 @@ $(document).ready(function() {
         "info": true,
         "autoWidth": false,
         "responsive": true,
-        "order": [[7, "desc"]], 
+        "order": [[7, "desc"]],
         "dom": '<"top"f>rt<"bottom"lip><"clear">',
         "language": {
             "search": "_INPUT_",
@@ -320,18 +320,18 @@ function openEditPaymentModal(payment) {
 
     // 1. Clean Paid Tracker (Unlock edited fees so they are selectable)
     const cleanTracker = JSON.parse(JSON.stringify(studentData.paidTracker));
-    
+
     details.forEach(d => {
          // Non-Monthly Keys check
          if (cleanTracker[d.name]) delete cleanTracker[d.name];
-         
+
          // Monthly Keys check
          Object.keys(cleanTracker).forEach(key => {
-             if (Array.isArray(cleanTracker[key])) { 
+             if (Array.isArray(cleanTracker[key])) {
                  let matchesMonth = false;
                  if(d.month && key.includes(d.month)) matchesMonth = true;
                  else if(d.name.includes(key) || d.name.includes(key.split(',')[0])) matchesMonth = true; // Heuristic
-                 
+
                  if(matchesMonth) {
                      const cleanName = d.name.split(' - ')[0]; // Extract base name "Tuition"
                      cleanTracker[key] = cleanTracker[key].filter(f => f !== cleanName && f !== '__ALL__');
@@ -345,14 +345,14 @@ function openEditPaymentModal(payment) {
     // otherwise the modal defaults to the student's current global discounts.
     const editDiscounts = {};
     let totalDetailsAmount = 0;
-    
+
     details.forEach(d => {
         // Map discount to fee (base name logic handled inside modal usually, but here we prep specific keys)
         // If the fee has a discount value > 0, we record it.
         // For monthly fees like "Tuition Fee - January", the modal expects "Tuition Fee".
         // If different months have different discounts, the modal UI only supports one per row (base name).
         // We will take the first non-zero discount we find for a base name.
-        
+
         // Extract base name logic (similar to cleanTracker above)
         let baseName = d.name;
         if(d.month && d.name.includes(d.month)) {
@@ -378,7 +378,7 @@ function openEditPaymentModal(payment) {
                   }
               }
         }
-        
+
         if (d.discount > 0) {
             if (!editDiscounts[baseName]) {
                  editDiscounts[baseName] = parseFloat(d.discount);
@@ -386,33 +386,33 @@ function openEditPaymentModal(payment) {
             // Also store exact name just in case
             editDiscounts[d.name] = parseFloat(d.discount);
         }
-        
+
         // Sum up net amount for manual discount calc
         const amt = parseFloat(d.amount) || 0;
         totalDetailsAmount += amt;
     });
-    
+
     // Merge defaults? No, if we are editing, we usually want exactly what was saved.
     // However, if the user adds a NEW fee during edit, they might expect the default discount.
     // Let's merge: editDiscounts takes precedence.
     const mergedDiscounts = { ...studentData.discounts, ...editDiscounts };
 
     openPayModal(
-        studentData.id, 
-        studentData.name, 
-        studentData.fatherName, 
-        studentData.fees, 
+        studentData.id,
+        studentData.name,
+        studentData.fatherName,
+        studentData.fees,
         mergedDiscounts, // <--- Pass Merged Discounts
-        cleanTracker, 
-        studentData.classFees, 
+        cleanTracker,
+        studentData.classFees,
         studentData.partialPayments
     );
-    
+
     // Check for Manual Global Discount (Payment Amount < Sum of Details)
     const storedTotal = parseFloat(payment.amount) || 0;
     // Note: totalDetailsAmount is sum of fee item Net Amounts.
     // If storedTotal < totalDetailsAmount, difference is Manual Discount.
-    
+
     // Slight tolerance for float precision
     if (totalDetailsAmount - storedTotal > 0.01) {
         const manualDisc = totalDetailsAmount - storedTotal;
@@ -425,11 +425,13 @@ function openEditPaymentModal(payment) {
              }
         }, 500); // reduced timeout slightly
     }
-    
+
+    // 3. Override Form Action for UPDATE
     // 3. Override Form Action for UPDATE
     const form = document.getElementById('paymentForm');
     form.action = `/payments/${payment.id}`;
-    
+    form.removeAttribute('target'); // Ensure page reloads to show updated data
+
     // Inject PUT method
     let methodContainer = document.getElementById('methodSpoofContainer');
     if(!methodContainer) {
@@ -438,7 +440,7 @@ function openEditPaymentModal(payment) {
         form.appendChild(methodContainer);
     }
     methodContainer.innerHTML = '<input type="hidden" name="_method" value="PUT">';
-    
+
     // UI Updates
     document.getElementById('payModalTitle').innerText = 'Edit Payment';
     const submitBtn = form.querySelector('button[type="submit"]');
@@ -448,15 +450,18 @@ function openEditPaymentModal(payment) {
     if(payment.payment_date) {
         document.getElementById('paymentDateInput').value = payment.payment_date.substring(0, 10);
     }
-    
+
     const category = payment.payment_type || 'Monthly';
     document.getElementById('feeCategorySelect').value = category;
     document.getElementById('paymentType').value = category;
-    
+    if(payment.month) {
+        document.getElementById('hiddenMonthInput').value = payment.month;
+    }
+
     // Note & Mode
     const modeSelect = document.querySelector('select[name="payment_mode"]');
     if(modeSelect && payment.payment_mode) modeSelect.value = payment.payment_mode;
-    
+
     const noteInput = document.querySelector('input[name="note"]');
     if(noteInput) noteInput.value = payment.note || '';
 
@@ -464,7 +469,7 @@ function openEditPaymentModal(payment) {
     if(category === 'Monthly') {
         const uniqueMonths = new Set();
         const baseFeeNames = new Set();
-        
+
         details.forEach(d => {
             if(d.month) {
                 uniqueMonths.add(d.month);
@@ -495,7 +500,7 @@ function openEditPaymentModal(payment) {
                 }
             }
         });
-        
+
         // Reconstruct allFees (Active list)
         allFees = Array.from(baseFeeNames).map(name => {
              const sub = studentData.fees.find(f => f.name === name);
@@ -508,11 +513,11 @@ function openEditPaymentModal(payment) {
                  is_partial_completion: false
              };
         });
-        
-        updateFeeViews(); 
-        
+
+        updateFeeViews();
+
         // Tick Months
-        updatePeriod(); 
+        updatePeriod();
         document.querySelectorAll('.month-checkbox').forEach(cb => {
             if(uniqueMonths.has(cb.dataset.displayText) || uniqueMonths.has(cb.value)) {
                 cb.checked = true;
@@ -522,14 +527,14 @@ function openEditPaymentModal(payment) {
             }
         });
         updateSelectedMonths();
-        
+
     } else {
         // Non-Monthly & Parts handling
         // 1. Set allFees based on base names logic or just raw details?
         // For Quarterly with parts, the "Base Fee" is "Tuition Fee". The "Detail" is "Tuition Fee - 1st Quater".
         // updateFeeViews renders "Tuition Fee" with dropdown.
         // So we need allFees to contain the BASE FEE.
-        
+
         const baseFeeNames = new Set();
         details.forEach(d => {
              // Try to extract base name if it has a part suffix
@@ -553,16 +558,16 @@ function openEditPaymentModal(payment) {
                  is_partial_completion: false
              };
         });
-        
+
         updateFeeViews();
-        
+
         // 2. Select the specific parts in Dropdowns
         details.forEach(d => {
              const parts = d.name.split(' - ');
              if(parts.length > 1) {
                  const partName = parts.pop();
                  const feeName = parts.join(' - ');
-                 
+
                  const tr = document.querySelector(`.main-fee-row[data-fee-name="${feeName}"]`);
                  if(tr) {
                      const dropdown = tr.querySelector('.part-dropdown-menu');
@@ -582,7 +587,7 @@ function openEditPaymentModal(payment) {
              }
         });
     }
-    
+
     calculateTotal();
 }
 

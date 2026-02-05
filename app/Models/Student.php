@@ -16,8 +16,8 @@ class Student extends Model
         'father_name',
         'mother_name',
         'address',
-        'mobile',
-        'alt_mobile',
+        'father_mobile',
+        'mother_mobile',
         'nid_file_path',
         'class_id',
         'section',
@@ -25,7 +25,7 @@ class Student extends Model
         'program_type', // Hifz or Schooling
         'shift', // Morning or Evening
         'photo', // Student photo
-        // New student details  
+        // New student details
         'dob',
         'gender',
         'siblings_count',

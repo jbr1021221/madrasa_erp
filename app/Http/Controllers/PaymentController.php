@@ -50,7 +50,7 @@ class PaymentController extends Controller
                         $sq->where('month', 'Admission')
                            ->whereMonth('payment_date', $monthIndex);
                     });
-                    
+
                     // 3. OR It's inside fee_details (bundled fees) - using LIKE for JSON search
                     $q->orWhere('fee_details', 'LIKE', '%"month":"' . $monthName . '%')
                       ->orWhere('fee_details', 'LIKE', '%"month": "' . $monthName . '%')
@@ -86,7 +86,7 @@ class PaymentController extends Controller
         // Filter by fee name (payment type or content in fee_details)
         if ($request->filled('fee_name')) {
             $feeNames = is_array($request->fee_name) ? $request->fee_name : [$request->fee_name];
-            
+
             $query->where(function($q) use ($feeNames) {
                 foreach ($feeNames as $feeName) {
                     $q->orWhere('payment_type', 'like', "%{$feeName}%")
@@ -95,13 +95,60 @@ class PaymentController extends Controller
             });
         }
 
-        $payments = $query->latest('id')->get();
+        $unpaidStudents = collect();
+        $isUnpaidSearch = $request->status === 'unpaid';
 
-        
+        if ($isUnpaidSearch) {
+            $query = Student::with('classroom');
+
+            // Filter by class
+            if ($request->filled('class_id')) {
+                $query->where('class_id', $request->class_id);
+            }
+
+            // Filter by section
+            if ($request->filled('section')) {
+                $query->where('section', $request->section);
+            }
+
+            // Filter by student name or ID
+            if ($request->filled('student_search')) {
+                $search = $request->student_search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('student_id', 'like', "%{$search}%");
+                });
+            }
+
+            // Exclude students who have paid for the selected month
+            if ($request->filled('month')) {
+                $month = $request->month;
+                $year = $request->filled('year') ? $request->year : date('Y');
+
+                $query->whereDoesntHave('payments', function ($q) use ($month, $year) {
+                    // Check logic matching the existing 'Paid' filter logic
+                    $q->where(function($sub) use ($month) {
+                        $sub->where('month', $month)
+                            ->orWhere('month', 'like', "$month%") // Matches "January 2025"
+                            ->orWhere('fee_details', 'LIKE', '%"month":"' . $month . '%')
+                            ->orWhere('fee_details', 'LIKE', '%"month": "' . $month . '%');
+                    })
+                    // Ensure it's for the relevant year (using payment_date as proxy if month string doesn't have year)
+                    ->whereYear('payment_date', $year);
+                });
+            }
+
+            $unpaidStudents = $query->latest()->get();
+            $payments = collect(); // Empty payments collection
+        } else {
+            $payments = $query->latest('id')->get();
+        }
+
+
         if ($request->filled('fee_name')) {
             $filterNames = is_array($request->fee_name) ? $request->fee_name : [$request->fee_name];
             $totalEarnings = 0;
-            
+
             foreach ($payments as $payment) {
                 $matchedAmount = 0;
                 $details = $payment->fee_details;
@@ -127,7 +174,7 @@ class PaymentController extends Controller
                     foreach ($filterNames as $filterName) {
                         if (stripos($payment->payment_type, $filterName) !== false) {
                             $matchedAmount = $payment->amount;
-                            break; 
+                            break;
                         }
                     }
                 }
@@ -144,7 +191,7 @@ class PaymentController extends Controller
 
         // Get filter options
         $classrooms = Classroom::all();
-        
+
         // Pass classroom data (sections) as JSON for JavaScript
         $classroomData = $classrooms->mapWithKeys(function($classroom) {
             return [$classroom->id => [
@@ -162,11 +209,11 @@ class PaymentController extends Controller
             ->pluck('year');
 
         $allStudents = Student::select('id', 'name', 'student_id')->orderBy('name')->get();
-        
+
         // Get all unique fee names from Classrooms + standard types
         $classroomFees = Classroom::all()->pluck('fees')->flatten(1)->pluck('name')->filter();
         $feeTypes = collect(['Admission', 'Monthly Fee'])->merge($classroomFees)->unique()->sort()->values();
-        
+
         $allSections = Student::select('section')->whereNotNull('section')->distinct()->orderBy('section')->pluck('section');
 
         return view('payments.index', compact(
@@ -178,7 +225,8 @@ class PaymentController extends Controller
             'years',
             'allStudents',
             'feeTypes',
-            'allSections'
+            'allSections',
+            'unpaidStudents'
         ));
     }
 
@@ -210,7 +258,7 @@ class PaymentController extends Controller
             'selected_months' => 'nullable|string',
             'added_fees' => 'nullable|string',
         ]);
-        
+
         // Handle d/m/Y date format
         if (isset($validated['payment_date']) && preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $validated['payment_date'])) {
             try {
@@ -222,12 +270,12 @@ class PaymentController extends Controller
 
         // Build fee details array from the payment details
         $feeDetails = [];
-        
+
         if ($request->has('payment_details')) {
             $paymentDetails = json_decode($request->payment_details, true);
             $selectedMonths = $request->has('selected_months') ? json_decode($request->selected_months, true) : [];
             $addedFees = $request->has('added_fees') ? json_decode($request->added_fees, true) : [];
-            
+
             // Check if flat fee details are provided directly (more accurate for partial months)
             if (isset($paymentDetails['fee_details']) && is_array($paymentDetails['fee_details'])) {
                 // Preserve all fields including original_amount and discount
@@ -237,7 +285,7 @@ class PaymentController extends Controller
                         'type' => $fee['type'] ?? 'Other',
                         'amount' => $fee['amount'] ?? 0
                     ];
-                    
+
                     // Preserve original_amount and discount if present
                     if (isset($fee['original_amount'])) {
                         $feeDetail['original_amount'] = $fee['original_amount'];
@@ -251,7 +299,7 @@ class PaymentController extends Controller
                     if (isset($fee['year'])) {
                         $feeDetail['year'] = $fee['year'];
                     }
-                    
+
                     $feeDetails[] = $feeDetail;
                 }
             } else {
@@ -262,7 +310,7 @@ class PaymentController extends Controller
                         $monthName = $month['name'] ?? 'N/A';
                         $year = $month['year'] ?? date('y');
                         $displayMonth = $monthName . ', ' . $year;
-                        
+
                         // Add each monthly fee component (Tuition, Structural, etc.)
                         foreach ($paymentDetails['monthlyFees'] as $fee) {
                             $feeDetails[] = [
@@ -275,7 +323,7 @@ class PaymentController extends Controller
                         }
                     }
                 }
-                
+
                 // Add other fees
                 if (count($addedFees) > 0) {
                     foreach ($addedFees as $fee) {
@@ -288,43 +336,43 @@ class PaymentController extends Controller
                 }
             }
         }
-        
+
         $validated['fee_details'] = $feeDetails;
 
         $payment = Payment::create($validated);
-        
+
         // Handle partial payment completion
         $student = Student::find($validated['student_id']);
         if ($student && $student->partial_payments) {
             $partialPayments = $student->partial_payments;
             $updated = false;
-            
+
             // Check if any fee in this payment is completing a partial payment
             foreach ($feeDetails as $fee) {
                 $feeName = $fee['name'];
-                
+
                 // Check if this is a partial payment completion (name ends with " (Remaining)")
                 if (str_ends_with($feeName, ' (Remaining)')) {
                     $originalName = str_replace(' (Remaining)', '', $feeName);
-                    
+
                     if (isset($partialPayments[$originalName])) {
                         $partial = $partialPayments[$originalName];
                         $paidAmount = $fee['amount'];
-                        
+
                         // Update partial payment record
                         $partial['paid'] += $paidAmount;
                         $partial['remaining'] = max(0, $partial['total'] - $partial['paid']);
                         $partial['payment_ids'][] = $payment->id;
-                        
+
                         // If fully paid, remove from partial_payments
                         if ($partial['remaining'] <= 0) {
                             unset($partialPayments[$originalName]);
                         } else {
                             $partialPayments[$originalName] = $partial;
                         }
-                        
+
                         $updated = true;
-                        
+
                         \Log::info('Partial Payment Updated:', [
                             'fee' => $originalName,
                             'paid_now' => $paidAmount,
@@ -334,18 +382,18 @@ class PaymentController extends Controller
                     }
                 }
             }
-            
+
             if ($updated) {
                 $student->update(['partial_payments' => $partialPayments]);
             }
         }
 
-        // If show_receipt is true, the form submission has already opened the receipt 
+        // If show_receipt is true, the form submission has already opened the receipt
         // in a new tab (target="_blank"). We just need to redirect the main window back.
-        // However, standard form submission redirects the "target" window. 
-        // To handle "New Tab + Parent Refresh", we actually need the Controller to return the PDF/View 
+        // However, standard form submission redirects the "target" window.
+        // To handle "New Tab + Parent Refresh", we actually need the Controller to return the PDF/View
         // in the response (which goes to the new tab).
-        
+
         if ($request->has('show_receipt') && $request->show_receipt) {
              // Redirect to the view receipt route, which will load content in the new blank tab
              return redirect()->route('payments.receipt', $payment->id);
@@ -353,7 +401,7 @@ class PaymentController extends Controller
 
         // Check if redirect_to is specified
         $redirectRoute = $validated['redirect_to'] ?? 'payments.index';
-        
+
         return redirect()->route($redirectRoute)
             ->with('success', 'Payment recorded successfully.');
     }
@@ -404,7 +452,7 @@ class PaymentController extends Controller
             $paymentDetails = json_decode($request->payment_details, true);
             $selectedMonths = $request->has('selected_months') ? json_decode($request->selected_months, true) : [];
             $addedFees = $request->has('added_fees') ? json_decode($request->added_fees, true) : [];
-            
+
             // Check if flat fee details are provided directly (more accurate for partial months)
             if (isset($paymentDetails['fee_details']) && is_array($paymentDetails['fee_details'])) {
                 // Preserve all fields including original_amount and discount
@@ -414,13 +462,13 @@ class PaymentController extends Controller
                         'type' => $fee['type'] ?? 'Other',
                         'amount' => $fee['amount'] ?? 0
                     ];
-                    
+
                     // Preserve original_amount and discount if present
                     if (isset($fee['original_amount'])) $feeDetail['original_amount'] = $fee['original_amount'];
                     if (isset($fee['discount'])) $feeDetail['discount'] = $fee['discount'];
                     if (isset($fee['month'])) $feeDetail['month'] = $fee['month'];
                     if (isset($fee['year'])) $feeDetail['year'] = $fee['year'];
-                    
+
                     $feeDetails[] = $feeDetail;
                 }
             } else {
@@ -430,7 +478,7 @@ class PaymentController extends Controller
                         $monthName = $month['name'] ?? 'N/A';
                         $year = $month['year'] ?? date('y');
                         $displayMonth = $monthName . ', ' . $year;
-                        
+
                         foreach ($paymentDetails['monthlyFees'] as $fee) {
                             $feeDetails[] = [
                                 'name' => ($fee['name'] ?? 'Monthly Fee') . ' - ' . $displayMonth,
@@ -456,12 +504,12 @@ class PaymentController extends Controller
             $validated['fee_details'] = $feeDetails;
         }
 
-        // Auto-fix Amount: If the user updated fees (sum changes) but the Total Amount sent 
+        // Auto-fix Amount: If the user updated fees (sum changes) but the Total Amount sent
         // matches the OLD amount (meaning they likely didn't update it manually or JS failed),
         // we should trust the new Fee Sum.
         if (isset($validated['fee_details']) && count($validated['fee_details']) > 0) {
             $newFeeSum = collect($validated['fee_details'])->sum('amount');
-            
+
             // If there's a discrepancy between Sent Amount and Fee Sum
             if (abs($validated['amount'] - $newFeeSum) > 0.01) {
                 // And the Sent Amount is exactly the same as the Old DB Amount (Stale)
@@ -483,7 +531,7 @@ class PaymentController extends Controller
 
         // Handle Redirect
         $redirectRoute = $request->input('redirect_to', 'payments.index');
-        
+
         return redirect()->route($redirectRoute, $payment->student_id)
             ->with('success', 'Payment updated successfully.');
     }
@@ -525,10 +573,10 @@ class PaymentController extends Controller
     {
         $payment->load(['student.classroom']);
         $student = $payment->student;
-        
+
         // Convert amount to words
         $amountInWords = $this->numberToWords(intval($payment->amount));
-        
+
         // Generate Receipt No
         $receiptNo = ($payment->payment_date ? \Carbon\Carbon::parse($payment->payment_date) : now())->format('ymd') . str_pad($payment->id, 3, '0', STR_PAD_LEFT);
 
@@ -542,10 +590,10 @@ class PaymentController extends Controller
     {
         $payment->load(['student.classroom']);
         $student = $payment->student;
-        
+
         // Convert amount to words
         $amountInWords = $this->numberToWords(intval($payment->amount));
-        
+
         // Generate Receipt No
         $receiptNo = ($payment->payment_date ? \Carbon\Carbon::parse($payment->payment_date) : now())->format('ymd') . str_pad($payment->id, 3, '0', STR_PAD_LEFT);
 
@@ -557,9 +605,9 @@ class PaymentController extends Controller
         'isPdf' => true
     ])
         ->setPaper('a4', 'landscape');
-        
+
         $filename = 'payment_receipt_' . $student->student_id . '_' . $payment->id . '.pdf';
-        
+
         return $pdf->download($filename);
     }
 

@@ -18,7 +18,7 @@
             font-size: 12px;
             line-height: 1.2;
         }
-        
+
         .receipt-container {
             max-width: 900px;
             margin: 0 auto;
@@ -27,7 +27,7 @@
             border: 1px solid #51272f;
             position: relative;
         }
-        
+
         .header-container {
             position: relative;
             min-height: 130px;
@@ -42,7 +42,7 @@
             width: 100px;
             height: 100px;
         }
-        
+
         .logo-left img {
             max-width: 100%;
             max-height: 100%;
@@ -54,7 +54,7 @@
             padding: 0 110px;
             padding-top: 10px;
         }
-        
+
         .banner-center img {
             max-width: 100%;
             height: auto;
@@ -124,7 +124,7 @@
     width: auto;
 }
 
-        
+
         h1 {
             text-align: center;
             font-size: 18px;
@@ -134,24 +134,24 @@
             border-bottom: 4px solid #51272f;
             padding-bottom: 5px;
         }
-        
+
         .content {
             display: table;
             width: 98%;
             margin-top: 15px;
         }
-        
+
         .student-details, .fee-section {
             display: table-cell;
             vertical-align: top;
             padding: 5px;
         }
-        
+
         .student-details {
             width: 35%;
             padding-right: 15px;
         }
-        
+
         .fee-section {
             width: 65%;
             padding-left: 15px;
@@ -178,14 +178,14 @@
             margin-bottom:-2px !important;
             padding-left:3px;
         }
-        
+
         .fee-table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 15px;
             font-size: 12px;
         }
-        
+
         .fee-table th {
             background-color: #f5f5f5;
             padding: 8px;
@@ -195,46 +195,46 @@
             color: #51272f;
             font-size: 12px;
         }
-        
+
         .fee-table td {
             padding: 8px;
             border: 1px solid #51272f;
             background-color: white;
         }
-        
+
         .fee-table .amount-cell {
             text-align: right;
             font-weight: 500;
         }
-        
+
         .empty-row {
             height: 35px;
             background-color: #fafafa;
         }
-        
+
         .payment-summary {
             margin-top: 10px;
             width: 50%;
             margin-left: auto;
         }
-        
+
         .payment-method {
             margin-bottom: 10px;
             font-size: 12px;
         }
-        
+
         .payment-method-label {
             font-weight: normal;
             margin-bottom: 3px;
             color: #000;
         }
-        
+
         .payment-method-label label {
             font-weight: bold;
             margin-bottom: 3px;
             color: #51272f;
         }
-        
+
         .payment-row {
             display: flex;
             justify-content: flex-end;
@@ -242,11 +242,11 @@
             font-size: 12px;
             gap: 10px;
         }
-        
+
         .payment-row span {
             text-align: right;
         }
-        
+
         .amount-box {
             border: 1px solid #51272f;
             padding: 4px 8px;
@@ -255,21 +255,21 @@
             background-color: white;
             font-weight: 500;
         }
-        
+
         .total-row {
             font-weight: bold;
             font-size: 12px;
             margin-top: 8px;
             padding-top: 8px;
         }
-        
+
         .footer {
             margin-top: 30px;
             padding-top: 15px;
             border-top: 1px solid #51272f;
             text-align: center;
         }
-        
+
         .footer-image {
             max-width: 100%;
             height: auto;
@@ -283,14 +283,14 @@
                 padding: 0;
                 margin: 0;
             }
-            
+
             .receipt-container {
                 border: 1px solid #51272f;
                 padding: 10px;
                 max-width: 100%;
                 page-break-inside: avoid;
             }
-            
+
             .no-print {
                 display: none !important;
             }
@@ -311,7 +311,7 @@
 </head>
 <body>
 
-    
+
     @if(!isset($isPdf) || !$isPdf)
     <div class="no-print" style="text-align:center; padding:10px; background:#f0f0f0; border-bottom:1px solid #ccc; margin-bottom:20px;">
         <button onclick="window.print()" style="padding:8px 16px; background:#51272f; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; margin-right:10px;">
@@ -324,7 +324,7 @@
     @endif
 
     <div class="receipt-container">
-        
+
         <div class="header-container">
             <!-- Logo Left -->
             <div class="logo-left">
@@ -345,18 +345,18 @@
                 </div>
             </div>
 
-            
+
             <!-- Date Right -->
 <div class="date-wrapper">
  <div class="date-box">
                     Receipt No: {{ $receiptNo }}
                 </div>
     <div class="date-box">
-        Date: {{ \Carbon\Carbon::parse($payment->payment_date)->format('d/m/Y') }}
+        Date: {{ \Carbon\Carbon::parse($payment->payment_date)->format('d M, Y') }}
     </div>
 </div>
 
-        
+
         <h1>PAYMENT RECEIPT</h1>
 
         <!-- Main Content -->
@@ -391,9 +391,9 @@
                     <span class="detail-label">Phone:</span>
                     <span class="detail-value">{{ $student?->mobile ?? 'N/A' }}</span>
                 </div>
-          
+
             </div>
-            
+
             <div class="fee-section">
                 @php
                     // Get fee details from the payment record in database
@@ -402,7 +402,7 @@
                     // Process and group fees
                     $processedFees = [];
                     $monthlyGroups = [];
-                    
+
                     $totalNet = 0;
                     $totalOriginal = 0;
                     $totalDiscount = 0;
@@ -412,7 +412,7 @@
                             $net = floatval($fee['amount'] ?? 0);
                             $orig = floatval($fee['original_amount'] ?? $net);
                             $disc = floatval($fee['discount'] ?? ($orig - $net));
-                            
+
                             $totalNet += $net;
                             $totalOriginal += $orig;
                             $totalDiscount += $disc;
@@ -422,7 +422,7 @@
                                 // Extract base name logic
                                 $nameParts = explode(' - ', $fee['name']);
                                 $baseName = count($nameParts) > 1 ? trim($nameParts[0]) : $fee['name'];
-                                
+
                                 $monthLabel = $fee['month'];
                                 if (isset($fee['year']) && strpos($monthLabel, $fee['year']) === false) {
                                     $monthLabel .= ' ' . $fee['year'];
@@ -461,9 +461,9 @@
 
                     // Process groups
                     foreach ($monthlyGroups as $baseName => $group) {
-                        $months = $group['months']; 
+                        $months = $group['months'];
                         $count = count($months);
-                        
+
                         $monthRange = '';
                         if ($count === 1) {
                             $monthRange = $months[0];
@@ -472,7 +472,7 @@
                         } elseif ($count >= 3) {
                             $monthRange = $months[0] . ' - ' . end($months);
                         }
-                        
+
                         $description = $baseName . ' (' . $monthRange . ')';
 
                         $processedFees[] = [
@@ -484,7 +484,7 @@
                     }
 
                     // Reconcile Manual/Global Discount
-                    // If the sum of fee items (Net) is greater than the actual Payment Amount, 
+                    // If the sum of fee items (Net) is greater than the actual Payment Amount,
                     // it means a global discount was applied (e.g. manual entry)
                     $actualPaid = floatval($payment->amount);
                     $manualDiscount = max(0, $totalNet - $actualPaid);
@@ -499,11 +499,11 @@
                          $totalDiscount += $manualDiscount;
                          $totalNet -= $manualDiscount; // Should match actualPaid now
                     }
-                    
+
                     // Show discount columns if Total Discount > 0
                     $showDiscountCol = $totalDiscount > 0;
                 @endphp
-                
+
                 <table class="fee-table">
                     <thead>
                         <tr>
@@ -531,7 +531,7 @@
                                     @endif
                                 </tr>
                             @endforeach
-                            
+
                             {{-- Fill empty rows --}}
                             @php $emptyRows = max(0, 4 - count($processedFees)); @endphp
                             @for($i = 0; $i < $emptyRows; $i++)
@@ -555,7 +555,7 @@
                                 <td class="amount-cell">{{ number_format($payment->amount, 2) }}</td>
                             </tr>
                         @endif
-                        
+
                         {{-- Total Row --}}
                         <tr class="total-row" style="background-color: #f5f5f5; border-top: 2px solid #51272f;">
                             <td style="text-align: right; font-weight: bold;">Total:</td>
@@ -569,20 +569,20 @@
                         </tr>
                     </tbody>
                 </table>
-                
+
                 <div style="display: flex; justify-content: space-between; margin-top: 10px; align-items: flex-start;">
                     <!-- Left Side: Payment Method & In Word -->
                     <div style="width: 100%;">
                         <div class="payment-method">
                             <div class="payment-method-label"><label>Payment Method:</label> {{ $payment->payment_mode ?? 'Cash' }}</div>
                         </div>
-                        
+
                         @if($payment->note)
                         <div class="payment-method">
                             <div class="payment-method-label"><label>Note:</label> {{ $payment->note }}</div>
                         </div>
                         @endif
-                        
+
                         <div class="payment-method">
                             <div class="payment-method-label"><label>In Word:</label> {{ ucwords($amountInWords) }} Taka Only</div>
                         </div>
@@ -590,13 +590,13 @@
                 </div>
             </div>
         </div>
-        
+
         <div style="margin-top: 40px; margin-bottom: 20px;">
             <div style="border-top: 1px solid #000; width: 150px; text-align: center; font-size: 12px; margin-left: 20px;">
                 Accountant
             </div>
         </div>
-        
+
         <!-- Footer -->
         <div class="footer">
             <div style="display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap;">

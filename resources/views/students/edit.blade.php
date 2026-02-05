@@ -52,16 +52,16 @@
 
   <div class="form-row">
     <div class="form-group">
-      <label>Mobile *</label>
-      <input type="text" name="mobile" placeholder="01XXXXXXXXX" value="{{ old('mobile', $student->mobile) }}" required>
-      @error('mobile')
+      <label>Father/Main Mobile *</label>
+      <input type="text" name="father_mobile" placeholder="01XXXXXXXXX" value="{{ old('father_mobile', $student->father_mobile) }}" required>
+      @error('father_mobile')
         <div class="error">{{ $message }}</div>
       @enderror
     </div>
     <div class="form-group">
-      <label>Alt Mobile</label>
-      <input type="text" name="alt_mobile" placeholder="01XXXXXXXXX" value="{{ old('alt_mobile', $student->alt_mobile) }}">
-      @error('alt_mobile')
+      <label>Mother/Alt Mobile</label>
+      <input type="text" name="mother_mobile" placeholder="01XXXXXXXXX" value="{{ old('mother_mobile', $student->mother_mobile) }}">
+      @error('mother_mobile')
         <div class="error">{{ $message }}</div>
       @enderror
     </div>
@@ -275,7 +275,7 @@
           <div style="text-align:right">Amount</div>
           <div></div>
         </div>
-        
+
         <div id="studentFeesContainer">
           <p style="color:var(--muted);text-align:center;margin-top:20px;" id="emptyStudentFeesMsg"><em>Select a class to load fees</em></p>
         </div>
@@ -330,17 +330,17 @@ function updateSections() {
     const classSelect = document.getElementById('class_id');
     const classId = classSelect.value;
     const sectionSelect = document.getElementById('section');
-    
+
     // Reset section dropdown
     sectionSelect.innerHTML = '<option value="">Select Section</option>';
-    
+
     if (!classId || !classroomData[classId]) {
         sectionSelect.innerHTML = '<option value="">Select Class First</option>';
         return;
     }
-    
+
     const data = classroomData[classId];
-    
+
     // Populate sections
     if (data.sections && data.sections.length > 0) {
         data.sections.forEach(section => {
@@ -361,17 +361,17 @@ function updateSections() {
         }
         sectionSelect.appendChild(option);
     }
-    
+
     // Load fees for the selected class
     loadClassFees(classId);
 }
 
 function loadClassFees(classId) {
     if (!classId || !classroomData[classId]) return;
-    
+
     const data = classroomData[classId];
     availableClassFees = [];
-    
+
     // Add admission fee
     const admissionFee = parseFloat(data.admission_fee) || 0;
     if (admissionFee > 0) {
@@ -382,7 +382,7 @@ function loadClassFees(classId) {
             is_admission: true
         });
     }
-    
+
     // Add other fees
     const additionalFees = data.fees || [];
     additionalFees.forEach(f => {
@@ -392,14 +392,14 @@ function loadClassFees(classId) {
             amount: parseFloat(f.amount)
         });
     });
-    
+
     // Clear containers
     // Clear containers
     const studentContainer = document.getElementById('studentFeesContainer');
     studentContainer.innerHTML = '';
     const emptyMsg = document.getElementById('emptyStudentFeesMsg');
     if (emptyMsg) emptyMsg.style.display = 'none';
-    
+
     // Render available fees first
     renderAvailableFees();
 
@@ -420,7 +420,7 @@ function loadClassFees(classId) {
 function restoreStudentFees() {
     const selectedFees = studentData.selectedFees;
     const discounts = studentData.discounts;
-    
+
     // If no selected fees, add all fees
     if (!selectedFees || selectedFees.length === 0) {
         availableClassFees.forEach((fee, index) => {
@@ -459,19 +459,19 @@ function renderAvailableFees() {
     const container = document.getElementById('availableFeesContainer');
     if (!container) return;
     container.innerHTML = '';
-    
+
     if (availableClassFees.length === 0) {
         container.innerHTML = '<p style="color:var(--muted);text-align:center;">No fees available</p>';
         return;
     }
-    
+
     availableClassFees.forEach((fee, index) => {
         const div = document.createElement('div');
         div.id = `avail_fee_div_${index}`;
         div.style.cssText = 'background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);margin-bottom:8px;padding:10px;border-radius:4px;display:flex;justify-content:space-between;align-items:center;transition:background 0.2s;';
         div.onmouseover = () => div.style.background = 'rgba(255,255,255,0.06)';
         div.onmouseout = () => div.style.background = 'rgba(255,255,255,0.03)';
-        
+
         div.innerHTML = `
             <div>
                 <div style="font-weight:600;font-size:13px;color:var(--text);">${fee.name}</div>
@@ -486,21 +486,21 @@ function renderAvailableFees() {
 function addFeeToStudent(feeIndex) {
     const fee = availableClassFees[feeIndex];
     if (!fee) return;
-    
+
     const container = document.getElementById('studentFeesContainer');
     const emptyMsg = document.getElementById('emptyStudentFeesMsg');
     if (emptyMsg) emptyMsg.style.display = 'none';
-    
+
     // Check if already added
     const existing = Array.from(container.querySelectorAll('.student-fee-row')).find(r => r.dataset.name === fee.name);
     if (existing) {
         alert('Fee already added');
         return existing.id;
     }
-    
+
     const rowId = 'fee_row_' + (feeRowCounter++);
     const isPeriodic = ['Monthly', 'Quarterly', 'Half Yearly', 'Half-Yearly', 'Half_Yearly'].includes(fee.type);
-    
+
     const row = document.createElement('div');
     row.className = 'student-fee-row';
     row.id = rowId;
@@ -510,12 +510,12 @@ function addFeeToStudent(feeIndex) {
     row.dataset.name = fee.name;
     row.dataset.isPeriodic = isPeriodic;
     row.style.cssText = 'background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);margin-bottom:8px;padding:8px;border-radius:4px;display:grid;grid-template-columns:2fr 1.5fr 1fr 1fr 30px;gap:8px;align-items:center;';
-    
+
     row.innerHTML = `
         <div style="font-size:12px;font-weight:500;">${fee.name}</div>
         <div style="font-size:11px;color:var(--muted);">${fee.type}</div>
         <div style="display:flex;align-items:center;gap:4px;">
-            <input type="number" class="fee-discount-input" placeholder="0" min="0" max="${fee.amount}" 
+            <input type="number" class="fee-discount-input" placeholder="0" min="0" max="${fee.amount}"
                    style="width:60px;background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:4px;border-radius:3px;font-size:12px;"
                    oninput="updateFeeRow('${rowId}')">
             <label style="font-size:10px;color:var(--muted);display:flex;align-items:center;gap:2px;cursor:pointer;" title="Permanent Discount">
@@ -529,14 +529,14 @@ function addFeeToStudent(feeIndex) {
             <button type="button" onclick="removeFeeRow('${rowId}')" style="background:none;border:none;color:#ff4444;cursor:pointer;font-size:16px;line-height:1;">&times;</button>
         </div>
     `;
-    
+
     container.appendChild(row);
     updateFeeRow(rowId);
-    
+
     // Hide from available list
     const availDiv = document.getElementById(`avail_fee_div_${feeIndex}`);
     if (availDiv) availDiv.style.display = 'none';
-    
+
     return rowId;
 }
 
@@ -550,10 +550,10 @@ function removeFeeRow(rowId) {
         }
         row.remove();
     }
-    
+
     // Update total first
     updateTotal();
-    
+
     // Then check if container is empty
     const c = document.getElementById('studentFeesContainer');
     const feeRows = c.querySelectorAll('.student-fee-row');
@@ -566,15 +566,15 @@ function removeFeeRow(rowId) {
 function updateFeeRow(rowId) {
     const row = document.getElementById(rowId);
     if (!row) return;
-    
+
     const base = parseFloat(row.dataset.baseAmount);
     const discInput = row.querySelector('.fee-discount-input');
     const discount = parseFloat(discInput.value) || 0;
     const total = Math.max(0, base - discount);
-    
+
     const totalEl = row.querySelector('.fee-row-total');
     if (totalEl) totalEl.textContent = `৳ ${total.toFixed(2)}`;
-    
+
     updateTotal();
 }
 
@@ -587,10 +587,10 @@ function updateTotal() {
         const discount = parseFloat(discInput.value) || 0;
         total += Math.max(0, base - discount);
     });
-    
+
     const totalEl = document.getElementById('studentFeesTotal');
     if (totalEl) totalEl.textContent = `৳ ${total.toFixed(2)}`;
-    
+
     // Update hidden field with fee data
     updateHiddenField();
 }
@@ -606,7 +606,7 @@ function updateHiddenField() {
         const permCheck = row.querySelector('.perm-check');
         const discount = parseFloat(discInput.value) || 0;
         const isPermanent = permCheck.checked;
-        
+
         fees.push({
             name: name,
             type: type,
@@ -615,7 +615,7 @@ function updateHiddenField() {
             is_permanent: isPermanent
         });
     });
-    
+
     const hiddenField = document.getElementById('studentAssignedFees');
     if (hiddenField) hiddenField.value = JSON.stringify(fees);
 }

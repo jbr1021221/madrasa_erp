@@ -18,7 +18,7 @@
             font-size: 12px;
             line-height: 1.2;
         }
-        
+
         .form-wrapper {
             max-width: 900px;
             margin: 0 auto;
@@ -27,7 +27,7 @@
             border: 1px solid #51272f;
             position: relative;
         }
-        
+
         .header-container {
             position: relative;
             min-height: 130px;
@@ -41,7 +41,7 @@
             width: 100px;
             height: 100px;
         }
-        
+
         .logo-left img {
             max-width: 100%;
             max-height: 100%;
@@ -56,7 +56,7 @@
             flex-direction: column;
             align-items: center;
         }
-        
+
         .banner-center img {
             max-width: 100%;
             height: auto;
@@ -172,7 +172,7 @@
     margin-right: 5px;
     font-family: 'DejaVu Sans', sans-serif;
 }
-        
+
         h1 {
             text-align: center;
             font-size: 18px;
@@ -183,7 +183,7 @@
             padding-bottom: 5px;
             margin-top: 5px;
         }
-        
+
         .form-label {
             font-family: 'Century Gothic', 'CenturyGothic', 'AppleGothic', sans-serif;
             font-size: 10px;
@@ -200,7 +200,7 @@
             display: block;
             color: #000;
         }
-        
+
 
         .row {
             display: table;
@@ -331,7 +331,7 @@
             body {
                 padding: 0;
             }
-            
+
             .form-wrapper {
                 border: 1px solid #51272f;
                 padding: 10px;
@@ -350,7 +350,7 @@
 </head>
 <body>
     <div class="form-wrapper">
-        
+
         <div class="header-container">
             <!-- Logo Left -->
             <div class="logo-left">
@@ -389,7 +389,7 @@
                 </div>
             </div>
         </div>
-        
+
         <h1>ADMISSION FORM</h1>
 
         <!-- Academic Year, Class, Shift -->
@@ -529,7 +529,7 @@
         <div class="row mb-2">
             <div class="col-md-6">
                 <span class="form-label">Phone Number:</span>
-                <span class="form-value d-block">{{ $student->guardian_phone ?? $student->mobile }}</span>
+                <span class="form-value d-block">{{ $student->guardian_phone ?? $student->father_mobile }}</span>
             </div>
             <div class="col-md-6">
                 <span class="form-label">Email Address:</span>

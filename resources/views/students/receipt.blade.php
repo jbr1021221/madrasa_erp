@@ -18,7 +18,7 @@
             font-size: 12px;
             line-height: 1.2;
         }
-        
+
         .receipt-container {
             max-width: 900px;
             margin: 0 auto;
@@ -36,7 +36,7 @@
             /* Hide browser default headers and footers */
             @top-left { content: none; }
         }
-        
+
         .header-container {
             position: relative;
             min-height: 130px;
@@ -51,7 +51,7 @@
             width: 100px;
             height: 100px;
         }
-        
+
         .logo-left img {
             max-width: 100%;
             max-height: 100%;
@@ -63,7 +63,7 @@
             padding: 0 110px;
             padding-top: 10px;
         }
-        
+
         .banner-center img {
             max-width: 100%;
             height: auto;
@@ -134,7 +134,7 @@
     width: auto;
 }
 
-        
+
         h1 {
             text-align: center;
             font-size: 18px;
@@ -144,25 +144,25 @@
             border-bottom: 4px solid #51272f;
             padding-bottom: 5px;
         }
-        
+
         .content {
             display: table;
             width: 98%;
             margin-top: 5px;
 
         }
-        
+
         .student-details, .fee-section {
             display: table-cell;
             vertical-align: top;
             padding: 2px;
         }
-        
+
         .student-details {
             width: 35%;
             padding-right: 8px;
         }
-        
+
         .fee-section {
             width: 65%;
             padding-left: 8px;
@@ -189,14 +189,14 @@
             margin-bottom:-2px !important;
             padding-left:3px;
             }
-        
+
         .fee-table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 15px;
             font-size: 12px;
         }
-        
+
         .fee-table th {
             background-color: #f5f5f5;
             padding: 8px;
@@ -206,47 +206,47 @@
             color: #51272f;
             font-size: 12px;
         }
-        
+
         .fee-table td {
             padding: 8px;
             border: 1px solid #51272f;
             background-color: white;
         }
-        
+
         .fee-table .amount-cell {
             text-align: right;
             font-weight: 500;
         }
-        
+
         .empty-row {
             height: 35px;
             background-color: #fafafa;
         }
-        
+
         .payment-summary {
             margin-top: 5px;
             width: 50%;
             margin-left: auto;
         }
-        
+
         .payment-method {
             margin-bottom: 3px;
             font-size: 9px;
         }
-        
+
         .payment-method-label label{
             font-weight: bold;
             margin-bottom: 3px;
             color: #51272f;
         }
-        
-        
+
+
         .payment-method-label {
             font-weight: normal;
             margin-bottom: 3px;
             color: #000;
         }
-        
+
         .payment-row {
             display: flex;
             justify-content: flex-end;
@@ -254,11 +254,11 @@
             font-size: 9px;
             gap: 5px;
         }
-        
+
         .payment-row span {
             text-align: right;
         }
-        
+
         .amount-box {
             border: 1px solid #51272f;
             padding: 2px 4px;
@@ -267,21 +267,21 @@
             background-color: white;
             font-weight: 500;
         }
-        
+
         .total-row {
             font-weight: bold;
             font-size: 9px;
             margin-top: 3px;
             padding-top: 3px;
         }
-        
+
         .footer {
             margin-top: 30px;
             padding-top: 15px;
             border-top: 1px solid #51272f;
             text-align: center;
         }
-        
+
         .footer-image {
             max-width: 100%;
             height: auto;
@@ -294,7 +294,7 @@
             body {
                 padding: 0;
             }
-            
+
             .receipt-container {
                 border: 1px solid #51272f;
                 padding: 5px;
@@ -309,7 +309,7 @@
 </head>
 <body>
     <div class="receipt-container">
-        
+
         <div class="header-container">
             <!-- Logo Left -->
             <div class="logo-left">
@@ -339,7 +339,7 @@
                 </div>
             </div>
 
-                    
+
                     <h1>PAYMENT RECEIPT(Admission)</h1>
 
                     <!-- Main Content -->
@@ -372,23 +372,23 @@
                             </div>
                             <div class="detail-row">
                                 <span class="detail-label">Phone:</span>
-                                <span class="detail-value">{{ $student->mobile }}</span>
+                                <span class="detail-value">{{ $student->father_mobile }}</span>
                             </div>
 
-                
-                
+
+
 </div>
-            
+
             <!-- Fee Section -->
             <div class="fee-section">
                 @php
                     // Get fee details from the payment record in database
                     $feeDetails = $admissionPayment->fee_details ?? [];
-                    
+
                     // Process and group fees
                     $processedFees = [];
                     $monthlyGroups = [];
-                    
+
                     $totalNet = 0;
                     $totalOriginal = 0;
                     $totalDiscount = 0;
@@ -397,10 +397,10 @@
                         foreach ($feeDetails as $fee) {
                             // Net Amount (Paid Amount)
                             $net = floatval($fee['amount'] ?? 0);
-                            
+
                             // Discount
                             $disc = floatval($fee['discount'] ?? 0);
-                            
+
                             // Original Amount
                             // Check for Partial Payment (Suffix added by controller)
                             $isPartial = (strpos($fee['name'], '(Partial)') !== false);
@@ -415,7 +415,7 @@
                             } else {
                                 $orig = $net;
                             }
-                            
+
                             // Double check discount
                             if ($disc <= 0 && $orig > $net) {
                                 $disc = $orig - $net;
@@ -431,7 +431,7 @@
                                 // Extract base name by splitting " - "
                                 $nameParts = explode(' - ', $fee['name']);
                                 $baseName = count($nameParts) > 1 ? trim($nameParts[0]) : $fee['name'];
-                                
+
                                 $monthLabel = $fee['month'];
                                 if (isset($fee['year']) && strpos($monthLabel, $fee['year']) === false) {
                                     $monthLabel .= ' ' . $fee['year'];
@@ -455,7 +455,7 @@
                                     'name' => $fee['name'],
                                     'amount' => $net
                                 ];
-                                
+
                                 if (strpos($fee['name'], 'Admission Fee (Partial)') !== false) {
                                      if (isset($fee['original_amount'])) {
                                          $item['original'] = floatval($fee['original_amount']);
@@ -463,7 +463,7 @@
                                          $item['original'] = $net + $disc;
                                      }
                                 }
-                                
+
                                 $processedFees[] = $item;
                             }
                         }
@@ -473,7 +473,7 @@
                     foreach ($monthlyGroups as $baseName => $group) {
                         $months = $group['months'];
                         $count = count($months);
-                        
+
                         $monthRange = '';
                         if ($count === 1) {
                             $monthRange = $months[0];
@@ -482,7 +482,7 @@
                         } elseif ($count >= 3) {
                             $monthRange = $months[0] . ' - ' . end($months);
                         }
-                        
+
                         $description = $baseName . ' (' . $monthRange . ')';
 
                         $processedFees[] = [
@@ -490,13 +490,13 @@
                             'amount' => $group['total_amount']
                         ];
                     }
-                    
+
                     $totalPaid = $admissionPayment->amount ?? 0;
-                    
+
                     // Final Calculation for Display
                     $subtotal = $totalOriginal;
                     $discount = $totalDiscount;
-                    
+
                     // Fallback: If no discount data found at all, but totalPaid < subtotal (from loop), recalculate
                     // (This handles cases where the loop calculates subtotal based on net only if orig is missing)
                     // But our robust logic above handles orig defaulting to net.
@@ -508,7 +508,7 @@
                          // Let's trust the fee_details logic primarily.
                     }
                 @endphp
-                
+
                 <table class="fee-table">
                     <thead>
                         <tr>
@@ -538,7 +538,7 @@
                                 <td class="amount-cell">{{ number_format($totalPaid, 2) }}</td>
                             </tr>
                         @endif
-                        
+
                         {{-- Add empty rows to fill space --}}
                         @php
                             $rowCount = count($feeDetails) > 0 ? count($feeDetails) : 1;
@@ -551,14 +551,14 @@
                         @endfor
                     </tbody>
                 </table>
-                
+
                 <div style="display: flex; justify-content: space-between; margin-top: 5px; align-items: flex-start;">
                     {{-- Left Side: Payment Method & In Word --}}
                     <div style="width: 55%;">
                         <div class="payment-method">
                             <div class="payment-method-label"><label>Pay Method:</label> {{ $admissionPayment->payment_mode ?? 'Cash' }}</div>
                         </div>
-                        
+
                         <div class="payment-method">
                             <div class="payment-method-label"><label>In Word:</label> {{ ucwords($amountInWords) }} Taka Only</div>
                         </div>
@@ -570,12 +570,12 @@
                         <div class="payment-row">
                             <div class="amount-box"><span style="float:left;">Subtotal:</span>{{ number_format($subtotal, 2) }}</div>
                         </div>
-                        
+
                         <div class="payment-row">
                             <div class="amount-box"><span style="float:left;">Discount:</span>{{ number_format($discount, 2) }}</div>
                         </div>
                         @endif
-                        
+
                         <div class="payment-row">
                             <div class="amount-box"><span style="float:left;">Total:</span>{{ number_format($totalPaid, 2) }}</div>
                         </div>
@@ -584,7 +584,7 @@
             </div>
 
         </div>
-        
+
         <div style="margin-top: 20px; margin-bottom: 10px;">
             <div style="border-top: 1px solid #000; width: 100px; text-align: center; font-size: 9px; margin-left: 10px;">
                 Accountant
@@ -592,18 +592,18 @@
         </div>
 
         <!-- Footer -->
-    
+
               <div class="footer">
             <div style="display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap;">
                 <img src="{{ isset($isPdf) && $isPdf ? public_path('images/Aslaf.jpg') : asset('images/Aslaf.jpg') }}" alt="Aslaf" style="height: 25px; width: auto;">
                 <img src="{{ isset($isPdf) && $isPdf ? public_path('images/BriCou1.png') : asset('images/BriCou1.png') }}" alt="British Council" style="height: 25px; width: auto;">
                 <img src="{{ isset($isPdf) && $isPdf ? public_path('images/Cambridge.jpg') : asset('images/Cambridge.jpg') }}" alt="Cambridge" style="height: 25px; width: auto;">
                 <img src="{{ isset($isPdf) && $isPdf ? public_path('images/edexcel.png') : asset('images/edexcel.png') }}" alt="Edexcel" style="height: 25px; width: auto;">
-                
+
                 <img src="{{ isset($isPdf) && $isPdf ? public_path('images/pearson.png') : asset('images/pearson.png') }}" alt="Pearson" style="height: 25px; width: auto;">
             </div>
         </div>
-        
+
     </div>
 </body>
 </html>
