@@ -19,14 +19,14 @@ class PaymentController extends Controller
 
         // Filter by class
         if ($request->filled('class_id')) {
-            $query->whereHas('student', function($q) use ($request) {
+            $query->whereHas('student', function ($q) use ($request) {
                 $q->where('class_id', $request->class_id);
             });
         }
 
         // Filter by section
         if ($request->filled('section')) {
-            $query->whereHas('student', function($q) use ($request) {
+            $query->whereHas('student', function ($q) use ($request) {
                 $q->where('section', $request->section);
             });
         }
@@ -40,22 +40,22 @@ class PaymentController extends Controller
                 $monthIndex = null;
             }
 
-            $query->where(function($q) use ($monthName, $monthIndex) {
+            $query->where(function ($q) use ($monthName, $monthIndex) {
                 // 1. The payment is explicitly for this month (Billing Month)
                 $q->where('month', $monthName);
 
                 if ($monthIndex) {
                     // 2. OR The payment is an Admission fee (or similar non-standard month) PAID in this month
-                    $q->orWhere(function($sq) use ($monthIndex) {
+                    $q->orWhere(function ($sq) use ($monthIndex) {
                         $sq->where('month', 'Admission')
-                           ->whereMonth('payment_date', $monthIndex);
+                            ->whereMonth('payment_date', $monthIndex);
                     });
 
                     // 3. OR It's inside fee_details (bundled fees) - using LIKE for JSON search
                     $q->orWhere('fee_details', 'LIKE', '%"month":"' . $monthName . '%')
-                      ->orWhere('fee_details', 'LIKE', '%"month": "' . $monthName . '%')
-                      ->orWhere('fee_details', 'LIKE', '%"month":"' . $monthName . ',%')
-                      ->orWhere('fee_details', 'LIKE', '%"month": "' . $monthName . ',%');
+                        ->orWhere('fee_details', 'LIKE', '%"month": "' . $monthName . '%')
+                        ->orWhere('fee_details', 'LIKE', '%"month":"' . $monthName . ',%')
+                        ->orWhere('fee_details', 'LIKE', '%"month": "' . $monthName . ',%');
                 }
             });
         }
@@ -77,9 +77,9 @@ class PaymentController extends Controller
         // Filter by student name or ID
         if ($request->filled('student_search')) {
             $search = $request->student_search;
-            $query->whereHas('student', function($q) use ($search) {
+            $query->whereHas('student', function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('student_id', 'like', "%{$search}%");
+                    ->orWhere('student_id', 'like', "%{$search}%");
             });
         }
 
@@ -87,10 +87,10 @@ class PaymentController extends Controller
         if ($request->filled('fee_name')) {
             $feeNames = is_array($request->fee_name) ? $request->fee_name : [$request->fee_name];
 
-            $query->where(function($q) use ($feeNames) {
+            $query->where(function ($q) use ($feeNames) {
                 foreach ($feeNames as $feeName) {
                     $q->orWhere('payment_type', 'like', "%{$feeName}%")
-                      ->orWhere('fee_details', 'like', "%{$feeName}%");
+                        ->orWhere('fee_details', 'like', "%{$feeName}%");
                 }
             });
         }
@@ -116,27 +116,25 @@ class PaymentController extends Controller
                 $search = $request->student_search;
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('student_id', 'like', "%{$search}%");
+                        ->orWhere('student_id', 'like', "%{$search}%");
                 });
             }
 
-            // Exclude students who have paid for the selected month
-            if ($request->filled('month')) {
-                $month = $request->month;
-                $year = $request->filled('year') ? $request->year : date('Y');
+            // Exclude students who have paid for the selected month (or current month if not specified)
+            $month = $request->filled('month') ? $request->month : date('F');
+            $year = $request->filled('year') ? $request->year : date('Y');
 
-                $query->whereDoesntHave('payments', function ($q) use ($month, $year) {
-                    // Check logic matching the existing 'Paid' filter logic
-                    $q->where(function($sub) use ($month) {
-                        $sub->where('month', $month)
-                            ->orWhere('month', 'like', "$month%") // Matches "January 2025"
-                            ->orWhere('fee_details', 'LIKE', '%"month":"' . $month . '%')
-                            ->orWhere('fee_details', 'LIKE', '%"month": "' . $month . '%');
-                    })
+            $query->whereDoesntHave('payments', function ($q) use ($month, $year) {
+                // Check logic matching the existing 'Paid' filter logic
+                $q->where(function ($sub) use ($month) {
+                    $sub->where('month', $month)
+                        ->orWhere('month', 'like', "$month%") // Matches "January 2025"
+                        ->orWhere('fee_details', 'LIKE', '%"month":"' . $month . '%')
+                        ->orWhere('fee_details', 'LIKE', '%"month": "' . $month . '%');
+                })
                     // Ensure it's for the relevant year (using payment_date as proxy if month string doesn't have year)
                     ->whereYear('payment_date', $year);
-                });
-            }
+            });
 
             $unpaidStudents = $query->latest()->get();
             $payments = collect(); // Empty payments collection
@@ -193,15 +191,25 @@ class PaymentController extends Controller
         $classrooms = Classroom::all();
 
         // Pass classroom data (sections) as JSON for JavaScript
-        $classroomData = $classrooms->mapWithKeys(function($classroom) {
+        $classroomData = $classrooms->mapWithKeys(function ($classroom) {
             return [$classroom->id => [
                 'sections' => $classroom->sections ?? []
             ]];
         });
 
         $months = [
-            'January', 'February', 'March', 'April', 'May', 'June',
-            'July', 'August', 'September', 'October', 'November', 'December'
+            'January',
+            'February',
+            'March',
+            'April',
+            'May',
+            'June',
+            'July',
+            'August',
+            'September',
+            'October',
+            'November',
+            'December'
         ];
         $years = Payment::selectRaw('YEAR(payment_date) as year')
             ->distinct()
@@ -395,8 +403,8 @@ class PaymentController extends Controller
         // in the response (which goes to the new tab).
 
         if ($request->has('show_receipt') && $request->show_receipt) {
-             // Redirect to the view receipt route, which will load content in the new blank tab
-             return redirect()->route('payments.receipt', $payment->id);
+            // Redirect to the view receipt route, which will load content in the new blank tab
+            return redirect()->route('payments.receipt', $payment->id);
         }
 
         // Check if redirect_to is specified
@@ -411,7 +419,7 @@ class PaymentController extends Controller
      */
     public function show($studentId)
     {
-        $student = Student::with(['classroom', 'payments' => function($query) {
+        $student = Student::with(['classroom', 'payments' => function ($query) {
             $query->latest('payment_date');
         }])->findOrFail($studentId);
 
@@ -514,11 +522,11 @@ class PaymentController extends Controller
             if (abs($validated['amount'] - $newFeeSum) > 0.01) {
                 // And the Sent Amount is exactly the same as the Old DB Amount (Stale)
                 if (abs($validated['amount'] - $payment->amount) < 0.01) {
-                     // And the New Fee Sum IS different from the Old DB Amount (So changes happened)
-                     if (abs($newFeeSum - $payment->amount) > 0.01) {
-                         \Log::info("Auto-correcting Payment Amount from {$validated['amount']} to {$newFeeSum} because fees changed.");
-                         $validated['amount'] = $newFeeSum;
-                     }
+                    // And the New Fee Sum IS different from the Old DB Amount (So changes happened)
+                    if (abs($newFeeSum - $payment->amount) > 0.01) {
+                        \Log::info("Auto-correcting Payment Amount from {$validated['amount']} to {$newFeeSum} because fees changed.");
+                        $validated['amount'] = $newFeeSum;
+                    }
                 }
             }
         }
@@ -526,7 +534,7 @@ class PaymentController extends Controller
         $payment->update($validated);
 
         if ($request->has('show_receipt') && $request->show_receipt) {
-             return redirect()->route('payments.receipt', $payment->id);
+            return redirect()->route('payments.receipt', $payment->id);
         }
 
         // Handle Redirect
@@ -552,7 +560,7 @@ class PaymentController extends Controller
      */
     public function studentHistory($studentId)
     {
-        $student = Student::with(['classroom', 'payments' => function($query) {
+        $student = Student::with(['classroom', 'payments' => function ($query) {
             $query->latest('payment_date');
         }])->findOrFail($studentId);
 
@@ -598,13 +606,13 @@ class PaymentController extends Controller
         $receiptNo = ($payment->payment_date ? \Carbon\Carbon::parse($payment->payment_date) : now())->format('ymd') . str_pad($payment->id, 3, '0', STR_PAD_LEFT);
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('payments.receipt', [
-        'payment' => $payment,
-        'student' => $student,
-        'amountInWords' => $amountInWords,
-        'receiptNo' => $receiptNo,
-        'isPdf' => true
-    ])
-        ->setPaper('a4', 'landscape');
+            'payment' => $payment,
+            'student' => $student,
+            'amountInWords' => $amountInWords,
+            'receiptNo' => $receiptNo,
+            'isPdf' => true
+        ])
+            ->setPaper('a4', 'landscape');
 
         $filename = 'payment_receipt_' . $student->student_id . '_' . $payment->id . '.pdf';
 
@@ -614,7 +622,8 @@ class PaymentController extends Controller
     /**
      * Convert number to words (helper function)
      */
-    private function numberToWords($number) {
+    private function numberToWords($number)
+    {
         $hyphen      = '-';
         $conjunction = ' and ';
         $separator   = ', ';

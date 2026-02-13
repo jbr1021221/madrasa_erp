@@ -3,482 +3,683 @@
 @section('title', 'Students - Madrasa ERP')
 
 @section('content')
-@if(session('success'))
-  <div class="alert success" style="background:rgba(76,175,80,0.2);color:#4caf50;padding:12px;border-radius:6px;margin-bottom:16px">
-    {{ session('success') }}
-  </div>
-@endif
+    @if (session('success'))
+        <div class="alert success"
+            style="background:rgba(76,175,80,0.2);color:#4caf50;padding:12px;border-radius:6px;margin-bottom:16px">
+            {{ session('success') }}
+        </div>
+    @endif
 
-<div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:end">
-  <div>
-    <h2 style="margin:0">Students</h2>
-    <p style="margin:0;color:var(--muted);font-size:13px">Manage & monitor all enrolled students</p>
-  </div>
+    <div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:end">
+        <div>
+            <h2 style="margin:0">Students</h2>
+            <p style="margin:0;color:var(--muted);font-size:13px">Manage & monitor all enrolled students</p>
+        </div>
 
-</div>
+    </div>
 
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:10px;flex-wrap:wrap">
-  <div style="display:flex;gap:10px;flex:1;flex-wrap:wrap;align-items:center">
-    <!-- Filters Form -->
-    <form method="GET" action="{{ route('students.index') }}" style="display:flex;gap:10px;flex-wrap:wrap">
-      <select name="class_id" onchange="this.form.submit()" style="background:#1b1f22;color:var(--text);border:1px solid rgba(255,255,255,0.15);padding:6px 10px;border-radius:var(--radius);font-size:14px;width:150px">
-        <option value="">All Classes</option>
-        @foreach($classrooms as $classroom)
-          <option value="{{ $classroom->id }}" {{ request('class_id') == $classroom->id ? 'selected' : '' }}>
-            {{ $classroom->name }}
-          </option>
-        @endforeach
-      </select>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:10px;flex-wrap:wrap">
+        <div style="display:flex;gap:10px;flex:1;flex-wrap:wrap;align-items:center">
+            <!-- Filters Form -->
+            <form method="GET" action="{{ route('students.index') }}" style="display:flex;gap:10px;flex-wrap:wrap">
+                <select name="class_id" onchange="this.form.submit()"
+                    style="background:#1b1f22;color:var(--text);border:1px solid rgba(255,255,255,0.15);padding:6px 10px;border-radius:var(--radius);font-size:14px;width:150px">
+                    <option value="">All Classes</option>
+                    @foreach ($classrooms as $classroom)
+                        <option value="{{ $classroom->id }}" {{ request('class_id') == $classroom->id ? 'selected' : '' }}>
+                            {{ $classroom->name }}
+                        </option>
+                    @endforeach
+                </select>
 
-      <select name="section" onchange="this.form.submit()" style="background:#1b1f22;color:var(--text);border:1px solid rgba(255,255,255,0.15);padding:6px 10px;border-radius:var(--radius);font-size:14px;width:150px">
-        <option value="">All Sections</option>
-        @foreach($sections as $section)
-          <option value="{{ $section }}" {{ request('section') == $section ? 'selected' : '' }}>
-            Section {{ $section }}
-          </option>
-        @endforeach
-      </select>
+                <select name="section" onchange="this.form.submit()"
+                    style="background:#1b1f22;color:var(--text);border:1px solid rgba(255,255,255,0.15);padding:6px 10px;border-radius:var(--radius);font-size:14px;width:150px">
+                    <option value="">All Sections</option>
+                    @foreach ($sections as $section)
+                        <option value="{{ $section }}" {{ request('section') == $section ? 'selected' : '' }}>
+                            Section {{ $section }}
+                        </option>
+                    @endforeach
+                </select>
 
-      <input type="date" name="start_date" value="{{ request('start_date') }}" 
-             style="background:#1b1f22;color:var(--text);border:1px solid rgba(255,255,255,0.15);padding:6px 10px;border-radius:var(--radius);font-size:14px;width:140px" title="Start Date">
-      
-      <input type="date" name="end_date" value="{{ request('end_date') }}" 
-             style="background:#1b1f22;color:var(--text);border:1px solid rgba(255,255,255,0.15);padding:6px 10px;border-radius:var(--radius);font-size:14px;width:140px" title="End Date">
+                <input type="date" name="start_date" value="{{ request('start_date') }}"
+                    style="background:#1b1f22;color:var(--text);border:1px solid rgba(255,255,255,0.15);padding:6px 10px;border-radius:var(--radius);font-size:14px;width:140px"
+                    title="Start Date">
 
-      <input type="text" name="search" placeholder="Search by Name or ID" value="{{ request('search') }}" 
-             style="background:#1b1f22;color:var(--text);border:1px solid rgba(255,255,255,0.15);padding:6px 10px;border-radius:var(--radius);font-size:14px;width:200px">
-      
-      <button type="submit" class="btn ghost" style="padding:6px 14px">Filter</button>
-      @if(request()->hasAny(['class_id', 'section', 'search', 'start_date', 'end_date']))
-        <a href="{{ route('students.index') }}" class="btn ghost" style="padding:6px 14px">Clear</a>
-      @endif
-    </form>
+                <input type="date" name="end_date" value="{{ request('end_date') }}"
+                    style="background:#1b1f22;color:var(--text);border:1px solid rgba(255,255,255,0.15);padding:6px 10px;border-radius:var(--radius);font-size:14px;width:140px"
+                    title="End Date">
 
-    <!-- Bulk Actions Dropdown -->
-    <select id="bulkActionDropdown" onchange="handleBulkAction(this.value); this.value='';" style="background:#1b1f22;color:var(--text);border:1px solid rgba(255,255,255,0.15);padding:6px 10px;border-radius:var(--radius);font-size:14px;width:150px">
-      <option value="">Bulk Actions</option>
-      <option value="delete">Delete Selected</option>
-      <!--<option value="export-pdf">Export to PDF</option>-->
-      <!--<option value="export-excel">Export to Excel</option>-->
-    </select>
-  </div>
+                <input type="text" name="search" placeholder="Search by Name or ID" value="{{ request('search') }}"
+                    style="background:#1b1f22;color:var(--text);border:1px solid rgba(255,255,255,0.15);padding:6px 10px;border-radius:var(--radius);font-size:14px;width:200px">
 
-  <a href="{{ route('students.create') }}" class="btn">+ Add Student</a>
-</div>
+                <button type="submit" class="btn ghost" style="padding:6px 14px">Filter</button>
+                @if (request()->hasAny(['class_id', 'section', 'search', 'start_date', 'end_date']))
+                    <a href="{{ route('students.index') }}" class="btn ghost" style="padding:6px 14px">Clear</a>
+                @endif
+            </form>
 
-<form id="bulkActionForm" action="{{ route('students.bulk-destroy') }}" method="POST">
-  @csrf
-  @method('DELETE')
-  
-  <table id="datatable">
-    <thead>
-      <tr>
-        <th style="width:40px" class="no-sort"><input type="checkbox" id="selectAll" onclick="toggleSelectAll()"></th>
-        <th style="width:50px">SL</th>
-        <th>Name</th>
-        <th>ID</th>
-        <th>Class</th>
-        <th>Section</th>
-        <th class="no-sort">Actions</th>
-      </tr>
-    </thead>
-    <tbody id="studentTable">
-      @foreach($students as $index => $student)
-      <tr>
-        <td><input type="checkbox" name="selected_ids[]" value="{{ $student->id }}" class="student-checkbox" onclick="updateBulkAction()"></td>
-        <td>{{ $loop->iteration }}</td>
-        <td>{{ $student->name }}</td>
-        <td>{{ $student->student_id }}</td>
-        <td>{{ $student->classroom->name ?? 'N/A' }}</td>
-        <td>{{ $student->section }}</td>
-        <td style="display:flex;gap:6px;justify-content:center">
-          @php
-            $recurringFees = [];
-            $className = 'N/A';
-            if($student->classroom) {
-                $className = $student->classroom->name;
-                
-                // Get all class fees first
-                $allClassFees = $student->classroom->fees ?? [];
-                
-                // Check if student has specific selected fees saved
-                $subscribedFees = $student->selected_fees ?? null;
-                $subscribedFeeNames = [];
-                
-                if($subscribedFees && is_array($subscribedFees)) {
-                    foreach($subscribedFees as $f) {
-                        if (!empty($f['name'])) {
-                            $subscribedFeeNames[] = $f['name'];
-                        }
-                    }
-                } 
-                // Fallback: Try to find from Admission payment (Legacy support)
-                elseif($student->payments) {
-                     $admissionPayment = $student->payments->where('payment_type', 'Admission')->first();
-                     if($admissionPayment && !empty($admissionPayment->fee_details)) {
-                        foreach($admissionPayment->fee_details as $detail) {
-                             $name = $detail['name'] ?? '';
-                             if(strpos($name, ' - ') !== false) {
-                                $parts = explode(' - ', $name);
-                                $name = trim($parts[0]);
-                             }
-                             if(!empty($name)) $subscribedFeeNames[] = $name;
-                        }
-                     }
-                }
-                
-                if($allClassFees) {
-                    foreach($allClassFees as $fee) {
-                        if(isset($fee['type'])) {
-                            // If we have a subscription list (either from selected_fees or legacy admission), use it
-                            if (count($subscribedFeeNames) > 0) {
-                                if (in_array($fee['name'], $subscribedFeeNames)) {
-                                    $recurringFees[] = $fee;
-                                }
-                            } else {
-                                // Fallback: Include all fees if no specific subscription found
-                                $recurringFees[] = $fee;
-                            }
-                        }
-                    }
-                }
-            }
-            // Calculate paid months and fees from all payments
-            $paidFeeTracker = [];
-            if($student->payments) {
-                foreach($student->payments as $payment) {
-                    if($payment->fee_details && is_array($payment->fee_details)) {
-                        foreach($payment->fee_details as $feeDetail) {
-                            $fType = strtolower($feeDetail['type'] ?? '');
-                            if($fType === 'monthly') {
-                                // Build month key in format "MonthName, YY"
-                                $monthName = $feeDetail['month'] ?? '';
-                                $year = $feeDetail['year'] ?? date('y');
-                                
-                                if (strpos($monthName, ', ') !== false) {
-                                  $monthKey = $monthName;
-                                } else {
-                                  $monthKey = $monthName . ', ' . $year;
-                                }
-                                
-                                if(!isset($paidFeeTracker[$monthKey])) $paidFeeTracker[$monthKey] = [];
-                                
-                                // Extract simple fee name
-                                $name = $feeDetail['name'];
-                                if(strpos($name, ' - ') !== false) {
-                                  $parts = explode(' - ', $name);
-                                  $name = trim($parts[0]);
-                                }
-                                
-                                $paidFeeTracker[$monthKey][] = $name;
-                            } else {
-                                // For Quarterly/Half/Other
-                                $rawName = $feeDetail['name'] ?? '';
-                                
-                                // Check if name is in "Fee - Parts" format
-                                if (strpos($rawName, ' - ') !== false) {
-                                    // Extract Base Name and Parts String
-                                    // We need to be careful finding the first valid separator that separates Fee from Parts
-                                    // Assuming "Fee Name - Part1, Part2"
-                                    $separatorPos = strpos($rawName, ' - ');
-                                    $baseName = trim(substr($rawName, 0, $separatorPos));
-                                    $partsStr = substr($rawName, $separatorPos + 3);
-                                    
-                                    $parts = explode(',', $partsStr);
-                                    foreach($parts as $p) {
-                                        $p = trim($p);
-                                        if(!empty($p)) {
-                                            $paidFeeTracker[$baseName . ' - ' . $p] = true;
+            <!-- Bulk Actions Dropdown -->
+            <select id="bulkActionDropdown" onchange="handleBulkAction(this.value); this.value='';"
+                style="background:#1b1f22;color:var(--text);border:1px solid rgba(255,255,255,0.15);padding:6px 10px;border-radius:var(--radius);font-size:14px;width:150px">
+                <option value="">Bulk Actions</option>
+                <option value="delete">Delete Selected</option>
+                <!--<option value="export-pdf">Export to PDF</option>-->
+                <!--<option value="export-excel">Export to Excel</option>-->
+            </select>
+        </div>
+
+        <a href="{{ route('students.create') }}" class="btn">+ Add Student</a>
+    </div>
+
+    <form id="bulkActionForm" action="{{ route('students.bulk-destroy') }}" method="POST">
+        @csrf
+        @method('DELETE')
+
+        <table id="datatable">
+            <thead>
+                <tr>
+                    <th style="width:40px" class="no-sort"><input type="checkbox" id="selectAll"
+                            onclick="toggleSelectAll()"></th>
+                    <th style="width:50px">SL</th>
+                    <th>Name</th>
+                    <th>ID</th>
+                    <th>Class</th>
+                    <th>Section</th>
+                    <th class="no-sort">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="studentTable">
+                @foreach ($students as $index => $student)
+                    <tr>
+                        <td><input type="checkbox" name="selected_ids[]" value="{{ $student->id }}"
+                                class="student-checkbox" onclick="updateBulkAction()"></td>
+                        <td>{{ $loop->iteration }}</td>
+                        <td>{{ $student->name }}</td>
+                        <td>{{ $student->student_id }}</td>
+                        <td>{{ $student->classroom->name ?? 'N/A' }}</td>
+                        <td>{{ $student->section }}</td>
+                        <td style="display:flex;gap:6px;justify-content:center">
+                            @php
+                                $recurringFees = [];
+                                $className = 'N/A';
+                                if ($student->classroom) {
+                                    $className = $student->classroom->name;
+
+                                    // Get all class fees first
+                                    $allClassFees = $student->classroom->fees ?? [];
+
+                                    // Check if student has specific selected fees saved
+                                    $subscribedFees = $student->selected_fees ?? null;
+                                    $subscribedFeeNames = [];
+
+                                    if ($subscribedFees && is_array($subscribedFees)) {
+                                        foreach ($subscribedFees as $f) {
+                                            if (!empty($f['name'])) {
+                                                $subscribedFeeNames[] = $f['name'];
+                                            }
                                         }
                                     }
-                                } else {
-                                    // Fallback for simple names
-                                    $names = explode(',', $rawName);
-                                    foreach($names as $n) {
-                                        $prioritizedKey = trim($n);
-                                        $paidFeeTracker[$prioritizedKey] = true;
+                                    // Fallback: Try to find from Admission payment (Legacy support)
+                                    elseif ($student->payments) {
+                                        $admissionPayment = $student->payments
+                                            ->where('payment_type', 'Admission')
+                                            ->first();
+                                        if ($admissionPayment && !empty($admissionPayment->fee_details)) {
+                                            foreach ($admissionPayment->fee_details as $detail) {
+                                                $name = $detail['name'] ?? '';
+                                                if (strpos($name, ' - ') !== false) {
+                                                    $parts = explode(' - ', $name);
+                                                    $name = trim($parts[0]);
+                                                }
+                                                if (!empty($name)) {
+                                                    $subscribedFeeNames[] = $name;
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    if ($allClassFees) {
+                                        foreach ($allClassFees as $fee) {
+                                            if (isset($fee['type'])) {
+                                                // If we have a subscription list (either from selected_fees or legacy admission), use it
+                                                if (count($subscribedFeeNames) > 0) {
+                                                    if (in_array($fee['name'], $subscribedFeeNames)) {
+                                                        $recurringFees[] = $fee;
+                                                    }
+                                                } else {
+                                                    // Fallback: Include all fees if no specific subscription found
+                                                    $recurringFees[] = $fee;
+                                                }
+                                            }
+                                        }
                                     }
                                 }
-                            }
-                        }
-                    } 
-                    // Fallback for legacy payments (if full month was marked paid without details)
-                    elseif ($payment->month && strtolower($payment->payment_type) === 'monthly') {
-                         preg_match_all('/([A-Za-z]+,\s*\d{2})/', $payment->month, $matches);
-                         if(!empty($matches[0])) {
-                             foreach($matches[0] as $m) {
-                                 // Assume ALL fees paid for this legacy month
-                                 if(!isset($paidFeeTracker[$m])) $paidFeeTracker[$m] = ['__ALL__'];
-                             }
-                         }
-                    }
-                }
-            }
-          @endphp
-          <button type="button" class="action-btn" onclick="openPayModal({{ $student->id }}, '{{ $student->name }} ({{ $className }})', '{{ $student->father_name }}', {{ json_encode($recurringFees) }}, {{ json_encode($student->discounts ?? []) }}, {{ json_encode($paidFeeTracker) }}, {{ json_encode($allClassFees ?? []) }}, {{ json_encode($student->partial_payments ?? []) }})" title="Pay Fees">Fees</button>
-          <a href="{{ route('students.show', $student) }}" class="action-btn" title="View Details">View</a>
-          <a href="{{ route('students.receipt.confirm', $student) }}" class="action-btn receipt" title="View Receipt">Receipt</a>
-          <button type="button" class="action-btn delete" onclick="confirmDelete('{{ route('students.destroy', $student) }}')" title="Delete Student">Delete</button>
-        </td>
-      </tr>
-      @endforeach
-    </tbody>
-  </table>
-</form>
+                                // Calculate paid months and fees from all payments
+                                $paidFeeTracker = [];
+                                if ($student->payments) {
+                                    foreach ($student->payments as $payment) {
+                                        if ($payment->fee_details && is_array($payment->fee_details)) {
+                                            foreach ($payment->fee_details as $feeDetail) {
+                                                $fType = strtolower($feeDetail['type'] ?? '');
+                                                if ($fType === 'monthly') {
+                                                    // Build month key in format "MonthName, YY"
+                                                    $monthName = $feeDetail['month'] ?? '';
+                                                    $year = $feeDetail['year'] ?? date('y');
 
-<!-- PAY MODAL -->
-@include('students.partials.payment-modal')
+                                                    if (strpos($monthName, ', ') !== false) {
+                                                        $monthKey = $monthName;
+                                                    } else {
+                                                        $monthKey = $monthName . ', ' . $year;
+                                                    }
+
+                                                    if (!isset($paidFeeTracker[$monthKey])) {
+                                                        $paidFeeTracker[$monthKey] = [];
+                                                    }
+
+                                                    // Extract simple fee name
+                                                    $name = $feeDetail['name'];
+                                                    if (strpos($name, ' - ') !== false) {
+                                                        $parts = explode(' - ', $name);
+                                                        $name = trim($parts[0]);
+                                                    }
+
+                                                    $paidFeeTracker[$monthKey][] = $name;
+                                                } else {
+                                                    // For Quarterly/Half/Other
+                                                    $rawName = $feeDetail['name'] ?? '';
+
+                                                    // Check if name is in "Fee - Parts" format
+                                                    if (strpos($rawName, ' - ') !== false) {
+                                                        // Extract Base Name and Parts String
+                                                        // We need to be careful finding the first valid separator that separates Fee from Parts
+                                                        // Assuming "Fee Name - Part1, Part2"
+                                                        $separatorPos = strpos($rawName, ' - ');
+                                                        $baseName = trim(substr($rawName, 0, $separatorPos));
+                                                        $partsStr = substr($rawName, $separatorPos + 3);
+
+                                                        $parts = explode(',', $partsStr);
+                                                        foreach ($parts as $p) {
+                                                            $p = trim($p);
+                                                            if (!empty($p)) {
+                                                                $paidFeeTracker[$baseName . ' - ' . $p] = true;
+                                                            }
+                                                        }
+                                                    } else {
+                                                        // Fallback for simple names
+                                                        $names = explode(',', $rawName);
+                                                        foreach ($names as $n) {
+                                                            $prioritizedKey = trim($n);
+                                                            $paidFeeTracker[$prioritizedKey] = true;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        // Fallback for legacy payments (if full month was marked paid without details)
+                                        elseif ($payment->month && strtolower($payment->payment_type) === 'monthly') {
+                                            preg_match_all('/([A-Za-z]+,\s*\d{2})/', $payment->month, $matches);
+                                            if (!empty($matches[0])) {
+                                                foreach ($matches[0] as $m) {
+                                                    // Assume ALL fees paid for this legacy month
+                                                    if (!isset($paidFeeTracker[$m])) {
+                                                        $paidFeeTracker[$m] = ['__ALL__'];
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            @endphp
+                            <button type="button" class="action-btn"
+                                onclick="openPayModal({{ $student->id }}, '{{ $student->name }} ({{ $className }})', '{{ $student->father_name }}', {{ json_encode($recurringFees) }}, {{ json_encode($student->discounts ?? []) }}, {{ json_encode($paidFeeTracker) }}, {{ json_encode($allClassFees ?? []) }}, {{ json_encode($student->partial_payments ?? []) }})"
+                                title="Pay Fees">Fees</button>
+                            <a href="{{ route('students.show', $student) }}" class="action-btn"
+                                title="View Details">View</a>
+                            <button type="button" class="action-btn delete"
+                                onclick="confirmDelete('{{ route('students.destroy', $student) }}')"
+                                title="Delete Student">Delete</button>
+                        </td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </form>
+
+    <!-- PAY MODAL -->
+    @include('students.partials.payment-modal')
 @endsection
 
 @section('extra-styles')
-<style>
-table{width:100%;border-collapse:collapse;margin-top:14px}
-th{background:rgba(255,255,255,0.15);padding:10px;font-size:14px;text-align:center}
-td{padding:10px;font-size:14px;text-align:center}
-#studentTable tr:nth-child(odd){background:rgba(255,255,255,0.04)}
-#studentTable tr:nth-child(even){background:rgba(255,255,255,0.09)}
-#studentTable tr:hover{background:rgba(227,120,20,0.18);transition:0.2s}
-.action-btn{
-  padding:6px 10px;border-radius:6px;border:1px solid var(--accent);
-  color:var(--accent);background:transparent;cursor:pointer;font-size:13px;
-  text-decoration:none;display:inline-block;margin:2px;transition:all 0.2s
-}
-.action-btn:hover{background:rgba(227,120,20,0.15)}
-.action-btn.delete{border-color:var(--danger);color:var(--danger)}
-.action-btn.delete:hover{background:rgba(255,78,78,0.15)}
-.action-btn.receipt{border-color:#4caf50;color:#4caf50}
-.action-btn.receipt:hover{background:rgba(76,175,80,0.15)}
-.action-btn.admission{border-color:#2196f3;color:#2196f3}
-.action-btn.admission:hover{background:rgba(33,150,243,0.15)}
-.action-btn.edit{border-color:#ffc107;color:#ffc107}
-.action-btn.edit:hover{background:rgba(255,193,7,0.15)}
-.btn.ghost{background:transparent;border:1px solid var(--accent);color:var(--accent)}
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 14px
+        }
 
-/* MODAL */
-.modal{
-  position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);
-  display:none;justify-content:center;align-items:center;z-index:9999;
-}
-.modal-content{
-  width: 800px;max-width:90%;background:var(--card);padding:30px;border-radius:var(--radius);
-  border:1px solid rgba(255,255,255,0.15);
-}
-.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
-.modal-header h3{margin:0}
-.close{cursor:pointer;color:var(--muted);font-size:18px}
-label{display:block;margin-bottom:6px;font-size:13px;color:var(--muted)}
-input,select{width:100%;padding:8px;background:#1b1f22;border:1px solid rgba(255,255,255,0.15);color:var(--text);border-radius:4px}
+        th {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 10px;
+            font-size: 14px;
+            text-align: center
+        }
 
-/* Pagination Styles */
-.pagination {display:flex;justify-content:center;gap:6px;list-style:none;padding:0;margin:0}
-.pagination li a, .pagination li span {
-  padding: 6px 12px;
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 4px;
-  color: var(--text);
-  text-decoration: none;
-  font-size: 14px;
-}
-.pagination li.active span {
-  background: var(--accent);
-  color: #000;
-  border-color: var(--accent);
-}
-.pagination li a:hover {
-  background: rgba(255,255,255,0.1);
-}
-.pagination li.disabled span {
-  color: var(--muted);
-  cursor: not-allowed;
-}
-/* Checkbox size */
-input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-}
+        td {
+            padding: 10px;
+            font-size: 14px;
+            text-align: center
+        }
 
-/* DataTables Customization */
-.dataTables_wrapper {margin-top: 20px; color: var(--text); font-size: 14px;}
-.dataTables_length select {background: #1b1f22; color: var(--text); border: 1px solid rgba(255,255,255,0.15); padding: 4px; border-radius: 4px;}
-.dataTables_filter input {background: #1b1f22; color: var(--text); border: 1px solid rgba(255,255,255,0.15); padding: 6px; border-radius: 4px; margin-left: 8px;}
-.dataTables_info {color: var(--muted) !important; margin-top: 10px;}
-.dataTables_paginate {margin-top: 10px;}
-.dataTables_paginate .paginate_button {color: var(--text) !important; padding: 6px 12px; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; margin: 0 2px; cursor: pointer;}
-.dataTables_paginate .paginate_button.current {background: var(--accent); color: #000 !important; border-color: var(--accent);}
-.dataTables_paginate .paginate_button:hover {background: rgba(255,255,255,0.1); color: var(--text) !important; border-color: rgba(255,255,255,0.2);}
-.dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter, .dataTables_wrapper .dataTables_info, .dataTables_wrapper .dataTables_processing, .dataTables_wrapper .dataTables_paginate {color: var(--muted);}
-table.dataTable tbody tr {background-color: transparent;}
-</style>
+        #studentTable tr:nth-child(odd) {
+            background: rgba(255, 255, 255, 0.04)
+        }
 
-<!-- DataTables CSS -->
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+        #studentTable tr:nth-child(even) {
+            background: rgba(255, 255, 255, 0.09)
+        }
+
+        #studentTable tr:hover {
+            background: rgba(227, 120, 20, 0.18);
+            transition: 0.2s
+        }
+
+        .action-btn {
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            background: transparent;
+            cursor: pointer;
+            font-size: 13px;
+            text-decoration: none;
+            display: inline-block;
+            margin: 2px;
+            transition: all 0.2s
+        }
+
+        .action-btn:hover {
+            background: rgba(227, 120, 20, 0.15)
+        }
+
+        .action-btn.delete {
+            border-color: var(--danger);
+            color: var(--danger)
+        }
+
+        .action-btn.delete:hover {
+            background: rgba(255, 78, 78, 0.15)
+        }
+
+        .action-btn.receipt {
+            border-color: #4caf50;
+            color: #4caf50
+        }
+
+        .action-btn.receipt:hover {
+            background: rgba(76, 175, 80, 0.15)
+        }
+
+        .action-btn.admission {
+            border-color: #2196f3;
+            color: #2196f3
+        }
+
+        .action-btn.admission:hover {
+            background: rgba(33, 150, 243, 0.15)
+        }
+
+        .action-btn.edit {
+            border-color: #ffc107;
+            color: #ffc107
+        }
+
+        .action-btn.edit:hover {
+            background: rgba(255, 193, 7, 0.15)
+        }
+
+        .btn.ghost {
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent)
+        }
+
+        /* MODAL */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.65);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .modal-content {
+            width: 800px;
+            max-width: 90%;
+            background: var(--card);
+            padding: 30px;
+            border-radius: var(--radius);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px
+        }
+
+        .modal-header h3 {
+            margin: 0
+        }
+
+        .close {
+            cursor: pointer;
+            color: var(--muted);
+            font-size: 18px
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: var(--muted)
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 8px;
+            background: #1b1f22;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: var(--text);
+            border-radius: 4px
+        }
+
+        /* Pagination Styles */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            list-style: none;
+            padding: 0;
+            margin: 0
+        }
+
+        .pagination li a,
+        .pagination li span {
+            padding: 6px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            color: var(--text);
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .pagination li.active span {
+            background: var(--accent);
+            color: #000;
+            border-color: var(--accent);
+        }
+
+        .pagination li a:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .pagination li.disabled span {
+            color: var(--muted);
+            cursor: not-allowed;
+        }
+
+        /* Checkbox size */
+        input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        /* DataTables Customization */
+        .dataTables_wrapper {
+            margin-top: 20px;
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        .dataTables_length select {
+            background: #1b1f22;
+            color: var(--text);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        .dataTables_filter input {
+            background: #1b1f22;
+            color: var(--text);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 6px;
+            border-radius: 4px;
+            margin-left: 8px;
+        }
+
+        .dataTables_info {
+            color: var(--muted) !important;
+            margin-top: 10px;
+        }
+
+        .dataTables_paginate {
+            margin-top: 10px;
+        }
+
+        .dataTables_paginate .paginate_button {
+            color: var(--text) !important;
+            padding: 6px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            margin: 0 2px;
+            cursor: pointer;
+        }
+
+        .dataTables_paginate .paginate_button.current {
+            background: var(--accent);
+            color: #000 !important;
+            border-color: var(--accent);
+        }
+
+        .dataTables_paginate .paginate_button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text) !important;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter,
+        .dataTables_wrapper .dataTables_info,
+        .dataTables_wrapper .dataTables_processing,
+        .dataTables_wrapper .dataTables_paginate {
+            color: var(--muted);
+        }
+
+        table.dataTable tbody tr {
+            background-color: transparent;
+        }
+    </style>
+
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
 @endsection
 
 @section('scripts')
-<!-- jQuery and DataTables JS -->
-<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- jQuery and DataTables JS -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<script>
-$(document).ready(function() {
-    $('#datatable').DataTable({
-        "stateSave": true,
-        "paging": true,
-        "lengthChange": true,
-        "searching": true,
-        "ordering": true,
-        "info": true,
-        "autoWidth": false,
-        "responsive": true,
-        "order": [], // Disable initial sort
-        "columnDefs": [
-            { "orderable": false, "targets": "no-sort" } // Disable sort on specific columns
-        ],
-        "language": {
-            "search": "_INPUT_",
-            "searchPlaceholder": "Search records...",
-            "paginate": {
-                "previous": "Prev",
-                "next": "Next"
+    <script>
+        $(document).ready(function() {
+            $('#datatable').DataTable({
+                "stateSave": true,
+                "paging": true,
+                "lengthChange": true,
+                "searching": true,
+                "ordering": true,
+                "info": true,
+                "autoWidth": false,
+                "responsive": true,
+                "order": [], // Disable initial sort
+                "columnDefs": [{
+                        "orderable": false,
+                        "targets": "no-sort"
+                    } // Disable sort on specific columns
+                ],
+                "language": {
+                    "search": "_INPUT_",
+                    "searchPlaceholder": "Search records...",
+                    "paginate": {
+                        "previous": "Prev",
+                        "next": "Next"
+                    }
+                }
+            });
+        });
+
+        // Force reload on back button to ensure updated payment status
+        window.addEventListener("pageshow", function(event) {
+            var historyTraversal = event.persisted ||
+                (typeof window.performance != "undefined" &&
+                    window.performance.navigation.type === 2);
+            if (historyTraversal) {
+                window.location.reload();
+            }
+        });
+
+
+
+
+        function closePayModal() {
+            document.getElementById('payModal').style.display = 'none';
+        }
+
+        // Close on outside click
+        document.getElementById('payModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closePayModal();
+            }
+        });
+
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.getElementsByClassName('student-checkbox');
+
+            for (let checkbox of checkboxes) {
+                checkbox.checked = selectAll.checked;
+            }
+            updateBulkAction();
+        }
+
+        function updateBulkAction() {
+            // Optional: You can enable/disable the dropdown based on selection if needed
+            // For now, we just keep tracking handled by the dropdown's onchange
+        }
+
+        function confirmBulkDelete() {
+            const checkboxes = document.getElementsByClassName('student-checkbox');
+            let checkedCount = 0;
+            for (let checkbox of checkboxes) {
+                if (checkbox.checked) checkedCount++;
+            }
+
+            Swal.fire({
+                title: 'Are you sure?',
+                text: `You are about to delete ${checkedCount} students. This action cannot be undone!`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete them!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('bulkActionForm').submit();
+                }
+            })
+        }
+
+        // Handle bulk action dropdown
+        function handleBulkAction(action) {
+            if (!action) return;
+
+            const checkboxes = document.getElementsByClassName('student-checkbox');
+            let checkedCount = 0;
+
+            for (let checkbox of checkboxes) {
+                if (checkbox.checked) checkedCount++;
+            }
+
+            if (checkedCount === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No Students Selected',
+                    text: 'Please select at least one student to perform bulk actions.',
+                    confirmButtonColor: '#e37814'
+                });
+                return;
+            }
+
+            switch (action) {
+                case 'delete':
+                    confirmBulkDelete();
+                    break;
+
+                case 'export-pdf':
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Export to PDF',
+                        text: `Exporting ${checkedCount} selected students to PDF...`,
+                        confirmButtonColor: '#e37814',
+                        timer: 2000
+                    });
+                    // TODO: Implement PDF export functionality
+                    break;
+
+                case 'export-excel':
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Export to Excel',
+                        text: `Exporting ${checkedCount} selected students to Excel...`,
+                        confirmButtonColor: '#e37814',
+                        timer: 2000
+                    });
+                    // TODO: Implement Excel export functionality
+                    break;
             }
         }
-    });
-});
 
-// Force reload on back button to ensure updated payment status
-window.addEventListener("pageshow", function(event) {
-    var historyTraversal = event.persisted || 
-                           (typeof window.performance != "undefined" && 
-                            window.performance.navigation.type === 2);
-    if (historyTraversal) {
-        window.location.reload();
-    }
-});
+        function confirmDelete(url) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = document.getElementById('deleteForm');
+                    form.action = url;
+                    form.submit();
+                }
+            })
+        }
+    </script>
 
-
-
-
-function closePayModal() {
-  document.getElementById('payModal').style.display = 'none';
-}
-
-// Close on outside click
-document.getElementById('payModal').addEventListener('click', function(e) {
-  if (e.target === this) {
-    closePayModal();
-  }
-});
-
-function toggleSelectAll() {
-  const selectAll = document.getElementById('selectAll');
-  const checkboxes = document.getElementsByClassName('student-checkbox');
-  
-  for(let checkbox of checkboxes) {
-    checkbox.checked = selectAll.checked;
-  }
-  updateBulkAction();
-}
-
-function updateBulkAction() {
-  // Optional: You can enable/disable the dropdown based on selection if needed
-  // For now, we just keep tracking handled by the dropdown's onchange
-}
-
-function confirmBulkDelete() {
-  const checkboxes = document.getElementsByClassName('student-checkbox');
-  let checkedCount = 0;
-  for(let checkbox of checkboxes) {
-    if(checkbox.checked) checkedCount++;
-  }
-
-  Swal.fire({
-    title: 'Are you sure?',
-    text: `You are about to delete ${checkedCount} students. This action cannot be undone!`,
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#d33',
-    cancelButtonColor: '#3085d6',
-    confirmButtonText: 'Yes, delete them!'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      document.getElementById('bulkActionForm').submit();
-    }
-  })
-}
-
-// Handle bulk action dropdown
-function handleBulkAction(action) {
-  if (!action) return;
-  
-  const checkboxes = document.getElementsByClassName('student-checkbox');
-  let checkedCount = 0;
-  
-  for(let checkbox of checkboxes) {
-    if(checkbox.checked) checkedCount++;
-  }
-  
-  if (checkedCount === 0) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'No Students Selected',
-      text: 'Please select at least one student to perform bulk actions.',
-      confirmButtonColor: '#e37814'
-    });
-    return;
-  }
-  
-  switch(action) {
-    case 'delete':
-      confirmBulkDelete();
-      break;
-      
-    case 'export-pdf':
-      Swal.fire({
-        icon: 'info',
-        title: 'Export to PDF',
-        text: `Exporting ${checkedCount} selected students to PDF...`,
-        confirmButtonColor: '#e37814',
-        timer: 2000
-      });
-      // TODO: Implement PDF export functionality
-      break;
-      
-    case 'export-excel':
-      Swal.fire({
-        icon: 'info',
-        title: 'Export to Excel',
-        text: `Exporting ${checkedCount} selected students to Excel...`,
-        confirmButtonColor: '#e37814',
-        timer: 2000
-      });
-      // TODO: Implement Excel export functionality
-      break;
-  }
-}
-
-function confirmDelete(url) {
-  Swal.fire({
-    title: 'Are you sure?',
-    text: "You won't be able to revert this!",
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#d33',
-    cancelButtonColor: '#3085d6',
-    confirmButtonText: 'Yes, delete it!'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      const form = document.getElementById('deleteForm');
-      form.action = url;
-      form.submit();
-    }
-  })
-}
-</script>
-
-<form id="deleteForm" method="POST" style="display:none">
-  @csrf
-  @method('DELETE')
-</form>
+    <form id="deleteForm" method="POST" style="display:none">
+        @csrf
+        @method('DELETE')
+    </form>
 @endsection
