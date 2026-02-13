@@ -72,6 +72,8 @@
             <button
                 onclick='openPayModal({{ $student->id }}, "{{ $student->name }} ({{ $className }})", "{{ $student->father_name }}", @json($recurringFees), @json($student->discounts ?? []), @json($paidFeeTracker), @json($allClassFees ?? []), @json($student->partial_payments ?? []))'
                 class="btn" style="margin-right:8px;">Make Payment</button>
+            <a href="{{ route('students.admission-form.download', $student) }}" class="btn" style="margin-right:8px"
+                target="_blank">Download Admission Form</a>
             <a href="{{ route('students.edit', $student) }}" class="btn" style="margin-right:8px">Edit Student</a>
             <a href="{{ route('students.index') }}" class="btn ghost">Back to List</a>
         </div>
