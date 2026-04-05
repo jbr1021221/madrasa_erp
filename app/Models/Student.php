@@ -25,6 +25,7 @@ class Student extends Model
         'program_type', // Hifz or Schooling
         'shift', // Morning or Evening
         'photo', // Student photo
+        'is_active', // Active/Inactive status
         // New student details
         'dob',
         'gender',

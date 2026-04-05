@@ -22,6 +22,13 @@ class StudentController extends Controller
                 ->select('student_id', 'month', 'fee_details', 'payment_type');
         }]);
 
+        // Default: show only active students. show_inactive=1 shows only inactive.
+        if ($request->input('show_inactive') == '1') {
+            $query->where('is_active', false);
+        } else {
+            $query->where('is_active', true);
+        }
+
         // Filter by class
         if ($request->filled('class_id')) {
             $query->where('class_id', $request->class_id);
@@ -60,7 +67,8 @@ class StudentController extends Controller
             $sections = $classrooms->pluck('sections')->flatten()->unique()->sort()->values()->all();
         }
 
-        return view('students.index', compact('students', 'classrooms', 'sections'));
+        $showInactive = $request->input('show_inactive') == '1';
+        return view('students.index', compact('students', 'classrooms', 'sections', 'showInactive'));
     }
 
     /**
@@ -500,6 +508,15 @@ class StudentController extends Controller
         $student->update($validated);
 
         return redirect()->route('students.index')->with('success', 'Student updated successfully.');
+    }
+
+    /**
+     * Toggle student active/inactive status.
+     */
+    public function toggleStatus(Student $student)
+    {
+        $student->update(['is_active' => !$student->is_active]);
+        return redirect()->back()->with('success', 'Student status updated.');
     }
 
     /**

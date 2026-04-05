@@ -63,18 +63,43 @@
         }
     @endphp
 
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+        {{-- Left: Student name + status badge --}}
         <div>
-            <h2 style="margin:0">{{ $student->name }}</h2>
-            <p style="margin:4px 0 0 0;color:var(--muted);font-size:14px">Student ID: {{ $student->student_id }}</p>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <h2 style="margin:0">{{ $student->name }}</h2>
+                @if($student->is_active)
+                    <span style="background:rgba(76,175,80,0.15); color:#4caf50; padding:3px 10px; border-radius:20px; font-size:11px; border:1px solid rgba(76,175,80,0.4); font-weight:600; letter-spacing:0.5px;">● ACTIVE</span>
+                @else
+                    <span style="background:rgba(231,76,60,0.15); color:#e74c3c; padding:3px 10px; border-radius:20px; font-size:11px; border:1px solid rgba(231,76,60,0.4); font-weight:600; letter-spacing:0.5px;">● INACTIVE</span>
+                @endif
+            </div>
+            <p style="margin:4px 0 0 0; color:var(--muted); font-size:14px">Student ID: {{ $student->student_id }}</p>
         </div>
-        <div>
+
+        {{-- Right: Action buttons --}}
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
             <button
                 onclick='openPayModal({{ $student->id }}, "{{ $student->name }} ({{ $className }})", "{{ $student->father_name }}", @json($recurringFees), @json($student->discounts ?? []), @json($paidFeeTracker), @json($allClassFees ?? []), @json($student->partial_payments ?? []))'
-                class="btn" style="margin-right:8px;">Make Payment</button>
-            <a href="{{ route('students.admission-form.download', $student) }}" class="btn" style="margin-right:8px"
-                target="_blank">Download Admission Form</a>
-            <a href="{{ route('students.edit', $student) }}" class="btn" style="margin-right:8px">Edit Student</a>
+                class="btn">Make Payment</button>
+
+            <a href="{{ route('students.admission-form.download', $student) }}" class="btn" target="_blank">Admission Form</a>
+
+            <a href="{{ route('students.edit', $student) }}" class="btn">Edit</a>
+
+            <form method="POST" action="{{ route('students.toggle-status', $student) }}" style="display:inline; margin:0;">
+                @csrf
+                @if($student->is_active)
+                    <button type="submit" class="btn ghost"
+                            style="border-color:#e74c3c; color:#e74c3c;"
+                            onclick="return confirm('Deactivate this student?')">Deactivate</button>
+                @else
+                    <button type="submit" class="btn ghost"
+                            style="border-color:#4caf50; color:#4caf50;"
+                            onclick="return confirm('Activate this student?')">Activate</button>
+                @endif
+            </form>
+
             <a href="{{ route('students.index') }}" class="btn ghost">Back to List</a>
         </div>
     </div>

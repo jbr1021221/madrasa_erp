@@ -30,6 +30,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/students/{student}', [StudentController::class, 'show'])->name('students.show');
         Route::get('/students/{student}/edit', [StudentController::class, 'edit'])->name('students.edit');
         Route::put('/students/{student}', [StudentController::class, 'update'])->name('students.update');
+        Route::post('/students/{student}/toggle-status', [StudentController::class, 'toggleStatus'])->name('students.toggle-status');
         
         // Student Receipt & Forms
         Route::get('/students/{student}/receipt/confirm', [StudentController::class, 'receiptConfirm'])->name('students.receipt.confirm');

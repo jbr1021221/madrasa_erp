@@ -57,6 +57,14 @@
                 @if (request()->hasAny(['class_id', 'section', 'search', 'start_date', 'end_date']))
                     <a href="{{ route('students.index') }}" class="btn ghost" style="padding:6px 14px">Clear</a>
                 @endif
+                @if($showInactive)
+                    <a href="{{ route('students.index', request()->except('show_inactive')) }}"
+                       class="btn ghost filter-btn">← Show Active</a>
+                @else
+                    <a href="{{ route('students.index', array_merge(request()->all(), ['show_inactive' => '1'])) }}"
+                       class="btn ghost filter-btn"
+                       style="border-color:#e74c3c; color:#e74c3c;">Show Inactive</a>
+                @endif
             </form>
 
             <!-- Bulk Actions Dropdown -->
@@ -86,6 +94,7 @@
                     <th>ID</th>
                     <th>Class</th>
                     <th>Section</th>
+                    <th>Status</th>
                     <th class="no-sort">Actions</th>
                 </tr>
             </thead>
@@ -99,6 +108,13 @@
                         <td>{{ $student->student_id }}</td>
                         <td>{{ $student->classroom->name ?? 'N/A' }}</td>
                         <td>{{ $student->section }}</td>
+                        <td>
+                            @if($student->is_active)
+                                <span style="background:rgba(76,175,80,0.2);color:#4caf50;padding:2px 8px;border-radius:3px;font-size:11px;border:1px solid #4caf50;">Active</span>
+                            @else
+                                <span style="background:rgba(231,76,60,0.2);color:#e74c3c;padding:2px 8px;border-radius:3px;font-size:11px;border:1px solid #e74c3c;">Inactive</span>
+                            @endif
+                        </td>
                         <td style="display:flex;gap:6px;justify-content:center">
                             @php
                                 $recurringFees = [];
@@ -232,10 +248,15 @@
                                 }
                             @endphp
                             <button type="button" class="action-btn"
-                                onclick="openPayModal({{ $student->id }}, '{{ $student->name }} ({{ $className }})', '{{ $student->father_name }}', {{ json_encode($recurringFees) }}, {{ json_encode($student->discounts ?? []) }}, {{ json_encode($paidFeeTracker) }}, {{ json_encode($allClassFees ?? []) }}, {{ json_encode($student->partial_payments ?? []) }})"
+                                onclick="openPayModal({{ $student->id }}, '{{ $student->name }} ({{ $className }})', '{{ $student->father_name }}', {{ json_encode($recurringFees) }}, {{ json_encode($student->discounts ?? []) }}, {{ json_encode($paidFeeTracker) }}, {{ json_encode($allClassFees ?? []) }}, {{ json_encode($student->partial_payments ?? []) }}, '{{ $student->created_at->format('Y-m') }}')"
                                 title="Pay Fees">Fees</button>
                             <a href="{{ route('students.show', $student) }}" class="action-btn"
                                 title="View Details">View</a>
+                            <button type="button" class="action-btn"
+                                    style="{{ $student->is_active ? 'border-color:#e74c3c;color:#e74c3c;' : 'border-color:#4caf50;color:#4caf50;' }}"
+                                    onclick="confirmToggleStatus('{{ route('students.toggle-status', $student) }}', {{ $student->is_active ? 'true' : 'false' }}, this)">
+                                {{ $student->is_active ? 'Deactivate' : 'Activate' }}
+                            </button>
                             <button type="button" class="action-btn delete"
                                 onclick="confirmDelete('{{ route('students.destroy', $student) }}')"
                                 title="Delete Student">Delete</button>
@@ -675,6 +696,44 @@
                     form.submit();
                 }
             })
+        }
+        function confirmToggleStatus(url, isActive, btn) {
+            const action = isActive ? 'Deactivate' : 'Activate';
+            const color = isActive ? '#e74c3c' : '#4caf50';
+            const icon = isActive ? 'warning' : 'question';
+
+            Swal.fire({
+                title: action + ' Student?',
+                text: isActive
+                    ? 'This student will be hidden from the active student list.'
+                    : 'This student will be restored to the active student list.',
+                icon: icon,
+                showCancelButton: true,
+                confirmButtonColor: color,
+                cancelButtonColor: '#555',
+                confirmButtonText: 'Yes, ' + action + '!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': token,
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({})
+                    }).then(response => {
+                        if (response.ok || response.redirected) {
+                            window.location.reload();
+                        } else {
+                            Swal.fire('Error', 'Something went wrong. Please try again.', 'error');
+                        }
+                    }).catch(() => {
+                        Swal.fire('Error', 'Network error. Please try again.', 'error');
+                    });
+                }
+            });
         }
     </script>
 

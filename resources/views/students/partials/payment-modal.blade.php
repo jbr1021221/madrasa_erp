@@ -152,8 +152,9 @@
     let currentNetPayable = 0;
     let currentPaidFeeTracker = {};
     let availableClassFees = [];
+    let currentAdmissionDate = null; // e.g. "2024-09"
 
-    function openPayModal(id, name, fatherName, selectedFees, discounts, paidFeeTracker, classFees, partialPayments) {
+    function openPayModal(id, name, fatherName, selectedFees, discounts, paidFeeTracker, classFees, partialPayments, admissionDate) {
         // Reset Redirect to default (Receipt)
         const redirectInput = document.querySelector('input[name="redirect_to"]');
         if (redirectInput) redirectInput.value = 'students.receipt.confirm';
@@ -192,6 +193,7 @@
 
         currentDiscounts = discounts || {};
         currentPaidFeeTracker = paidFeeTracker || {};
+        currentAdmissionDate = admissionDate || null;
 
 
         // Add unpaid admission fees to availableClassFees
@@ -795,18 +797,30 @@
                 'October', 'November', 'December'
             ];
             const orderedMonths = [];
-            for (let i = 0; i < 12; i++) {
-                const currentMonthIndex = (monthIndex + i) % 12;
-                const monthName = months[currentMonthIndex];
-                const monthYear = year + Math.floor((monthIndex + i) / 12);
+            // Start from student admission month, end at December of current year
+            let startDate;
+            if (currentAdmissionDate) {
+                const parts = currentAdmissionDate.split('-');
+                startDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, 1);
+            } else {
+                startDate = new Date(year, 0, 1); // fallback: January of current year
+            }
+            // Always go to December of the current year
+            const endDate = new Date(year, 11, 1);
+
+            let cursor = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+            while (cursor <= endDate) {
+                const monthName = months[cursor.getMonth()];
+                const monthYear = cursor.getFullYear();
                 const shortYear = monthYear.toString().slice(-2);
                 orderedMonths.push({
                     name: monthName,
                     year: shortYear,
                     displayText: `${monthName}, ${shortYear}`
                 });
+                cursor.setMonth(cursor.getMonth() + 1);
             }
-
+            // No reverse — chronological order (admission month at top, December at bottom)
             const dropdownList = document.getElementById('monthDropdownList');
             dropdownList.innerHTML = '';
 
