@@ -59,6 +59,9 @@ class StudentController extends Controller
         $students = $query->latest()->get();
         $classrooms = Classroom::all();
 
+        // Always count total active students (unaffected by current filters)
+        $activeCount = Student::where('is_active', true)->count();
+
         if ($request->filled('class_id')) {
             $selectedClass = $classrooms->find($request->class_id);
             $sections = $selectedClass ? $selectedClass->sections : [];
@@ -68,7 +71,7 @@ class StudentController extends Controller
         }
 
         $showInactive = $request->input('show_inactive') == '1';
-        return view('students.index', compact('students', 'classrooms', 'sections', 'showInactive'));
+        return view('students.index', compact('students', 'classrooms', 'sections', 'showInactive', 'activeCount'));
     }
 
     /**

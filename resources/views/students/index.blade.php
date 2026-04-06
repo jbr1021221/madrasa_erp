@@ -10,12 +10,16 @@
         </div>
     @endif
 
-    <div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:end">
-        <div>
-            <h2 style="margin:0">Students</h2>
-            <p style="margin:0;color:var(--muted);font-size:13px">Manage & monitor all enrolled students</p>
+    <div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;align-items:center;gap:12px">
+            <div>
+                <h2 style="margin:0">Students</h2>
+                <p style="margin:0;color:var(--muted);font-size:13px">Manage & monitor all enrolled students</p>
+            </div>
+            <span style="background:rgba(76,175,80,0.15);color:#4caf50;border:1px solid rgba(76,175,80,0.5);padding:4px 14px;border-radius:20px;font-size:13px;font-weight:600;white-space:nowrap;">
+                ✅ {{ $activeCount }} Active Students
+            </span>
         </div>
-
     </div>
 
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:10px;flex-wrap:wrap">

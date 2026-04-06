@@ -15,8 +15,8 @@ class DashboardController extends Controller
             $studentsExist = Schema::hasTable('students');
             $paymentsExist = Schema::hasTable('payments');
 
-            // Get total students
-            $totalStudents = $studentsExist ? DB::table('students')->count() : 0;
+            // Get total active students (excluding soft-deleted)
+            $totalStudents = $studentsExist ? DB::table('students')->where('is_active', 1)->whereNull('deleted_at')->count() : 0;
 
             // Get total classes
             $totalClasses = Classroom::count();
@@ -24,11 +24,13 @@ class DashboardController extends Controller
             // Get total earnings
             $totalEarnings = $paymentsExist ? DB::table('payments')->sum('amount') ?? 0 : 0;
 
-            // Get class-wise student count
+            // Get class-wise active student count (excluding soft-deleted)
             $classWiseData = [];
             if ($studentsExist && Schema::hasColumn('students', 'class_id')) {
                 $classWiseData = DB::table('students')
                     ->join('classrooms', 'students.class_id', '=', 'classrooms.id')
+                    ->where('students.is_active', 1)
+                    ->whereNull('students.deleted_at')
                     ->select('classrooms.name as className', DB::raw('count(*) as total'))
                     ->groupBy('classrooms.id', 'classrooms.name')
                     ->get()
@@ -40,12 +42,16 @@ class DashboardController extends Controller
             
             if (DB::getDriverName() === 'sqlite') {
                 $studentData = DB::table('students')
+                    ->where('is_active', 1)
+                    ->whereNull('deleted_at')
                     ->select(DB::raw('count(*) as count'), DB::raw('strftime("%m", created_at) as month'))
                     ->whereYear('created_at', date('Y'))
                     ->groupBy(DB::raw('strftime("%m", created_at)'))
                     ->get();
             } else {
                 $studentData = DB::table('students')
+                    ->where('is_active', 1)
+                    ->whereNull('deleted_at')
                     ->select(DB::raw('count(*) as count'), DB::raw('MONTH(created_at) as month'))
                     ->whereYear('created_at', date('Y'))
                     ->groupBy(DB::raw('YEAR(created_at)'), DB::raw('MONTH(created_at)'))
