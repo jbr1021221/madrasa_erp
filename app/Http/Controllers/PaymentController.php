@@ -99,7 +99,7 @@ class PaymentController extends Controller
         $isUnpaidSearch = $request->status === 'unpaid';
 
         if ($isUnpaidSearch) {
-            $query = Student::with('classroom');
+            $query = Student::with('classroom')->where('is_active', true);
 
             // Filter by class
             if ($request->filled('class_id')) {
