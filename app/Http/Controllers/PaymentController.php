@@ -158,7 +158,12 @@ class PaymentController extends Controller
                             // Case-insensitive check
                             if (stripos($itm['name'] ?? '', $filterName) !== false) {
                                 if (!in_array($index, $matchedItems)) {
-                                    $matchedAmount += ($itm['amount'] ?? 0);
+                                    $original = isset($itm['original_amount']) ? floatval($itm['original_amount']) : null;
+                                    $discount = isset($itm['discount']) ? floatval($itm['discount']) : 0;
+                                    $effectiveAmount = ($original !== null)
+                                        ? max(0, $original - $discount)
+                                        : floatval($itm['amount'] ?? 0);
+                                    $matchedAmount += $effectiveAmount;
                                     $matchedItems[] = $index;
                                 }
                             }
@@ -181,9 +186,23 @@ class PaymentController extends Controller
                 $totalEarnings += $matchedAmount;
             }
         } else {
-            $totalEarnings = $payments->sum('amount');
+            $totalEarnings = 0;
             foreach ($payments as $payment) {
-                $payment->amount_display = $payment->amount;
+                $details = $payment->fee_details;
+                if (is_array($details) && count($details) > 0) {
+                    $recalculated = 0;
+                    foreach ($details as $itm) {
+                        $original = isset($itm['original_amount']) ? floatval($itm['original_amount']) : null;
+                        $discount = isset($itm['discount']) ? floatval($itm['discount']) : 0;
+                        $recalculated += ($original !== null)
+                            ? max(0, $original - $discount)
+                            : floatval($itm['amount'] ?? 0);
+                    }
+                    $payment->amount_display = $recalculated;
+                } else {
+                    $payment->amount_display = $payment->amount;
+                }
+                $totalEarnings += $payment->amount_display;
             }
         }
 

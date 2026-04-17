@@ -154,6 +154,28 @@
     let availableClassFees = [];
     let currentAdmissionDate = null; // e.g. "2024-09"
 
+    // Parse "January, 26" style display text into a Date object
+    function parseMonthYearToDate(displayText) {
+        const parts = displayText.split(', ');
+        if (parts.length !== 2) return null;
+        const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        const monthIndex = monthNames.indexOf(parts[0].trim());
+        const shortYear = parseInt(parts[1].trim());
+        if (monthIndex === -1 || isNaN(shortYear)) return null;
+        return new Date(2000 + shortYear, monthIndex);
+    }
+
+    // Returns true if the fee is applicable for the given month (respects 'since' date)
+    function feeApplicableForMonth(feeSince, monthDisplayText) {
+        if (!feeSince) return true;
+        const monthDate = parseMonthYearToDate(monthDisplayText);
+        if (!monthDate) return true;
+        const sinceParts = feeSince.split('-').map(Number);
+        const sinceDate = new Date(sinceParts[0], sinceParts[1] - 1);
+        return monthDate >= sinceDate;
+    }
+
+
     function openPayModal(id, name, fatherName, selectedFees, discounts, paidFeeTracker, classFees, partialPayments, admissionDate) {
         // Reset Redirect to default (Receipt)
         const redirectInput = document.querySelector('input[name="redirect_to"]');
@@ -175,9 +197,15 @@
 
         // Combine and deduplicate monthly fees based on name
         const monthlyFeesMap = {};
-        [...monthlyFeesFromClass, ...monthlyFeesFromSelected].forEach(fee => {
+        // Class fees define amounts/types; selected fees carry the 'since' date
+        monthlyFeesFromClass.forEach(fee => {
+            if (!monthlyFeesMap[fee.name]) monthlyFeesMap[fee.name] = {...fee};
+        });
+        monthlyFeesFromSelected.forEach(fee => {
             if (!monthlyFeesMap[fee.name]) {
-                monthlyFeesMap[fee.name] = fee;
+                monthlyFeesMap[fee.name] = {...fee};
+            } else if (fee.since) {
+                monthlyFeesMap[fee.name].since = fee.since; // Preserve 'since' from student's subscription
             }
         });
         allFees = Object.values(monthlyFeesMap);
@@ -400,6 +428,7 @@
             tr.dataset.unitAmount = actual;
             tr.dataset.discount = discount;
             tr.dataset.feeName = fee.name;
+            if (fee.since) tr.dataset.since = fee.since;
             if (initialPart) tr.dataset.partName = initialPart;
 
             tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
@@ -828,18 +857,19 @@
                 const displayText = monthObj.displayText;
                 const paidFeesForThisMonth = currentPaidFeeTracker[displayText] || [];
 
-                // Get the current monthly fees being displayed (which fees the student is subscribed to)
+                // Only count fees that were applicable for this specific month (respects 'since' date)
                 const monthlyFees = allFees.filter(f => (f.type || '').toLowerCase() === 'monthly');
-                const totalMonthlyFees = monthlyFees.length;
-                const monthlyFeeNames = monthlyFees.map(f => f.name.toLowerCase());
+                const applicableMonthlyFees = monthlyFees.filter(f => feeApplicableForMonth(f.since, monthObj.displayText));
+                const totalMonthlyFees = applicableMonthlyFees.length;
+                const monthlyFeeNames = applicableMonthlyFees.map(f => f.name.toLowerCase());
 
                 let paidCount = 0;
                 if (Array.isArray(paidFeesForThisMonth)) {
                     // If it's an array, it contains fee names or __ALL__
                     if (paidFeesForThisMonth.includes('__ALL__')) {
-                        paidCount = totalMonthlyFees;
+                        paidCount = totalMonthlyFees; // Only counts fees applicable for this month
                     } else {
-                        // Count how many of the current monthly fees have been paid
+                        // Count how many of the applicable monthly fees have been paid
                         paidCount = paidFeesForThisMonth.filter(pf => monthlyFeeNames.includes(pf
                             .toLowerCase())).length;
                     }
@@ -947,7 +977,9 @@
 
                 if (feeType === 'monthly') {
                     const targetFeeName = feeName.toLowerCase();
+                    const feeSince = row.dataset.since || null;
                     selectedMonthTexts.forEach(monthText => {
+                        if (!feeApplicableForMonth(feeSince, monthText)) return; // Skip months before fee started
                         const paidFees = currentPaidFeeTracker[monthText] || [];
                         const isPaid = paidFees.some(pf => pf.toLowerCase() === targetFeeName) ||
                             paidFees.includes('__ALL__');
@@ -1073,6 +1105,8 @@
                 } else {
                     document.querySelectorAll('.month-checkbox:checked').forEach(cb => {
                         const monthText = cb.dataset.displayText;
+                        const feeSince = row.dataset.since || null;
+                        if (!feeApplicableForMonth(feeSince, monthText)) return; // Skip months before fee started
                         const paidFees = currentPaidFeeTracker[monthText] || [];
                         const isPaid = paidFees.some(pf => pf.toLowerCase() === targetFeeName) ||
                             paidFees.includes('__ALL__');

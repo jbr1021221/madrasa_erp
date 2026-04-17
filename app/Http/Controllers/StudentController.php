@@ -469,18 +469,32 @@ class StudentController extends Controller
             $discounts = [];
             $selectedFees = [];
             $assignedFees = json_decode($request->student_assigned_fees, true);
+            $existingSelectedFees = $student->selected_fees ?? [];
+
             if (is_array($assignedFees)) {
                 foreach ($assignedFees as $fee) {
+                    $feeName = $fee['name'];
+
                     // Add to selected fees
-                    $selectedFees[] = [
-                        'name' => $fee['name'],
+                    $feeEntry = [
+                        'name' => $feeName,
                         'type' => $fee['type'] ?? 'Other',
                         'amount' => floatval($fee['amount'] ?? 0)
                     ];
 
+                    // Preserve or assign 'since' to track when each fee was added
+                    $existingFee = collect($existingSelectedFees)->firstWhere('name', $feeName);
+                    if ($existingFee && isset($existingFee['since'])) {
+                        $feeEntry['since'] = $existingFee['since']; // Keep original start date
+                    } elseif (!$existingFee) {
+                        $feeEntry['since'] = date('Y-m'); // New fee: starts this month
+                    }
+
+                    $selectedFees[] = $feeEntry;
+
                     // Add to discounts if discount exists (even if 0)
                     if (isset($fee['discount'])) {
-                        $discounts[$fee['name']] = [
+                        $discounts[$feeName] = [
                             'amount' => floatval($fee['discount']),
                             'permanent' => !empty($fee['is_permanent']) ? 1 : 0
                         ];
