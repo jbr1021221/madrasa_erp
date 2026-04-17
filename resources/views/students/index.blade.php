@@ -10,24 +10,26 @@
         </div>
     @endif
 
-    <div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
-        <div style="display:flex;align-items:center;gap:12px">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="page-header-left">
             <div>
                 <h2 style="margin:0">Students</h2>
                 <p style="margin:0;color:var(--muted);font-size:13px">Manage & monitor all enrolled students</p>
             </div>
-            <span style="background:rgba(76,175,80,0.15);color:#4caf50;border:1px solid rgba(76,175,80,0.5);padding:4px 14px;border-radius:20px;font-size:13px;font-weight:600;white-space:nowrap;">
-                ✅ {{ $activeCount }} Active Students
+            <span class="active-badge">
+                &#10003; {{ $activeCount }} Active
             </span>
         </div>
+        <a href="{{ route('students.create') }}" class="btn">+ Add Student</a>
     </div>
 
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:10px;flex-wrap:wrap">
-        <div style="display:flex;gap:10px;flex:1;flex-wrap:wrap;align-items:center">
-            <!-- Filters Form -->
-            <form method="GET" action="{{ route('students.index') }}" style="display:flex;gap:10px;flex-wrap:wrap">
-                <select name="class_id" onchange="this.form.submit()"
-                    style="background:#1b1f22;color:var(--text);border:1px solid rgba(255,255,255,0.15);padding:6px 10px;border-radius:var(--radius);font-size:14px;width:150px">
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+        <form method="GET" action="{{ route('students.index') }}" class="filter-form-row">
+            <div class="filter-group">
+                <label class="filter-label">Class</label>
+                <select name="class_id" onchange="this.form.submit()" class="filter-ctrl">
                     <option value="">All Classes</option>
                     @foreach ($classrooms as $classroom)
                         <option value="{{ $classroom->id }}" {{ request('class_id') == $classroom->id ? 'selected' : '' }}>
@@ -35,53 +37,57 @@
                         </option>
                     @endforeach
                 </select>
+            </div>
 
-                <select name="section" onchange="this.form.submit()"
-                    style="background:#1b1f22;color:var(--text);border:1px solid rgba(255,255,255,0.15);padding:6px 10px;border-radius:var(--radius);font-size:14px;width:150px">
+            <div class="filter-group">
+                <label class="filter-label">Section</label>
+                <select name="section" onchange="this.form.submit()" class="filter-ctrl">
                     <option value="">All Sections</option>
                     @foreach ($sections as $section)
                         <option value="{{ $section }}" {{ request('section') == $section ? 'selected' : '' }}>
-                            Section {{ $section }}
+                            {{ $section }}
                         </option>
                     @endforeach
                 </select>
+            </div>
 
-                <input type="date" name="start_date" value="{{ request('start_date') }}"
-                    style="background:#1b1f22;color:var(--text);border:1px solid rgba(255,255,255,0.15);padding:6px 10px;border-radius:var(--radius);font-size:14px;width:140px"
-                    title="Start Date">
+            <div class="filter-group">
+                <label class="filter-label">From</label>
+                <input type="date" name="start_date" value="{{ request('start_date') }}" class="filter-ctrl" title="Start Date">
+            </div>
 
-                <input type="date" name="end_date" value="{{ request('end_date') }}"
-                    style="background:#1b1f22;color:var(--text);border:1px solid rgba(255,255,255,0.15);padding:6px 10px;border-radius:var(--radius);font-size:14px;width:140px"
-                    title="End Date">
+            <div class="filter-group">
+                <label class="filter-label">To</label>
+                <input type="date" name="end_date" value="{{ request('end_date') }}" class="filter-ctrl" title="End Date">
+            </div>
 
-                <input type="text" name="search" placeholder="Search by Name or ID" value="{{ request('search') }}"
-                    style="background:#1b1f22;color:var(--text);border:1px solid rgba(255,255,255,0.15);padding:6px 10px;border-radius:var(--radius);font-size:14px;width:200px">
+            <div class="filter-group filter-group-search">
+                <label class="filter-label">Search</label>
+                <input type="text" name="search" placeholder="Name or ID..." value="{{ request('search') }}" class="filter-ctrl">
+            </div>
 
-                <button type="submit" class="btn ghost" style="padding:6px 14px">Filter</button>
+            <div class="filter-actions">
+                <button type="submit" class="btn ghost" style="padding:6px 16px">Filter</button>
                 @if (request()->hasAny(['class_id', 'section', 'search', 'start_date', 'end_date']))
-                    <a href="{{ route('students.index') }}" class="btn ghost" style="padding:6px 14px">Clear</a>
+                    <a href="{{ route('students.index') }}" class="btn ghost" style="padding:6px 16px">Clear</a>
                 @endif
                 @if($showInactive)
                     <a href="{{ route('students.index', request()->except('show_inactive')) }}"
-                       class="btn ghost filter-btn">← Show Active</a>
+                       class="btn ghost" style="padding:6px 14px">&#8592; Active Only</a>
                 @else
                     <a href="{{ route('students.index', array_merge(request()->all(), ['show_inactive' => '1'])) }}"
-                       class="btn ghost filter-btn"
-                       style="border-color:#e74c3c; color:#e74c3c;">Show Inactive</a>
+                       class="btn ghost" style="padding:6px 14px;border-color:#e74c3c;color:#e74c3c;">Show Inactive</a>
                 @endif
-            </form>
+            </div>
+        </form>
 
-            <!-- Bulk Actions Dropdown -->
-            <select id="bulkActionDropdown" onchange="handleBulkAction(this.value); this.value='';"
-                style="background:#1b1f22;color:var(--text);border:1px solid rgba(255,255,255,0.15);padding:6px 10px;border-radius:var(--radius);font-size:14px;width:150px">
+        <div class="filter-bulk">
+            <label class="filter-label">Bulk</label>
+            <select id="bulkActionDropdown" onchange="handleBulkAction(this.value); this.value='';" class="filter-ctrl">
                 <option value="">Bulk Actions</option>
                 <option value="delete">Delete Selected</option>
-                <!--<option value="export-pdf">Export to PDF</option>-->
-                <!--<option value="export-excel">Export to Excel</option>-->
             </select>
         </div>
-
-        <a href="{{ route('students.create') }}" class="btn">+ Add Student</a>
     </div>
 
     <form id="bulkActionForm" action="{{ route('students.bulk-destroy') }}" method="POST">
@@ -251,19 +257,36 @@
                                     }
                                 }
                             @endphp
-                            <button type="button" class="action-btn"
-                                onclick="openPayModal({{ $student->id }}, '{{ $student->name }} ({{ $className }})', '{{ $student->father_name }}', {{ json_encode($recurringFees) }}, {{ json_encode($student->discounts ?? []) }}, {{ json_encode($paidFeeTracker) }}, {{ json_encode($allClassFees ?? []) }}, {{ json_encode($student->partial_payments ?? []) }}, '{{ $student->created_at->format('Y-m') }}')"
-                                title="Pay Fees">Fees</button>
-                            <a href="{{ route('students.show', $student) }}" class="action-btn"
-                                title="View Details">View</a>
-                            <button type="button" class="action-btn"
-                                    style="{{ $student->is_active ? 'border-color:#e74c3c;color:#e74c3c;' : 'border-color:#4caf50;color:#4caf50;' }}"
-                                    onclick="confirmToggleStatus('{{ route('students.toggle-status', $student) }}', {{ $student->is_active ? 'true' : 'false' }}, this)">
-                                {{ $student->is_active ? 'Deactivate' : 'Activate' }}
-                            </button>
-                            <button type="button" class="action-btn delete"
-                                onclick="confirmDelete('{{ route('students.destroy', $student) }}')"
-                                title="Delete Student">Delete</button>
+                            <div class="action-group">
+                                <button type="button" class="icon-btn icon-btn-fee"
+                                    onclick="openPayModal({{ $student->id }}, '{{ $student->name }} ({{ $className }})', '{{ $student->father_name }}', {{ json_encode($recurringFees) }}, {{ json_encode($student->discounts ?? []) }}, {{ json_encode($paidFeeTracker) }}, {{ json_encode($allClassFees ?? []) }}, {{ json_encode($student->partial_payments ?? []) }}, '{{ $student->created_at->format('Y-m') }}')"
+                                    title="Pay Fees">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                                    Fees
+                                </button>
+                                <a href="{{ route('students.show', $student) }}" class="icon-btn icon-btn-view" title="View Details">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    View
+                                </a>
+                                <button type="button"
+                                    class="icon-btn {{ $student->is_active ? 'icon-btn-deactivate' : 'icon-btn-activate' }}"
+                                    onclick="confirmToggleStatus('{{ route('students.toggle-status', $student) }}', {{ $student->is_active ? 'true' : 'false' }}, this)"
+                                    title="{{ $student->is_active ? 'Deactivate' : 'Activate' }}">
+                                    @if($student->is_active)
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                                        Inactive
+                                    @else
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                                        Active
+                                    @endif
+                                </button>
+                                <button type="button" class="icon-btn icon-btn-delete"
+                                    onclick="confirmDelete('{{ route('students.destroy', $student) }}')"
+                                    title="Delete Student">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                                    Del
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 @endforeach
@@ -277,6 +300,89 @@
 
 @section('extra-styles')
     <style>
+        /* Page Header */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+        .page-header-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .active-badge {
+            background: rgba(76,175,80,0.15);
+            color: #4caf50;
+            border: 1px solid rgba(76,175,80,0.45);
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        /* Filter Bar */
+        .filter-bar {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: var(--radius);
+            padding: 14px 16px;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: flex-end;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+        .filter-form-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .filter-group-search { min-width: 180px; }
+        .filter-label {
+            font-size: 11px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin: 0;
+        }
+        .filter-ctrl {
+            background: #1b1f22;
+            color: var(--text);
+            border: 1px solid rgba(255,255,255,0.15);
+            padding: 7px 10px;
+            border-radius: var(--radius);
+            font-size: 13px;
+            width: 130px;
+            transition: border-color 0.2s;
+        }
+        .filter-ctrl:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .filter-group-search .filter-ctrl { width: 180px; }
+        .filter-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-bottom: 1px;
+        }
+        .filter-bulk {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .filter-bulk .filter-ctrl { width: 140px; }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -285,14 +391,14 @@
 
         th {
             background: rgba(255, 255, 255, 0.15);
-            padding: 10px;
-            font-size: 14px;
+            padding: 14px 16px;
+            font-size: 15px;
             text-align: center
         }
 
         td {
-            padding: 10px;
-            font-size: 14px;
+            padding: 14px 16px;
+            font-size: 16px;
             text-align: center
         }
 
@@ -309,59 +415,47 @@
             transition: 0.2s
         }
 
-        .action-btn {
-            padding: 6px 10px;
+        /* Action group */
+        .action-group {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .icon-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 9px;
             border-radius: 6px;
-            border: 1px solid var(--accent);
-            color: var(--accent);
+            border: 1px solid;
             background: transparent;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 12px;
+            font-weight: 500;
             text-decoration: none;
-            display: inline-block;
-            margin: 2px;
-            transition: all 0.2s
+            transition: background 0.18s, transform 0.1s;
+            white-space: nowrap;
+            line-height: 1;
         }
+        .icon-btn:hover { transform: translateY(-1px); }
+        .icon-btn svg { flex-shrink: 0; }
 
-        .action-btn:hover {
-            background: rgba(227, 120, 20, 0.15)
-        }
+        .icon-btn-fee   { border-color: var(--accent); color: var(--accent); }
+        .icon-btn-fee:hover { background: rgba(227,120,20,0.15); }
 
-        .action-btn.delete {
-            border-color: var(--danger);
-            color: var(--danger)
-        }
+        .icon-btn-view  { border-color: #2196f3; color: #2196f3; }
+        .icon-btn-view:hover { background: rgba(33,150,243,0.15); }
 
-        .action-btn.delete:hover {
-            background: rgba(255, 78, 78, 0.15)
-        }
+        .icon-btn-activate   { border-color: #4caf50; color: #4caf50; }
+        .icon-btn-activate:hover { background: rgba(76,175,80,0.15); }
 
-        .action-btn.receipt {
-            border-color: #4caf50;
-            color: #4caf50
-        }
+        .icon-btn-deactivate { border-color: #e74c3c; color: #e74c3c; }
+        .icon-btn-deactivate:hover { background: rgba(231,76,60,0.15); }
 
-        .action-btn.receipt:hover {
-            background: rgba(76, 175, 80, 0.15)
-        }
-
-        .action-btn.admission {
-            border-color: #2196f3;
-            color: #2196f3
-        }
-
-        .action-btn.admission:hover {
-            background: rgba(33, 150, 243, 0.15)
-        }
-
-        .action-btn.edit {
-            border-color: #ffc107;
-            color: #ffc107
-        }
-
-        .action-btn.edit:hover {
-            background: rgba(255, 193, 7, 0.15)
-        }
+        .icon-btn-delete { border-color: var(--danger); color: var(--danger); }
+        .icon-btn-delete:hover { background: rgba(255,78,78,0.15); }
 
         .btn.ghost {
             background: transparent;
