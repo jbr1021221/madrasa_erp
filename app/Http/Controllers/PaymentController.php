@@ -366,6 +366,18 @@ class PaymentController extends Controller
 
         $validated['fee_details'] = $feeDetails;
 
+        if (!empty($feeDetails)) {
+            $correct = 0;
+            foreach ($feeDetails as $fee) {
+                $orig = isset($fee['original_amount']) ? floatval($fee['original_amount']) : null;
+                $disc = isset($fee['discount']) ? floatval($fee['discount']) : 0;
+                $correct += ($orig !== null)
+                    ? max(0, $orig - $disc)
+                    : floatval($fee['amount'] ?? 0);
+            }
+            $validated['amount'] = $correct;
+        }
+
         $payment = Payment::create($validated);
 
         // Handle partial payment completion

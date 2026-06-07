@@ -238,7 +238,19 @@
                         <td>{{ $payment->payment_date->format('d M, Y') }}</td>
                         <td>{{ $payment->payment_type }}</td>
                         <td>{{ $payment->month }}</td>
-                        <td>৳ {{ number_format($payment->amount, 2) }}</td>
+                        @php
+                            $displayAmt = $payment->amount;
+                            if (is_array($payment->fee_details) && count($payment->fee_details) > 0) {
+                                $calc = 0;
+                                foreach ($payment->fee_details as $itm) {
+                                    $orig = isset($itm['original_amount']) ? floatval($itm['original_amount']) : null;
+                                    $disc = isset($itm['discount']) ? floatval($itm['discount']) : 0;
+                                    $calc += ($orig !== null) ? max(0, $orig - $disc) : floatval($itm['amount'] ?? 0);
+                                }
+                                $displayAmt = $calc;
+                            }
+                        @endphp
+                        <td>৳ {{ number_format($displayAmt, 2) }}</td>
                         <td>{{ ucfirst($payment->payment_mode) }}</td>
                         <td>{{ $payment->note ?? '-' }}</td>
                         <td style="display:flex;gap:6px;justify-content:center">

@@ -1249,7 +1249,7 @@ function collectAdmissionFees(event) {
         assignedFees.push({
             name: name,
             type: type,
-            amount: base,
+            amount: unitAmount,
             discount: disc,
             is_permanent: perm
         });
