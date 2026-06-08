@@ -317,8 +317,11 @@
         <button onclick="window.print()" style="padding:8px 16px; background:#51272f; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; margin-right:10px;">
             Print Receipt
         </button>
-        <a href="{{ route('payments.receipt.download', $payment->id) }}" style="padding:8px 16px; background:#4caf50; color:white; text-decoration:none; border-radius:4px; font-weight:bold; display:inline-block;">
+        <a href="{{ route('payments.receipt.download', $payment->id) }}" style="padding:8px 16px; background:#4caf50; color:white; text-decoration:none; border-radius:4px; font-weight:bold; display:inline-block; margin-right:10px;">
             Download PDF
+        </a>
+        <a href="https://wa.me/?text={{ urlencode('Payment Receipt for ' . ($student?->name ?? 'Student') . ' - Receipt No: ' . $receiptNo . ' - Amount: Tk ' . number_format($payment->amount, 2) . ' - ' . route('payments.receipt', $payment->id)) }}" target="_blank" style="padding:8px 16px; background:#25D366; color:white; text-decoration:none; border-radius:4px; font-weight:bold; display:inline-block;">
+            Share on WhatsApp
         </a>
     </div>
     @endif
@@ -595,6 +598,13 @@
             <div style="border-top: 1px solid #000; width: 150px; text-align: center; font-size: 12px; margin-left: 20px;">
                 Accountant
             </div>
+        </div>
+
+        <!-- Auto-generated Disclaimer -->
+        <div style="text-align: center;">
+            <p style="font-size: 10px; color: #666; font-style: italic; margin: 0;">
+                This is a computer-generated receipt and does not require any manual signature or authorization.
+            </p>
         </div>
 
         <!-- Footer -->
