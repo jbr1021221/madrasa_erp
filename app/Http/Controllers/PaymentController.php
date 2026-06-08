@@ -765,7 +765,8 @@ class PaymentController extends Controller
         // Generate Receipt No
         $receiptNo = ($payment->payment_date ? \Carbon\Carbon::parse($payment->payment_date) : now())->format('ymd') . str_pad($payment->id, 3, '0', STR_PAD_LEFT);
 
-        return view('payments.public-receipt', compact('payment', 'student', 'amountInWords', 'receiptNo'));
+        // Use the consolidated payments/receipt view
+        return view('payments.receipt', compact('payment', 'student', 'amountInWords', 'receiptNo'));
     }
 
     /**

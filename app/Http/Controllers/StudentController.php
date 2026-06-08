@@ -784,7 +784,11 @@ class StudentController extends Controller
         // Generate Receipt No
         $receiptNo = ($admissionPayment->payment_date ? \Carbon\Carbon::parse($admissionPayment->payment_date) : now())->format('ymd') . str_pad($admissionPayment->id, 3, '0', STR_PAD_LEFT);
 
-        $pdf = Pdf::loadView('students.receipt', compact('student', 'admissionPayment', 'amountInWords', 'receiptNo'))
+        // Use the consolidated payments/receipt view
+        // Map admission payment to payment variable for consistency
+        $payment = $admissionPayment;
+
+        $pdf = Pdf::loadView('payments.receipt', compact('student', 'payment', 'amountInWords', 'receiptNo', 'isPdf'))
             ->setPaper('a4', 'landscape');
 
         $filename = 'student_receipt_' . $student->student_id . '.pdf';
@@ -810,8 +814,12 @@ class StudentController extends Controller
         // Generate Receipt No
         $receiptNo = ($admissionPayment->payment_date ? \Carbon\Carbon::parse($admissionPayment->payment_date) : now())->format('ymd') . str_pad($admissionPayment->id, 3, '0', STR_PAD_LEFT);
 
+        // Use the consolidated payments/receipt view
+        // Map admission payment to payment variable for consistency
+        $payment = $admissionPayment;
+
         // Return HTML view for printing instead of PDF
-        return view('students.receipt', compact('student', 'admissionPayment', 'amountInWords', 'receiptNo'));
+        return view('payments.receipt', compact('student', 'payment', 'amountInWords', 'receiptNo'));
     }
 
     /**

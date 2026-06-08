@@ -641,15 +641,9 @@
             </div>
         </div>
 
-        <div style="margin-top: 40px; margin-bottom: 20px;">
-            <div style="border-top: 1px solid #000; width: 150px; text-align: center; font-size: 12px; margin-left: 20px;">
-                Accountant
-            </div>
-        </div>
-
         <!-- Auto-generated Disclaimer -->
-        <div style="text-align: center;">
-            <p style="font-size: 10px; color: #666; font-style: italic; margin: 0;">
+        <div style="text-align: center; margin-top: 40px; margin-bottom: 20px;">
+            <p style="font-size: 11px; color: #333; font-style: italic; margin: 0;">
                 This is a computer-generated receipt and is deemed authentic without the need for any physical signature, seal, or further authorization.
             </p>
         </div>
