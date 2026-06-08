@@ -112,8 +112,8 @@
 
 .date-wrapper {
     display: flex;
-    flex-direction: column;   /* stack vertically */
-    align-items: flex-end;    /* push to the right */
+    flex-direction: column;
+    align-items: flex-end;
 }
 .date-box {
     font-size: 11px;
@@ -278,6 +278,14 @@
             margin: 0 auto;
         }
 
+        .disclaimer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 9px;
+            color: #999;
+            font-style: italic;
+        }
+
         @media print {
             body {
                 padding: 0;
@@ -299,7 +307,6 @@
         @page {
             size: A4 landscape;
             margin: 10mm;
-            /* Hide browser default headers and footers */
             @top-left { content: none; }
             @top-center { content: none; }
             @top-right { content: none; }
@@ -311,79 +318,17 @@
 </head>
 <body>
 
-
-    @if(!isset($isPdf) || !$isPdf)
-    <div class="no-print" style="text-align:center; padding:10px; background:#f0f0f0; border-bottom:1px solid #ccc; margin-bottom:20px;">
-        <button onclick="window.print()" style="padding:8px 16px; background:#51272f; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; margin-right:10px;">
-            Print Receipt
-        </button>
-        <a href="{{ route('payments.receipt.download', $payment->id) }}" style="padding:8px 16px; background:#4caf50; color:white; text-decoration:none; border-radius:4px; font-weight:bold; display:inline-block; margin-right:10px;">
-            Download PDF
-        </a>
-        <button onclick="shareToWhatsApp()" style="padding:8px 16px; background:#25D366; color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer; display:inline-block;">
-            Share on WhatsApp
-        </button>
-
-        <script>
-        function shareToWhatsApp() {
-            // Generate the public share URL
-            const shareUrl = '{{ $payment->getPublicShareUrl() }}';
-
-            // Create the WhatsApp message
-            const studentName = '{{ $student?->name ?? 'Student' }}';
-            const receiptNo = '{{ $receiptNo }}';
-            const amount = '{{ number_format($payment->amount, 2) }}';
-
-            @php
-                // Extract month information from fee_details
-                $months = [];
-                $feeDetails = $payment->fee_details ?? [];
-
-                if (is_array($feeDetails) && count($feeDetails) > 0) {
-                    foreach ($feeDetails as $fee) {
-                        if (isset($fee['month'])) {
-                            $monthLabel = $fee['month'];
-                            if (isset($fee['year']) && strpos($monthLabel, $fee['year']) === false) {
-                                $monthLabel .= ' ' . $fee['year'];
-                            }
-                            if (!in_array($monthLabel, $months)) {
-                                $months[] = $monthLabel;
-                            }
-                        }
-                    }
-                }
-
-                // Fallback to payment month field if no months found in fee_details
-                if (empty($months) && $payment->month) {
-                    $months[] = $payment->month;
-                }
-
-                $monthText = !empty($months) ? implode(', ', $months) : 'N/A';
-            @endphp
-
-            const monthText = '{{ $monthText }}';
-            const paymentDate = '{{ \Carbon\Carbon::parse($payment->payment_date)->format('d M, Y') }}';
-
-            const message = `Payment Receipt for ${studentName}%0AReceipt No: ${receiptNo}%0AMonth(s): ${monthText}%0APayment Date: ${paymentDate}%0AAmount: ৳${amount}%0A%0AView receipt: ${shareUrl}`;
-
-            // Open WhatsApp with the message
-            window.open(`https://wa.me/?text=${message}`, '_blank');
-        }
-        </script>
-    </div>
-    @endif
-
     <div class="receipt-container">
 
         <div class="header-container">
             <!-- Logo Left -->
             <div class="logo-left">
-                <img src="{{ isset($isPdf) && $isPdf ? public_path('madrasa-logo.jpeg') : asset('madrasa-logo.jpeg') }}" alt="Logo">
+                <img src="{{ asset('madrasa-logo.jpeg') }}" alt="Logo">
             </div>
 
             <!-- Banner Center -->
             <div class="banner-center">
-                <img src="{{ isset($isPdf) && $isPdf ? public_path('academy-banner.png') : asset('academy-banner.png') }}" alt="Al Akhirah International Academy">
+                <img src="{{ asset('academy-banner.png') }}" alt="Al Akhirah International Academy">
                 <div class="academy-info">
                     <div class="academy-subtitle">International Academy</div>
                     <div class="academy-address">House #9, Road #14, Sobhanbagh, Dhanmondi, Dhaka</div>
@@ -657,14 +602,18 @@
         <!-- Footer -->
         <div class="footer">
             <div style="display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap;">
-                <img src="{{ isset($isPdf) && $isPdf ? public_path('images/Aslaf-3.jpg') : asset('images/Aslaf-3.jpg') }}" alt="Aslaf" style="height: 35px; width: 120px;">
-                <img src="{{ isset($isPdf) && $isPdf ? public_path('images/BriCou1.png') : asset('images/BriCou1.png') }}" alt="British Council" style="height: 25px; width: auto;">
-                <img src="{{ isset($isPdf) && $isPdf ? public_path('images/Cambridge.jpg') : asset('images/Cambridge.jpg') }}" alt="Cambridge" style="height: 25px; width: auto;">
-                <img src="{{ isset($isPdf) && $isPdf ? public_path('images/edexcel.png') : asset('images/edexcel.png') }}" alt="Edexcel" style="height: 25px; width: auto;">
-                <img src="{{ isset($isPdf) && $isPdf ? public_path('images/pearson.png') : asset('images/pearson.png') }}" alt="Pearson" style="height: 25px; width: auto;">
+                <img src="{{ asset('images/Aslaf-3.jpg') }}" alt="Aslaf" style="height: 35px; width: 120px;">
+                <img src="{{ asset('images/BriCou1.png') }}" alt="British Council" style="height: 25px; width: auto;">
+                <img src="{{ asset('images/Cambridge.jpg') }}" alt="Cambridge" style="height: 25px; width: auto;">
+                <img src="{{ asset('images/edexcel.png') }}" alt="Edexcel" style="height: 25px; width: auto;">
+                <img src="{{ asset('images/pearson.png') }}" alt="Pearson" style="height: 25px; width: auto;">
             </div>
         </div>
     </div>
+
+    <div class="disclaimer">
+        Generated on {{ now()->format('d M, Y H:i') }}
+    </div>
+
 </body>
 </html>
-

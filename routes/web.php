@@ -82,3 +82,6 @@ Route::middleware(['auth'])->group(function () {
 Route::get('/phpinfo', function() {
     phpinfo();
 });
+
+// Public Routes (No Auth Required)
+Route::get('/public/payment-receipt/{token}', [PaymentController::class, 'publicReceipt'])->name('payments.public.receipt');

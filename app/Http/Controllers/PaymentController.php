@@ -188,20 +188,9 @@ class PaymentController extends Controller
         } else {
             $totalEarnings = 0;
             foreach ($payments as $payment) {
-                $details = $payment->fee_details;
-                if (is_array($details) && count($details) > 0) {
-                    $recalculated = 0;
-                    foreach ($details as $itm) {
-                        $original = isset($itm['original_amount']) ? floatval($itm['original_amount']) : null;
-                        $discount = isset($itm['discount']) ? floatval($itm['discount']) : 0;
-                        $recalculated += ($original !== null)
-                            ? max(0, $original - $discount)
-                            : floatval($itm['amount'] ?? 0);
-                    }
-                    $payment->amount_display = $recalculated;
-                } else {
-                    $payment->amount_display = $payment->amount;
-                }
+                // Use the actual amount field since it now stores the net amount after discounts
+                // The sub_total and discount columns provide the breakdown if needed
+                $payment->amount_display = $payment->amount;
                 $totalEarnings += $payment->amount_display;
             }
         }
@@ -284,6 +273,8 @@ class PaymentController extends Controller
             'payment_details' => 'nullable|string',
             'selected_months' => 'nullable|string',
             'added_fees' => 'nullable|string',
+            'sub_total' => 'nullable|numeric|min:0',
+            'discount' => 'nullable|numeric|min:0',
         ]);
 
         // Handle d/m/Y date format
@@ -366,17 +357,62 @@ class PaymentController extends Controller
 
         $validated['fee_details'] = $feeDetails;
 
+        // Validate that all fees in payment_details are subscribed by student
+        $student = Student::find($validated['student_id']);
+        if ($student) {
+            // Use selected_fees array (JSON column), not the fees relationship
+            $studentFees = $student->selected_fees ?? $student->fees ?? [];
+            // Ensure it's an array, not a Collection
+            $studentFees = is_array($studentFees) ? $studentFees : [];
+            $subscribedFeeNames = array_column($studentFees, 'name');
+
+            if (!empty($feeDetails)) {
+                foreach ($feeDetails as $fee) {
+                    $feeName = $fee['name'];
+
+                    // Extract base fee name (remove month suffix like " - May, 26")
+                    $baseFeeName = preg_replace('/\s*-\s*[\w]+,\s*\d+$/', '', $feeName);
+
+                    // Check if student is subscribed to this fee type
+                    $isSubscribed = in_array($baseFeeName, $subscribedFeeNames) ||
+                                    in_array($feeName, $subscribedFeeNames);
+
+                    if (!$isSubscribed) {
+                        return redirect()->back()
+                            ->with('error', "Student is not subscribed to '{$baseFeeName}' fee. Please select only subscribed fees.")
+                            ->withInput();
+                    }
+                }
+            }
+        }
+
+        // Calculate sub_total and discount from fee_details
+        $subTotal = 0;
+        $totalDiscount = 0;
+
         if (!empty($feeDetails)) {
-            $correct = 0;
             foreach ($feeDetails as $fee) {
                 $orig = isset($fee['original_amount']) ? floatval($fee['original_amount']) : null;
                 $disc = isset($fee['discount']) ? floatval($fee['discount']) : 0;
-                $correct += ($orig !== null)
-                    ? max(0, $orig - $disc)
-                    : floatval($fee['amount'] ?? 0);
+
+                if ($orig !== null) {
+                    $subTotal += $orig;
+                    $totalDiscount += $disc;
+                }
             }
-            $validated['amount'] = $correct;
         }
+
+        // If sub_total and discount are provided by frontend, use them
+        // Otherwise calculate from fee_details
+        if (isset($validated['sub_total']) && isset($validated['discount'])) {
+            $subTotal = floatval($validated['sub_total']);
+            $totalDiscount = floatval($validated['discount']);
+        }
+
+        // Ensure amount matches sub_total - discount
+        $validated['sub_total'] = $subTotal;
+        $validated['discount'] = $totalDiscount;
+        $validated['amount'] = max(0, $subTotal - $totalDiscount);
 
         $payment = Payment::create($validated);
 
@@ -483,6 +519,8 @@ class PaymentController extends Controller
             'selected_months' => 'nullable|string',
             'added_fees' => 'nullable|string',
             'redirect_to' => 'nullable|string',
+            'sub_total' => 'nullable|numeric|min:0',
+            'discount' => 'nullable|numeric|min:0',
         ]);
 
         // Build fee details array from the payment details if provided
@@ -541,7 +579,64 @@ class PaymentController extends Controller
                 }
             }
             $validated['fee_details'] = $feeDetails;
+
+            // Validate that all fees in payment_details are subscribed by student
+            $student = Student::find($validated['student_id']);
+            if ($student) {
+                // Use selected_fees array (JSON column), not the fees relationship
+                $studentFees = $student->selected_fees ?? $student->fees ?? [];
+                // Ensure it's an array, not a Collection
+                $studentFees = is_array($studentFees) ? $studentFees : [];
+                $subscribedFeeNames = array_column($studentFees, 'name');
+
+                if (!empty($feeDetails)) {
+                    foreach ($feeDetails as $fee) {
+                        $feeName = $fee['name'];
+
+                        // Extract base fee name (remove month suffix like " - May, 26")
+                        $baseFeeName = preg_replace('/\s*-\s*[\w]+,\s*\d+$/', '', $feeName);
+
+                        // Check if student is subscribed to this fee type
+                        $isSubscribed = in_array($baseFeeName, $subscribedFeeNames) ||
+                                        in_array($feeName, $subscribedFeeNames);
+
+                        if (!$isSubscribed) {
+                            return redirect()->back()
+                                ->with('error', "Student is not subscribed to '{$baseFeeName}' fee. Please select only subscribed fees.")
+                                ->withInput();
+                        }
+                    }
+                }
+            }
         }
+
+        // Calculate sub_total and discount from fee_details
+        $subTotal = 0;
+        $totalDiscount = 0;
+
+        if (isset($validated['fee_details']) && count($validated['fee_details']) > 0) {
+            foreach ($validated['fee_details'] as $fee) {
+                $orig = isset($fee['original_amount']) ? floatval($fee['original_amount']) : null;
+                $disc = isset($fee['discount']) ? floatval($fee['discount']) : 0;
+
+                if ($orig !== null) {
+                    $subTotal += $orig;
+                    $totalDiscount += $disc;
+                }
+            }
+        }
+
+        // If sub_total and discount are provided by frontend, use them
+        // Otherwise calculate from fee_details
+        if (isset($validated['sub_total']) && isset($validated['discount'])) {
+            $subTotal = floatval($validated['sub_total']);
+            $totalDiscount = floatval($validated['discount']);
+        }
+
+        // Ensure amount matches sub_total - discount
+        $validated['sub_total'] = $subTotal;
+        $validated['discount'] = $totalDiscount;
+        $validated['amount'] = max(0, $subTotal - $totalDiscount);
 
         // Auto-fix Amount: If the user updated fees (sum changes) but the Total Amount sent
         // matches the OLD amount (meaning they likely didn't update it manually or JS failed),
@@ -648,6 +743,29 @@ class PaymentController extends Controller
         $filename = 'payment_receipt_' . $student->student_id . '_' . $payment->id . '.pdf';
 
         return $pdf->download($filename);
+    }
+
+    /**
+     * Public payment receipt (shareable via WhatsApp)
+     */
+    public function publicReceipt($token)
+    {
+        $payment = Payment::findByShareToken($token);
+
+        if (!$payment) {
+            abort(404, 'Payment receipt not found or invalid token.');
+        }
+
+        $payment->load(['student.classroom']);
+        $student = $payment->student;
+
+        // Convert amount to words
+        $amountInWords = $this->numberToWords(intval($payment->amount));
+
+        // Generate Receipt No
+        $receiptNo = ($payment->payment_date ? \Carbon\Carbon::parse($payment->payment_date) : now())->format('ymd') . str_pad($payment->id, 3, '0', STR_PAD_LEFT);
+
+        return view('payments.public-receipt', compact('payment', 'student', 'amountInWords', 'receiptNo'));
     }
 
     /**

@@ -238,19 +238,7 @@
                         <td>{{ $payment->payment_date->format('d M, Y') }}</td>
                         <td>{{ $payment->payment_type }}</td>
                         <td>{{ $payment->month }}</td>
-                        @php
-                            $displayAmt = $payment->amount;
-                            if (is_array($payment->fee_details) && count($payment->fee_details) > 0) {
-                                $calc = 0;
-                                foreach ($payment->fee_details as $itm) {
-                                    $orig = isset($itm['original_amount']) ? floatval($itm['original_amount']) : null;
-                                    $disc = isset($itm['discount']) ? floatval($itm['discount']) : 0;
-                                    $calc += ($orig !== null) ? max(0, $orig - $disc) : floatval($itm['amount'] ?? 0);
-                                }
-                                $displayAmt = $calc;
-                            }
-                        @endphp
-                        <td>৳ {{ number_format($displayAmt, 2) }}</td>
+                        <td>৳ {{ number_format($payment->amount, 2) }}</td>
                         <td>{{ ucfirst($payment->payment_mode) }}</td>
                         <td>{{ $payment->note ?? '-' }}</td>
                         <td style="display:flex;gap:6px;justify-content:center">
@@ -589,12 +577,23 @@
                     }
                 }
 
+                // Check if fee has discount stored in payment
                 if (d.discount > 0) {
                     if (!editDiscounts[baseName]) {
                         editDiscounts[baseName] = parseFloat(d.discount);
                     }
                     // Also store exact name just in case
                     editDiscounts[d.name] = parseFloat(d.discount);
+                } else {
+                    // For old payments without discount stored, check if student has permanent discount
+                    const permanentDiscount = studentData.discounts && studentData.discounts[baseName];
+                    if (permanentDiscount && permanentDiscount.amount > 0) {
+                        if (!editDiscounts[baseName]) {
+                            editDiscounts[baseName] = parseFloat(permanentDiscount.amount);
+                        }
+                        // Also store exact name
+                        editDiscounts[d.name] = parseFloat(permanentDiscount.amount);
+                    }
                 }
 
                 // Sum up net amount for manual discount calc
@@ -602,20 +601,17 @@
                 totalDetailsAmount += amt;
             });
 
-            // Merge defaults? No, if we are editing, we usually want exactly what was saved.
-            // However, if the user adds a NEW fee during edit, they might expect the default discount.
-            // Let's merge: editDiscounts takes precedence.
-            const mergedDiscounts = {
-                ...studentData.discounts,
-                ...editDiscounts
-            };
+            // Use only the discounts from this specific payment
+            // editDiscounts already contains the final discount values (including any permanent discounts)
+            // Merging with studentData.discounts would cause double discounting
+            const editModeDiscounts = editDiscounts;
 
             openPayModal(
                 studentData.id,
                 studentData.name,
                 studentData.fatherName,
                 studentData.fees,
-                mergedDiscounts, // <--- Pass Merged Discounts
+                editModeDiscounts, // <--- Pass Only Payment Discounts
                 cleanTracker,
                 studentData.classFees,
                 studentData.partialPayments

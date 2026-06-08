@@ -168,13 +168,8 @@
                                     if ($allClassFees) {
                                         foreach ($allClassFees as $fee) {
                                             if (isset($fee['type'])) {
-                                                // If we have a subscription list (either from selected_fees or legacy admission), use it
-                                                if (count($subscribedFeeNames) > 0) {
-                                                    if (in_array($fee['name'], $subscribedFeeNames)) {
-                                                        $recurringFees[] = $fee;
-                                                    }
-                                                } else {
-                                                    // Fallback: Include all fees if no specific subscription found
+                                                // Only include fees that the student is explicitly subscribed to
+                                                if (count($subscribedFeeNames) > 0 && in_array($fee['name'], $subscribedFeeNames)) {
                                                     $recurringFees[] = $fee;
                                                 }
                                             }

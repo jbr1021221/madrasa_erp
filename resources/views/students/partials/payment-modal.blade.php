@@ -20,6 +20,10 @@
             <input type="hidden" name="selected_months" id="selectedMonthsInput">
             <input type="hidden" name="added_fees" id="addedFeesInput">
 
+            <!-- Hidden inputs for sub_total and discount -->
+            <input type="hidden" name="sub_total" id="subTotalInput">
+            <input type="hidden" name="discount" id="discountInput">
+
             <div style="display:flex; gap: 16px; margin-bottom:12px; flex-wrap:wrap">
                 <div style="flex: 2; min-width: 200px;">
                     <label>Student</label>
@@ -189,23 +193,22 @@
         currentSubscribedFees = selectedFees || [];
 
         // Initialize 'allFees' (Active Payment Fees)
-        // Include all monthly fees from class, not just subscribed ones
-        // This ensures we can properly track payment status for each month
-        const monthlyFeesFromClass = (classFees || []).filter(f => (f.type || '').toLowerCase() === 'monthly');
-        const monthlyFeesFromSelected = (selectedFees || []).filter(f => (f.type || 'Monthly').toLowerCase() ===
-            'monthly');
+        // Only include fees that the student is explicitly subscribed to in the main table
+        const monthlyFeesFromSelected = (selectedFees || []).filter(f => (f.type || 'Monthly').toLowerCase() === 'monthly');
 
-        // Combine and deduplicate monthly fees based on name
+        // Build fee map from subscribed fees only
         const monthlyFeesMap = {};
-        // Class fees define amounts/types; selected fees carry the 'since' date
-        monthlyFeesFromClass.forEach(fee => {
-            if (!monthlyFeesMap[fee.name]) monthlyFeesMap[fee.name] = {...fee};
-        });
         monthlyFeesFromSelected.forEach(fee => {
-            if (!monthlyFeesMap[fee.name]) {
+            // Get fee details from classroom fees for amount/type, but only if subscribed
+            const classFee = (classFees || []).find(cf => cf.name === fee.name);
+            if (classFee) {
+                monthlyFeesMap[fee.name] = {
+                    ...classFee,
+                    since: fee.since // Preserve 'since' from student's subscription
+                };
+            } else if (fee.amount) {
+                // If no class fee found, use the selected fee details directly
                 monthlyFeesMap[fee.name] = {...fee};
-            } else if (fee.since) {
-                monthlyFeesMap[fee.name].since = fee.since; // Preserve 'since' from student's subscription
             }
         });
         allFees = Object.values(monthlyFeesMap);
@@ -532,6 +535,10 @@
         let visibleCount = 0;
 
         combinedOtherFees.forEach((fee, index) => {
+            // Check if student is subscribed to this fee - if not, skip completely
+            const isSubscribed = currentSubscribedFees.some(f => f.name === fee.name);
+            if (!isSubscribed) return; // Don't show unsubscribed fees at all
+
             const discount = getDiscount(fee.name);
             const actual = parseFloat(fee.amount) || 0;
             const discounted = Math.max(0, actual - discount);
@@ -560,8 +567,11 @@
                 `<span style="background:rgba(255,193,7,0.3); color:#ffc107; padding:2px 6px; border-radius:3px; font-size:10px; margin-left:4px; font-weight:600;">DUE</span>` :
                 '';
 
+            const backgroundStyle = isChecked ? 'rgba(227,120,20,0.15)' :
+                (isPartialFee ? 'rgba(255,193,7,0.08)' : 'rgba(255,255,255,0.02)');
+
             div.innerHTML = `
-        <div style="display:flex; align-items:center; gap: 8px; cursor:pointer; padding: 6px 8px; border-radius: 4px; background:${isChecked ? 'rgba(227,120,20,0.15)' : (isPartialFee ? 'rgba(255,193,7,0.08)' : 'rgba(255,255,255,0.02)')}; ${isPartialFee ? 'border: 1px solid rgba(255,193,7,0.3);' : ''} user-select:none;"
+        <div style="display:flex; align-items:center; gap: 8px; cursor:pointer; padding: 6px 8px; border-radius: 4px; background:${backgroundStyle}; ${isPartialFee ? 'border: 1px solid rgba(255,193,7,0.3);' : ''} user-select:none;"
              onclick="toggleOtherFee(this)">
             <input type="checkbox" class="fee-checkbox other-fee-checkbox"
                    data-fee-name="${fee.name}"
@@ -679,6 +689,7 @@
     function toggleOtherFee(container) {
         const checkbox = container.querySelector('input[type="checkbox"]');
         const feeName = checkbox.getAttribute('data-fee-name');
+
         const isAlreadySelected = allFees.some(f => f.name === feeName);
         const feeItem = container.closest('.other-fee-item');
         const tbody = document.getElementById('monthlyFeeTableBody');
@@ -1063,6 +1074,10 @@
         currentNetPayable = Math.max(0, subtotal - manualDiscount);
         document.getElementById('summarySubtotal').textContent = '৳ ' + subtotal.toFixed(2);
         document.getElementById('payAmountInput').value = currentNetPayable;
+
+        // Update hidden inputs for sub_total and discount
+        document.getElementById('subTotalInput').value = subtotal.toFixed(2);
+        document.getElementById('discountInput').value = manualDiscount.toFixed(2);
     }
 
     function preparePaymentDetails() {
