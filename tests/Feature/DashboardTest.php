@@ -30,6 +30,8 @@ class DashboardTest extends TestCase
         Payment::create([
             'student_id' => $student->id,
             'amount' => 1000,
+            'sub_total' => 1000,
+            'discount' => 0,
             'payment_date' => now(),
             'payment_type' => 'Monthly',
             'payment_mode' => 'Cash',
@@ -38,6 +40,8 @@ class DashboardTest extends TestCase
         Payment::create([
             'student_id' => $student->id,
             'amount' => 500,
+            'sub_total' => 500,
+            'discount' => 0,
             'payment_date' => now(),
             'payment_type' => 'Monthly',
             'payment_mode' => 'Cash',
@@ -97,10 +101,12 @@ class DashboardTest extends TestCase
 
         // Create payments in different months
         $studentId = DB::table('students')->first()->id;
-        
+
         Payment::create([
             'student_id' => $studentId,
             'amount' => 1000,
+            'sub_total' => 1000,
+            'discount' => 0,
             'payment_date' => now()->startOfYear()->addMonth(0), // January
             'payment_type' => 'Monthly',
             'payment_mode' => 'Cash',
@@ -110,6 +116,8 @@ class DashboardTest extends TestCase
         Payment::create([
             'student_id' => $studentId,
             'amount' => 2000,
+            'sub_total' => 2000,
+            'discount' => 0,
             'payment_date' => now()->startOfYear()->addMonth(1), // February
             'payment_type' => 'Monthly',
             'payment_mode' => 'Cash',

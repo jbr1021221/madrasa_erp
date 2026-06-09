@@ -124,6 +124,10 @@ class PaymentController extends Controller
             $month = $request->filled('month') ? $request->month : date('F');
             $year = $request->filled('year') ? $request->year : date('Y');
 
+            // Only include students registered on or before the selected month
+            $selectedMonthDate = \Carbon\Carbon::createFromDate($year, date('m', strtotime($month)), 1)->endOfMonth();
+            $query->where('created_at', '<=', $selectedMonthDate);
+
             $query->whereDoesntHave('payments', function ($q) use ($month, $year) {
                 // Check logic matching the existing 'Paid' filter logic
                 $q->where(function ($sub) use ($month) {

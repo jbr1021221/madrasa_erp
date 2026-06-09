@@ -49,6 +49,8 @@ class PaymentTest extends TestCase
         $payment = Payment::create([
             'student_id' => $student->id,
             'amount' => 500,
+            'sub_total' => 500,
+            'discount' => 0,
             'payment_date' => now()->format('Y-m-d'),
             'month' => 'January',
             'payment_type' => 'Monthly Fee',
@@ -85,6 +87,8 @@ class PaymentTest extends TestCase
         $payment = Payment::create([
             'student_id' => $student->id,
             'amount' => 500,
+            'sub_total' => 500,
+            'discount' => 0,
             'payment_date' => now()->format('Y-m-d'),
             'month' => 'January',
             'payment_type' => 'Monthly Fee',

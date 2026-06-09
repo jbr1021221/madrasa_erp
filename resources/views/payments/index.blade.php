@@ -346,7 +346,7 @@
     td {
         padding: 14px 16px;
         font-size: 15px;
-        text-align: center;
+        text-align: left;
     }
     #earnTable tr:nth-child(odd)  { background: rgba(255,255,255,0.03); }
     #earnTable tr:nth-child(even) { background: rgba(255,255,255,0.07); }

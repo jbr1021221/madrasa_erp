@@ -394,7 +394,7 @@
         td {
             padding: 14px 16px;
             font-size: 16px;
-            text-align: center
+            text-align: left
         }
 
         #studentTable tr:nth-child(odd) {

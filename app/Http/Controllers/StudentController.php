@@ -335,6 +335,14 @@ class StudentController extends Controller
         // Replace feeDetails with the final version
         $feeDetails = $finalFeeDetails;
 
+        // Calculate sub_total and discount from fee details for payment record
+        $paymentSubTotal = 0;
+        $paymentDiscount = 0;
+        foreach ($feeDetails as $fee) {
+            $paymentSubTotal += floatval($fee['original_amount'] ?? $fee['amount'] ?? 0);
+            $paymentDiscount += floatval($fee['discount'] ?? 0);
+        }
+
         // Create the student with retry logic for duplicate ID
         $maxRetries = 5;
         $retryCount = 0;
@@ -371,6 +379,8 @@ class StudentController extends Controller
         // Create admission payment record
         $admissionPayment = $student->payments()->create([
             'amount' => $actualPaymentAmount,
+            'sub_total' => $paymentSubTotal,
+            'discount' => $paymentDiscount,
             'payment_type' => 'Admission',
             'payment_mode' => $validated['payment_mode'],
             'month' => 'Admission',
