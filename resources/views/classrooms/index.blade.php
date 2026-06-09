@@ -216,24 +216,32 @@
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script>
 $(document).ready(function() {
-    $('#datatable').DataTable({
-        "stateSave": true,
-        "paging": true,
-        "lengthChange": true,
-        "searching": true,
-        "ordering": true,
-        "info": true,
-        "autoWidth": false,
-        "responsive": true,
-        "order": [],
-        "dom": '<"top"f>rt<"bottom"lip><"clear">',
-        "columnDefs": [{ "orderable": false, "targets": "no-sort" }],
-        "language": {
-            "search": "_INPUT_",
-            "searchPlaceholder": "Search classes...",
-            "paginate": { "previous": "Prev", "next": "Next" }
-        }
-    });
+    // Only initialize DataTables if there are actual classroom rows
+    const table = $('#datatable');
+    const hasData = table.find('tbody tr').not(function() {
+        return $(this).find('td[ colspan]').length > 0;
+    }).length > 0;
+
+    if (hasData) {
+        table.DataTable({
+            "stateSave": true,
+            "paging": true,
+            "lengthChange": true,
+            "searching": true,
+            "ordering": true,
+            "info": true,
+            "autoWidth": false,
+            "responsive": true,
+            "order": [],
+            "dom": '<"top"f>rt<"bottom"lip><"clear">',
+            "columnDefs": [{ "orderable": false, "targets": "no-sort" }],
+            "language": {
+                "search": "_INPUT_",
+                "searchPlaceholder": "Search classes...",
+                "paginate": { "previous": "Prev", "next": "Next" }
+            }
+        });
+    }
 });
 </script>
 @endsection

@@ -472,28 +472,36 @@
         };
 
         $(document).ready(function() {
-            $('#paymentTable').DataTable({
-                "stateSave": true,
-                "paging": true,
-                "lengthChange": true,
-                "searching": true,
-                "ordering": true,
-                "info": true,
-                "autoWidth": false,
-                "responsive": true,
-                "order": [
-                    [7, "desc"]
-                ],
-                "dom": '<"top"f>rt<"bottom"lip><"clear">',
-                "language": {
-                    "search": "_INPUT_",
-                    "searchPlaceholder": "Search payments...",
-                    "paginate": {
-                        "previous": "Prev",
-                        "next": "Next"
+            // Only initialize DataTables if there are actual payment rows
+            const table = $('#paymentTable');
+            const hasPayments = table.find('tbody tr').not(function() {
+                return $(this).find('td[ colspan]').length > 0;
+            }).length > 0;
+
+            if (hasPayments) {
+                table.DataTable({
+                    "stateSave": true,
+                    "paging": true,
+                    "lengthChange": true,
+                    "searching": true,
+                    "ordering": true,
+                    "info": true,
+                    "autoWidth": false,
+                    "responsive": true,
+                    "order": [
+                        [7, "desc"]
+                    ],
+                    "dom": '<"top"f>rt<"bottom"lip><"clear">',
+                    "language": {
+                        "search": "_INPUT_",
+                        "searchPlaceholder": "Search payments...",
+                        "paginate": {
+                            "previous": "Prev",
+                            "next": "Next"
+                        }
                     }
-                }
-            });
+                });
+            }
         });
 
         function openEditPaymentModal(payment) {
