@@ -14,8 +14,9 @@ class Payment extends Model
         'student_id',
         'fee_id',
         'amount',
+        'final_amount',
         'sub_total',
-        'discount',
+        'total_discount',
         'payment_type',
         'payment_mode',
         'month',
@@ -23,15 +24,17 @@ class Payment extends Model
         'payment_date',
         'transaction_id',
         'fee_details',
+        'discount_breakdown',
         'share_token'
     ];
 
     protected $casts = [
         'payment_date' => 'date',
-        'amount' => 'decimal:2',
+        'final_amount' => 'decimal:2',
         'sub_total' => 'decimal:2',
-        'discount' => 'decimal:2',
+        'total_discount' => 'decimal:2',
         'fee_details' => 'array',
+        'discount_breakdown' => 'array',
     ];
 
     /**
@@ -40,7 +43,7 @@ class Payment extends Model
     public function getDiscountPercentageAttribute()
     {
         if ($this->sub_total > 0) {
-            return round(($this->discount / $this->sub_total) * 100, 2);
+            return round(($this->total_discount / $this->sub_total) * 100, 2);
         }
         return 0;
     }
@@ -53,6 +56,11 @@ class Payment extends Model
     public function fee()
     {
         return $this->belongsTo(Fee::class);
+    }
+
+    public function payment_items()
+    {
+        return $this->hasMany(PaymentItem::class);
     }
 
     /**

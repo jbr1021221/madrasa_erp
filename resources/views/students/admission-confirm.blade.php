@@ -99,7 +99,7 @@
                             <label style="display:block;color:var(--muted);font-size:12px;margin-bottom:4px">
                                 Admission Fee Paid
                             </label>
-                            <p style="color:#4caf50;font-weight:700;font-size:24px;margin:0">৳{{ number_format($admissionPayment->amount, 2) }}</p>
+                            <p style="color:#4caf50;font-weight:700;font-size:24px;margin:0">৳{{ number_format($admissionPayment->final_amount, 2) }}</p>
                         </div>
                         <div style="text-align:right">
                             <label style="display:block;color:var(--muted);font-size:12px;margin-bottom:4px">Payment Mode</label>

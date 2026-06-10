@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Classroom;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -22,7 +21,7 @@ class DashboardController extends Controller
             $totalClasses = Classroom::count();
 
             // Get total earnings
-            $totalEarnings = $paymentsExist ? DB::table('payments')->sum('amount') ?? 0 : 0;
+            $totalEarnings = $paymentsExist ? DB::table('payments')->sum('final_amount') ?? 0 : 0;
 
             // Get class-wise active student count (excluding soft-deleted)
             $classWiseData = [];
@@ -68,13 +67,13 @@ class DashboardController extends Controller
             
             if (DB::getDriverName() === 'sqlite') {
                 $paymentData = DB::table('payments')
-                    ->select(DB::raw('sum(amount) as total'), DB::raw('strftime("%m", payment_date) as month'))
+                    ->select(DB::raw('sum(final_amount) as total'), DB::raw('strftime("%m", payment_date) as month'))
                     ->whereYear('payment_date', date('Y'))
                     ->groupBy(DB::raw('strftime("%m", payment_date)'))
                     ->get();
             } else {
                 $paymentData = DB::table('payments')
-                    ->select(DB::raw('sum(amount) as total'), DB::raw('MONTH(payment_date) as month'))
+                    ->select(DB::raw('sum(final_amount) as total'), DB::raw('MONTH(payment_date) as month'))
                     ->whereYear('payment_date', date('Y'))
                     ->groupBy(DB::raw('YEAR(payment_date)'), DB::raw('MONTH(payment_date)'))
                     ->get();
@@ -84,17 +83,13 @@ class DashboardController extends Controller
                 $earnings[(int)$data->month - 1] = $data->total;
             }
 
-            // Get total users
-            $totalUsers = \App\Models\User::count();
-
             // Get today's earnings
-            $todaysEarnings = $paymentsExist ? DB::table('payments')->whereDate('payment_date', now()->toDateString())->sum('amount') ?? 0 : 0;
+            $todaysEarnings = $paymentsExist ? DB::table('payments')->whereDate('payment_date', now()->toDateString())->sum('final_amount') ?? 0 : 0;
 
             return view('dashboard', compact(
                 'totalStudents',
                 'totalClasses',
                 'totalEarnings',
-                'totalUsers',
                 'todaysEarnings',
                 'classWiseData',
                 'admissions',

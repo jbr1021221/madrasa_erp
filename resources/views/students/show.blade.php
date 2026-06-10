@@ -10,53 +10,40 @@
 
         // Calculate Paid Fees Tracker for this student
         $paidFeeTracker = [];
-        foreach ($student->payments as $payment) {
-            if ($payment->fee_details && is_array($payment->fee_details)) {
-                foreach ($payment->fee_details as $feeDetail) {
-                    $fType = strtolower($feeDetail['type'] ?? '');
-                    if ($fType === 'monthly') {
-                        $monthName = $feeDetail['month'] ?? '';
-                        $year = $feeDetail['year'] ?? date('y');
-                        $monthKey = strpos($monthName, ', ') !== false ? $monthName : $monthName . ', ' . $year;
+        foreach ($student->payment_items as $paymentItem) {
+            $fType = strtolower($paymentItem->fee_type ?? '');
+            if ($fType === 'monthly') {
+                $monthName = $paymentItem->month ?? '';
+                $year = $paymentItem->year ?? date('y');
+                $monthKey = strpos($monthName, ', ') !== false ? $monthName : $monthName . ', ' . $year;
 
-                        if (!isset($paidFeeTracker[$monthKey])) {
-                            $paidFeeTracker[$monthKey] = [];
-                        }
+                if (!isset($paidFeeTracker[$monthKey])) {
+                    $paidFeeTracker[$monthKey] = [];
+                }
 
-                        $name = $feeDetail['name'];
-                        if (strpos($name, ' - ') !== false) {
-                            $parts = explode(' - ', $name);
-                            $name = trim($parts[0]);
-                        }
-                        $paidFeeTracker[$monthKey][] = $name;
-                    } else {
-                        $rawName = $feeDetail['name'] ?? '';
-                        if (strpos($rawName, ' - ') !== false) {
-                            $separatorPos = strpos($rawName, ' - ');
-                            $baseName = trim(substr($rawName, 0, $separatorPos));
-                            $partsStr = substr($rawName, $separatorPos + 3);
-                            $parts = explode(',', $partsStr);
-                            foreach ($parts as $p) {
-                                $p = trim($p);
-                                if (!empty($p)) {
-                                    $paidFeeTracker[$baseName . ' - ' . $p] = true;
-                                }
-                            }
-                        } else {
-                            $names = explode(',', $rawName);
-                            foreach ($names as $n) {
-                                $paidFeeTracker[trim($n)] = true;
-                            }
+                $name = $paymentItem->fee_name;
+                if (strpos($name, ' - ') !== false) {
+                    $parts = explode(' - ', $name);
+                    $name = trim($parts[0]);
+                }
+                $paidFeeTracker[$monthKey][] = $name;
+            } else {
+                $rawName = $paymentItem->fee_name ?? '';
+                if (strpos($rawName, ' - ') !== false) {
+                    $separatorPos = strpos($rawName, ' - ');
+                    $baseName = trim(substr($rawName, 0, $separatorPos));
+                    $partsStr = substr($rawName, $separatorPos + 3);
+                    $parts = explode(',', $partsStr);
+                    foreach ($parts as $p) {
+                        $p = trim($p);
+                        if (!empty($p)) {
+                            $paidFeeTracker[$baseName . ' - ' . $p] = true;
                         }
                     }
-                }
-            } elseif ($payment->month && strtolower($payment->payment_type) === 'monthly') {
-                preg_match_all('/([A-Za-z]+,\s*\d{2})/', $payment->month, $matches);
-                if (!empty($matches[0])) {
-                    foreach ($matches[0] as $m) {
-                        if (!isset($paidFeeTracker[$m])) {
-                            $paidFeeTracker[$m] = ['__ALL__'];
-                        }
+                } else {
+                    $names = explode(',', $rawName);
+                    foreach ($names as $n) {
+                        $paidFeeTracker[trim($n)] = true;
                     }
                 }
             }
@@ -238,7 +225,7 @@
                         <td>{{ $payment->payment_date->format('d M, Y') }}</td>
                         <td>{{ $payment->payment_type }}</td>
                         <td>{{ $payment->month }}</td>
-                        <td>৳ {{ number_format($payment->amount, 2) }}</td>
+                        <td>৳ {{ number_format($payment->final_amount, 2) }}</td>
                         <td>{{ ucfirst($payment->payment_mode) }}</td>
                         <td>{{ $payment->note ?? '-' }}</td>
                         <td style="display:flex;gap:6px;justify-content:center">

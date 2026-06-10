@@ -22,7 +22,7 @@
 
             <!-- Hidden inputs for sub_total and discount -->
             <input type="hidden" name="sub_total" id="subTotalInput">
-            <input type="hidden" name="discount" id="discountInput">
+            <input type="hidden" name="total_discount" id="discountInput">
 
             <div style="display:flex; gap: 16px; margin-bottom:12px; flex-wrap:wrap">
                 <div style="flex: 2; min-width: 200px;">
@@ -77,7 +77,7 @@
                             <tr>
                                 <th style="text-align:left; padding: 10px;">Description</th>
                                 <th style="text-align:right; padding: 10px;">Actual Fee</th>
-                                <th style="text-align:right; padding: 10px;">Discounted Fee</th>
+                                <th style="text-align:right; padding: 10px;">Discount</th>
                             </tr>
                         </thead>
                         <tbody id="monthlyFeeTableBody">
@@ -117,7 +117,7 @@
                         <div
                             style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
                             <span style="font-weight:bold; font-size: 16px;">Total Amount</span>
-                            <input type="number" name="amount" id="payAmountInput" readonly
+                            <input type="number" name="final_amount" id="payAmountInput" readonly
                                 style="width: 120px; text-align:right; font-weight:bold; color:var(--accent); background:rgba(0,0,0,0.2); border:1px solid var(--accent); border-radius:4px; padding:6px;">
                         </div>
                     </div>
@@ -335,12 +335,11 @@
         const tds = tr.querySelectorAll('td');
         if (tds[1]) tds[1].innerText = '৳' + newTotal.toFixed(2);
 
-        // Update Discounted Column
+        // Update Discount Column (show discount amount, or "-" if no discount)
         const discount = parseFloat(tr.dataset.discount) || 0;
-        const discounted = Math.max(0, newTotal - discount);
         if (tds[2]) {
             const span = tds[2].querySelector('span');
-            if (span) span.innerText = '৳' + discounted.toFixed(2);
+            if (span) span.innerText = discount > 0 ? '৳' + discount.toFixed(2) : '-';
         }
 
         calculateTotal();
@@ -446,7 +445,7 @@
         <td style="text-align:right; padding: 10px;">৳${actual.toFixed(2)}</td>
         <td style="text-align:right; padding: 10px;">
           <div style="display:flex; align-items:center; justify-content:flex-end; gap:8px;">
-            <span style="font-weight:bold; color:var(--text);">৳${discounted.toFixed(2)}</span>
+            <span style="font-weight:bold; color:var(--text);">${discount > 0 ? '৳' + discount.toFixed(2) : '-'}</span>
             <button type="button" onclick="removeMainFee('${fee.name}')"
                     class="action-btn delete" style="padding:4px 8px; font-size:11px;">✕ Remove</button>
           </div>
@@ -485,7 +484,7 @@
                   oninput="updatePartialAmount(this)"
                   style="width:80px; background:#1b1f22; color:white; border:1px solid #444; border-radius:4px; padding:4px; text-align:right;"
                   step="0.01" min="0" max="${actual}">` :
-                `৳${discounted.toFixed(2)}`;
+                discount > 0 ? '৳' + discount.toFixed(2) : '-';
 
             tr.innerHTML = `
         <td style="text-align:left; padding: 10px;">
@@ -744,7 +743,7 @@
         <td style="text-align:right; padding: 10px;">৳${actual.toFixed(2)}</td>
         <td style="text-align:right; padding: 10px;">
           <div style="display:flex; align-items:center; justify-content:flex-end; gap:8px;">
-            <span style="font-weight:bold; color:var(--text);">৳${(Math.max(0, actual-discount)).toFixed(2)}</span>
+            <span style="font-weight:bold; color:var(--text);">${discount > 0 ? '৳' + discount.toFixed(2) : '-'}</span>
             <button type="button" onclick="removeMainFee('${feeName}')"
                     class="action-btn delete" style="padding:4px 8px; font-size:11px;">✕ Remove</button>
           </div>
@@ -762,7 +761,7 @@
                   oninput="updatePartialAmount(this)"
                   style="width:80px; background:#1b1f22; color:white; border:1px solid #444; border-radius:4px; padding:4px; text-align:right;"
                   step="0.01" min="0" max="${actual}">` :
-                    `৳${discounted.toFixed(2)}`;
+                    discount > 0 ? '৳' + discount.toFixed(2) : '-';
 
                 tr.innerHTML = `
         <td style="text-align:left; padding: 10px;">
@@ -1032,7 +1031,7 @@
                             actionCell.innerHTML = `
                             <div style="display:flex; align-items:center; justify-content:flex-end; gap:8px;">
                                 ${badgeHtml}
-                                <span style="font-weight:bold; color:var(--text);">${totalForThisFee > 0 ? '৳'+totalForThisFee.toFixed(2) : ''}</span>
+                                <span style="font-weight:bold; color:var(--text);">${permanentDiscount > 0 ? '৳' + permanentDiscount.toFixed(2) : '-'}</span>
                                 ${removeBtnHtml}
                             </div>`;
                         }

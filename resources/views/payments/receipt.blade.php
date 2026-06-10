@@ -332,19 +332,19 @@
             // Create the WhatsApp message
             const studentName = '{{ $student?->name ?? 'Student' }}';
             const receiptNo = '{{ $receiptNo }}';
-            const amount = '{{ number_format($payment->amount, 2) }}';
+            const amount = '{{ number_format($payment->final_amount, 2) }}';
 
             @php
-                // Extract month information from fee_details
+                // Extract month information from payment_items
                 $months = [];
-                $feeDetails = $payment->fee_details ?? [];
+                $paymentItems = $payment->payment_items ?? collect();
 
-                if (is_array($feeDetails) && count($feeDetails) > 0) {
-                    foreach ($feeDetails as $fee) {
-                        if (isset($fee['month'])) {
-                            $monthLabel = $fee['month'];
-                            if (isset($fee['year']) && strpos($monthLabel, $fee['year']) === false) {
-                                $monthLabel .= ' ' . $fee['year'];
+                if ($paymentItems->count() > 0) {
+                    foreach ($paymentItems as $item) {
+                        if ($item->month) {
+                            $monthLabel = $item->month;
+                            if ($item->year && strpos($monthLabel, $item->year) === false) {
+                                $monthLabel .= ' ' . $item->year;
                             }
                             if (!in_array($monthLabel, $months)) {
                                 $months[] = $monthLabel;
@@ -353,7 +353,7 @@
                     }
                 }
 
-                // Fallback to payment month field if no months found in fee_details
+                // Fallback to payment month field if no months found in payment_items
                 if (empty($months) && $payment->month) {
                     $months[] = $payment->month;
                 }
@@ -446,8 +446,8 @@
 
             <div class="fee-section">
                 @php
-                    // Get fee details from the payment record in database
-                    $feeDetails = $payment->fee_details ?? [];
+                    // Get payment items from the relationship
+                    $paymentItems = $payment->payment_items ?? collect();
 
                     // Process and group fees
                     $processedFees = [];
@@ -457,25 +457,25 @@
                     $totalOriginal = 0;
                     $totalDiscount = 0;
 
-                    if (is_array($feeDetails) && count($feeDetails) > 0) {
-                        foreach ($feeDetails as $fee) {
-                            $net = floatval($fee['amount'] ?? 0);
-                            $orig = floatval($fee['original_amount'] ?? $net);
-                            $disc = floatval($fee['discount'] ?? ($orig - $net));
+                    if ($paymentItems->count() > 0) {
+                        foreach ($paymentItems as $item) {
+                            $net = floatval($item->amount ?? 0);
+                            $orig = floatval($item->original_amount ?? $net);
+                            $disc = floatval($item->discount ?? ($orig - $net));
 
                             $totalNet += $net;
                             $totalOriginal += $orig;
                             $totalDiscount += $disc;
 
                             // Check if this is a monthly fee that should be grouped
-                            if (isset($fee['type']) && $fee['type'] === 'Monthly' && isset($fee['month'])) {
+                            if ($item->fee_type === 'Monthly' && $item->month) {
                                 // Extract base name logic
-                                $nameParts = explode(' - ', $fee['name']);
-                                $baseName = count($nameParts) > 1 ? trim($nameParts[0]) : $fee['name'];
+                                $nameParts = explode(' - ', $item->fee_name);
+                                $baseName = count($nameParts) > 1 ? trim($nameParts[0]) : $item->fee_name;
 
-                                $monthLabel = $fee['month'];
-                                if (isset($fee['year']) && strpos($monthLabel, $fee['year']) === false) {
-                                    $monthLabel .= ' ' . $fee['year'];
+                                $monthLabel = $item->month;
+                                if ($item->year && strpos($monthLabel, $item->year) === false) {
+                                    $monthLabel .= ' ' . $item->year;
                                 } elseif (isset($nameParts[1])) {
                                     $monthLabel = trim($nameParts[1]);
                                 }
@@ -495,7 +495,7 @@
                             } else {
                                 // Non-grouped fee
                                 $processedFees[] = [
-                                    'name' => $fee['name'],
+                                    'name' => $item->fee_name,
                                     'amount' => $net,
                                     'original_amount' => $orig,
                                     'discount' => $disc
@@ -503,9 +503,9 @@
                             }
                         }
                     } else {
-                        // Legacy fallback if fee_details empty but amount exists
-                        $totalNet = $payment->amount;
-                        $totalOriginal = $payment->amount;
+                        // Legacy fallback if no payment_items but amount exists
+                        $totalNet = $payment->final_amount;
+                        $totalOriginal = $payment->final_amount;
                         $totalDiscount = 0;
                     }
 
@@ -536,7 +536,7 @@
                     // Reconcile Manual/Global Discount
                     // If the sum of fee items (Net) is greater than the actual Payment Amount,
                     // it means a global discount was applied (e.g. manual entry)
-                    $actualPaid = floatval($payment->amount);
+                    $actualPaid = floatval($payment->final_amount);
                     $manualDiscount = max(0, $totalNet - $actualPaid);
 
                     if ($manualDiscount > 0.01) {
@@ -599,10 +599,10 @@
                             <tr>
                                 <td>{{ $payment->payment_type }} - {{ $payment->month }}</td>
                                 @if($showDiscountCol)
-                                    <td class="amount-cell">{{ number_format($payment->amount, 2) }}</td>
+                                    <td class="amount-cell">{{ number_format($payment->final_amount, 2) }}</td>
                                     <td class="amount-cell">0.00</td>
                                 @endif
-                                <td class="amount-cell">{{ number_format($payment->amount, 2) }}</td>
+                                <td class="amount-cell">{{ number_format($payment->final_amount, 2) }}</td>
                             </tr>
                         @endif
 

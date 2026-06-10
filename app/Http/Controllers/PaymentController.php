@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Payment;
+use App\Models\PaymentItem;
 use App\Models\Student;
 use App\Models\Classroom;
 use Carbon\Carbon;
@@ -51,11 +52,10 @@ class PaymentController extends Controller
                             ->whereMonth('payment_date', $monthIndex);
                     });
 
-                    // 3. OR It's inside fee_details (bundled fees) - using LIKE for JSON search
-                    $q->orWhere('fee_details', 'LIKE', '%"month":"' . $monthName . '%')
-                        ->orWhere('fee_details', 'LIKE', '%"month": "' . $monthName . '%')
-                        ->orWhere('fee_details', 'LIKE', '%"month":"' . $monthName . ',%')
-                        ->orWhere('fee_details', 'LIKE', '%"month": "' . $monthName . ',%');
+                    // 3. OR The payment has payment_items for this month
+                    $q->orWhereHas('payment_items', function ($pi) use ($monthName, $monthIndex) {
+                        $pi->where('month', $monthName);
+                    });
                 }
             });
         }
@@ -128,16 +128,10 @@ class PaymentController extends Controller
             $selectedMonthDate = \Carbon\Carbon::createFromDate($year, date('m', strtotime($month)), 1)->endOfMonth();
             $query->where('created_at', '<=', $selectedMonthDate);
 
-            $query->whereDoesntHave('payments', function ($q) use ($month, $year) {
-                // Check logic matching the existing 'Paid' filter logic
-                $q->where(function ($sub) use ($month) {
-                    $sub->where('month', $month)
-                        ->orWhere('month', 'like', "$month%") // Matches "January 2025"
-                        ->orWhere('fee_details', 'LIKE', '%"month":"' . $month . '%')
-                        ->orWhere('fee_details', 'LIKE', '%"month": "' . $month . '%');
-                })
-                    // Ensure it's for the relevant year (using payment_date as proxy if month string doesn't have year)
-                    ->whereYear('payment_date', $year);
+            $query->whereDoesntHave('payment_items', function ($q) use ($month, $year) {
+                $q->where('fee_type', 'Monthly')
+                    ->where('month', $month)
+                    ->where('year', date('y', strtotime($year)));
             });
 
             $unpaidStudents = $query->latest()->get();
@@ -180,7 +174,7 @@ class PaymentController extends Controller
                 if (empty($matchedItems)) {
                     foreach ($filterNames as $filterName) {
                         if (stripos($payment->payment_type, $filterName) !== false) {
-                            $matchedAmount = $payment->amount;
+                            $matchedAmount = $payment->final_amount;
                             break;
                         }
                     }
@@ -192,9 +186,9 @@ class PaymentController extends Controller
         } else {
             $totalEarnings = 0;
             foreach ($payments as $payment) {
-                // Use the actual amount field since it now stores the net amount after discounts
-                // The sub_total and discount columns provide the breakdown if needed
-                $payment->amount_display = $payment->amount;
+                // Use the actual final_amount field since it now stores the net amount after discounts
+                // The sub_total and total_discount columns provide the breakdown if needed
+                $payment->amount_display = $payment->final_amount;
                 $totalEarnings += $payment->amount_display;
             }
         }
@@ -266,7 +260,7 @@ class PaymentController extends Controller
     {
         $validated = $request->validate([
             'student_id' => 'required|exists:students,id',
-            'amount' => 'required|numeric|min:0',
+            'final_amount' => 'required|numeric|min:0',
             'payment_date' => 'required',
             'month' => 'required|string',
             'payment_type' => 'required|string',
@@ -278,8 +272,13 @@ class PaymentController extends Controller
             'selected_months' => 'nullable|string',
             'added_fees' => 'nullable|string',
             'sub_total' => 'nullable|numeric|min:0',
-            'discount' => 'nullable|numeric|min:0',
+            'total_discount' => 'nullable|numeric|min:0',
         ]);
+
+        // Ensure amount is set for backwards compatibility
+        if (!isset($validated['amount'])) {
+            $validated['amount'] = $validated['final_amount'];
+        }
 
         // Handle d/m/Y date format
         if (isset($validated['payment_date']) && preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $validated['payment_date'])) {
@@ -406,19 +405,36 @@ class PaymentController extends Controller
             }
         }
 
-        // If sub_total and discount are provided by frontend, use them
+        // If sub_total and total_discount are provided by frontend, use them
         // Otherwise calculate from fee_details
-        if (isset($validated['sub_total']) && isset($validated['discount'])) {
+        if (isset($validated['sub_total']) && isset($validated['total_discount'])) {
             $subTotal = floatval($validated['sub_total']);
-            $totalDiscount = floatval($validated['discount']);
+            $totalDiscount = floatval($validated['total_discount']);
         }
 
-        // Ensure amount matches sub_total - discount
+        // Ensure final_amount matches sub_total - total_discount
         $validated['sub_total'] = $subTotal;
-        $validated['discount'] = $totalDiscount;
-        $validated['amount'] = max(0, $subTotal - $totalDiscount);
+        $validated['total_discount'] = $totalDiscount;
+        $validated['final_amount'] = max(0, $subTotal - $totalDiscount);
 
         $payment = Payment::create($validated);
+
+        // Create payment items from fee details
+        if (!empty($feeDetails)) {
+            foreach ($feeDetails as $fee) {
+                PaymentItem::create([
+                    'payment_id' => $payment->id,
+                    'student_id' => $validated['student_id'],
+                    'fee_name' => $fee['name'],
+                    'fee_type' => $fee['type'] ?? 'Other',
+                    'month' => $fee['month'] ?? null,
+                    'year' => $fee['year'] ?? null,
+                    'amount' => $fee['amount'],
+                    'original_amount' => $fee['original_amount'] ?? $fee['amount'],
+                    'discount' => $fee['discount'] ?? 0
+                ]);
+            }
+        }
 
         // Handle partial payment completion
         $student = Student::find($validated['student_id']);
@@ -512,166 +528,59 @@ class PaymentController extends Controller
     public function update(Request $request, Payment $payment)
     {
         $validated = $request->validate([
-            'student_id' => 'required|exists:students,id',
-            'amount' => 'required|numeric|min:0',
             'payment_date' => 'required|date',
             'month' => 'required|string',
             'payment_type' => 'required|string',
             'payment_mode' => 'required|string',
             'note' => 'nullable|string',
-            'payment_details' => 'nullable|string',
-            'selected_months' => 'nullable|string',
-            'added_fees' => 'nullable|string',
             'redirect_to' => 'nullable|string',
-            'sub_total' => 'nullable|numeric|min:0',
-            'discount' => 'nullable|numeric|min:0',
         ]);
 
-        // Build fee details array from the payment details if provided
-        if ($request->has('payment_details')) {
-            $feeDetails = [];
-            $paymentDetails = json_decode($request->payment_details, true);
-            $selectedMonths = $request->has('selected_months') ? json_decode($request->selected_months, true) : [];
-            $addedFees = $request->has('added_fees') ? json_decode($request->added_fees, true) : [];
+        // SECURITY: Prevent modification of payment amounts for accounting integrity
+        // Once a payment is recorded, its amounts cannot be changed
+        // Only allow editing of: payment_date, month, payment_type, payment_mode, note
 
-            // Check if flat fee details are provided directly (more accurate for partial months)
-            if (isset($paymentDetails['fee_details']) && is_array($paymentDetails['fee_details'])) {
-                // Preserve all fields including original_amount and discount
-                foreach ($paymentDetails['fee_details'] as $fee) {
-                    $feeDetail = [
-                        'name' => $fee['name'] ?? 'Fee',
-                        'type' => $fee['type'] ?? 'Other',
-                        'amount' => $fee['amount'] ?? 0
-                    ];
+        $validated['payment_type'] = $request->payment_type;
+        $validated['payment_mode'] = $request->payment_mode;
+        $validated['note'] = $request->note;
+        $validated['month'] = $request->month;
+        $validated['payment_date'] = $request->payment_date;
 
-                    // Preserve original_amount and discount if present
-                    if (isset($fee['original_amount'])) $feeDetail['original_amount'] = $fee['original_amount'];
-                    if (isset($fee['discount'])) $feeDetail['discount'] = $fee['discount'];
-                    if (isset($fee['month'])) $feeDetail['month'] = $fee['month'];
-                    if (isset($fee['year'])) $feeDetail['year'] = $fee['year'];
+        // Extract month and year from the month field (e.g., "February, 26")
+        $monthValue = $request->month;
+        $newMonth = null;
+        $newYear = null;
 
-                    $feeDetails[] = $feeDetail;
-                }
-            } else {
-                // Add monthly fees for each selected month (Fallback cross-product logic)
-                if (isset($paymentDetails['monthlyFees']) && count($selectedMonths) > 0) {
-                    foreach ($selectedMonths as $month) {
-                        $monthName = $month['name'] ?? 'N/A';
-                        $year = $month['year'] ?? date('y');
-                        $displayMonth = $monthName . ', ' . $year;
-
-                        foreach ($paymentDetails['monthlyFees'] as $fee) {
-                            $feeDetails[] = [
-                                'name' => ($fee['name'] ?? 'Monthly Fee') . ' - ' . $displayMonth,
-                                'type' => 'Monthly',
-                                'amount' => $fee['amount'],
-                                'month' => $monthName,
-                                'year' => $year
-                            ];
-                        }
-                    }
-                }
-                // Add other fees
-                if (count($addedFees) > 0) {
-                    foreach ($addedFees as $fee) {
-                        $feeDetails[] = [
-                            'name' => $fee['name'],
-                            'type' => $fee['type'] ?? 'Other',
-                            'amount' => $fee['amount']
-                        ];
-                    }
-                }
-            }
-            $validated['fee_details'] = $feeDetails;
-
-            // Validate that all fees in payment_details are subscribed by student
-            $student = Student::find($validated['student_id']);
-            if ($student) {
-                // Use selected_fees array (JSON column), not the fees relationship
-                $studentFees = $student->selected_fees ?? $student->fees ?? [];
-                // Ensure it's an array, not a Collection
-                $studentFees = is_array($studentFees) ? $studentFees : [];
-                $subscribedFeeNames = array_column($studentFees, 'name');
-
-                if (!empty($feeDetails)) {
-                    foreach ($feeDetails as $fee) {
-                        $feeName = $fee['name'];
-
-                        // Extract base fee name (remove month suffix like " - May, 26")
-                        $baseFeeName = preg_replace('/\s*-\s*[\w]+,\s*\d+$/', '', $feeName);
-
-                        // Check if student is subscribed to this fee type
-                        $isSubscribed = in_array($baseFeeName, $subscribedFeeNames) ||
-                                        in_array($feeName, $subscribedFeeNames);
-
-                        if (!$isSubscribed) {
-                            return redirect()->back()
-                                ->with('error', "Student is not subscribed to '{$baseFeeName}' fee. Please select only subscribed fees.")
-                                ->withInput();
-                        }
-                    }
-                }
-            }
+        if (preg_match('/^([A-Za-z]+)\s*,\s*(\d{2})$/', $monthValue, $matches)) {
+            $newMonth = $matches[1]; // e.g., "February"
+            $newYear = $matches[2];   // e.g., "26"
         }
 
-        // Calculate sub_total and discount from fee_details
-        $subTotal = 0;
-        $totalDiscount = 0;
+        // Update payment_items month/year if the payment month changed
+        if ($newMonth && $newYear) {
+            // Update fee names to reflect new month/year
+            foreach ($payment->payment_items as $item) {
+                // Update fee name: replace old month pattern with new one
+                $newFeeName = preg_replace(
+                    '/\s*-\s*[A-Za-z]+,\s*\d{2}$/',
+                    ' - ' . $monthValue,
+                    $item->fee_name
+                );
 
-        if (isset($validated['fee_details']) && count($validated['fee_details']) > 0) {
-            foreach ($validated['fee_details'] as $fee) {
-                $orig = isset($fee['original_amount']) ? floatval($fee['original_amount']) : null;
-                $disc = isset($fee['discount']) ? floatval($fee['discount']) : 0;
-
-                if ($orig !== null) {
-                    $subTotal += $orig;
-                    $totalDiscount += $disc;
-                }
-            }
-        }
-
-        // If sub_total and discount are provided by frontend, use them
-        // Otherwise calculate from fee_details
-        if (isset($validated['sub_total']) && isset($validated['discount'])) {
-            $subTotal = floatval($validated['sub_total']);
-            $totalDiscount = floatval($validated['discount']);
-        }
-
-        // Ensure amount matches sub_total - discount
-        $validated['sub_total'] = $subTotal;
-        $validated['discount'] = $totalDiscount;
-        $validated['amount'] = max(0, $subTotal - $totalDiscount);
-
-        // Auto-fix Amount: If the user updated fees (sum changes) but the Total Amount sent
-        // matches the OLD amount (meaning they likely didn't update it manually or JS failed),
-        // we should trust the new Fee Sum.
-        if (isset($validated['fee_details']) && count($validated['fee_details']) > 0) {
-            $newFeeSum = collect($validated['fee_details'])->sum('amount');
-
-            // If there's a discrepancy between Sent Amount and Fee Sum
-            if (abs($validated['amount'] - $newFeeSum) > 0.01) {
-                // And the Sent Amount is exactly the same as the Old DB Amount (Stale)
-                if (abs($validated['amount'] - $payment->amount) < 0.01) {
-                    // And the New Fee Sum IS different from the Old DB Amount (So changes happened)
-                    if (abs($newFeeSum - $payment->amount) > 0.01) {
-                        \Log::info("Auto-correcting Payment Amount from {$validated['amount']} to {$newFeeSum} because fees changed.");
-                        $validated['amount'] = $newFeeSum;
-                    }
-                }
+                $item->update([
+                    'month' => $newMonth,
+                    'year' => $newYear,
+                    'fee_name' => $newFeeName ?: $item->fee_name
+                ]);
             }
         }
 
         $payment->update($validated);
 
-        if ($request->has('show_receipt') && $request->show_receipt) {
-            return redirect()->route('payments.receipt', $payment->id);
-        }
-
-        // Handle Redirect
         $redirectRoute = $request->input('redirect_to', 'payments.index');
 
         return redirect()->route($redirectRoute, $payment->student_id)
-            ->with('success', 'Payment updated successfully.');
+            ->with('success', 'Payment updated successfully. Note: Amounts cannot be modified for accounting integrity.');
     }
 
     /**
@@ -713,7 +622,7 @@ class PaymentController extends Controller
         $student = $payment->student;
 
         // Convert amount to words
-        $amountInWords = $this->numberToWords(intval($payment->amount));
+        $amountInWords = $this->numberToWords(intval($payment->final_amount));
 
         // Generate Receipt No
         $receiptNo = ($payment->payment_date ? \Carbon\Carbon::parse($payment->payment_date) : now())->format('ymd') . str_pad($payment->id, 3, '0', STR_PAD_LEFT);
@@ -730,7 +639,7 @@ class PaymentController extends Controller
         $student = $payment->student;
 
         // Convert amount to words
-        $amountInWords = $this->numberToWords(intval($payment->amount));
+        $amountInWords = $this->numberToWords(intval($payment->final_amount));
 
         // Generate Receipt No
         $receiptNo = ($payment->payment_date ? \Carbon\Carbon::parse($payment->payment_date) : now())->format('ymd') . str_pad($payment->id, 3, '0', STR_PAD_LEFT);
@@ -764,7 +673,7 @@ class PaymentController extends Controller
         $student = $payment->student;
 
         // Convert amount to words
-        $amountInWords = $this->numberToWords(intval($payment->amount));
+        $amountInWords = $this->numberToWords(intval($payment->final_amount));
 
         // Generate Receipt No
         $receiptNo = ($payment->payment_date ? \Carbon\Carbon::parse($payment->payment_date) : now())->format('ymd') . str_pad($payment->id, 3, '0', STR_PAD_LEFT);

@@ -175,7 +175,7 @@
                         <td>{{ $payment->student?->student_id ?? 'N/A' }}</td>
                         <td>{{ $payment->student?->classroom?->name ?? 'N/A' }}</td>
                         <td>{{ $payment->student?->section ?? '-' }}</td>
-                        <td><span class="amount-cell">৳ {{ number_format($payment->amount_display ?? $payment->amount, 2) }}</span></td>
+                        <td><span class="amount-cell">৳ {{ number_format($payment->amount_display ?? $payment->final_amount, 2) }}</span></td>
                         <td>{{ \Carbon\Carbon::parse($payment->payment_date)->format('d M, Y') }}</td>
                         <td style="font-family:monospace;font-size:12px;color:var(--muted)">
                             {{ \Carbon\Carbon::parse($payment->payment_date)->format('ymd') . str_pad($payment->id, 3, '0', STR_PAD_LEFT) }}

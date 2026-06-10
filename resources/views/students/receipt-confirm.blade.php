@@ -64,8 +64,8 @@
                         $student->payments()->where('payment_type', 'Admission')->latest('id')->first() ??
                         $student->payments()->latest('id')->first();
 
-                    // Get fee details from the database (not session)
-                    $feeDetails = $latestPayment ? $latestPayment->fee_details ?? [] : [];
+                    // Get payment items from the relationship
+                    $paymentItems = $latestPayment ? $latestPayment->payment_items ?? collect() : collect();
                     $isAdmissionPayment = $latestPayment && $latestPayment->payment_type === 'Admission';
                 @endphp
 
@@ -73,9 +73,9 @@
                     <div style="margin-top:20px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.1)">
                         <h3 style="color:var(--text);margin:0 0 16px 0;font-size:18px">Payment Details</h3>
 
-                        @if (count($feeDetails) > 0)
+                        @if ($paymentItems->count() > 0)
                             @php
-                                // Process and group fees (ROBUST LOGIC from students/receipt.blade.php)
+                                // Process and group fees
                                 $processedFees = [];
                                 $monthlyGroups = [];
 
@@ -83,82 +83,80 @@
                                 $totalOriginal = 0;
                                 $totalDiscount = 0;
 
-                                if (is_array($feeDetails)) {
-                                    foreach ($feeDetails as $fee) {
-                                        // Net Amount (Paid Amount)
-                                        $net = floatval($fee['amount'] ?? 0);
+                                foreach ($paymentItems as $item) {
+                                    // Net Amount (Paid Amount)
+                                    $net = floatval($item->amount ?? 0);
 
-                                        // Discount
-                                        $disc = floatval($fee['discount'] ?? 0);
+                                    // Discount
+                                    $disc = floatval($item->discount ?? 0);
 
-                                        // Original Amount
-                                        // Check for Partial Payment (Suffix added by controller)
-                                        $isPartial = strpos($fee['name'], '(Partial)') !== false;
+                                    // Original Amount
+                                    // Check for Partial Payment (Suffix added by controller)
+                                    $isPartial = strpos($item->fee_name, '(Partial)') !== false;
 
-                                        if ($isPartial) {
-                                            // For receipt math, we only consider the portion processed now (Paid + Discount)
-                                            // This prevents "Unpaid Due" from being calculated as a Discount
-                                            $orig = $net + $disc;
-                                        } elseif (isset($fee['original_amount']) && $fee['original_amount'] > 0) {
-                                            $orig = floatval($fee['original_amount']);
-                                        } elseif ($disc > 0) {
-                                            $orig = $net + $disc;
-                                        } else {
-                                            $orig = $net;
+                                    if ($isPartial) {
+                                        // For receipt math, we only consider the portion processed now (Paid + Discount)
+                                        // This prevents "Unpaid Due" from being calculated as a Discount
+                                        $orig = $net + $disc;
+                                    } elseif (isset($item->original_amount) && $item->original_amount > 0) {
+                                        $orig = floatval($item->original_amount);
+                                    } elseif ($disc > 0) {
+                                        $orig = $net + $disc;
+                                    } else {
+                                        $orig = $net;
+                                    }
+
+                                    // Double check discount
+                                    if ($disc <= 0 && $orig > $net) {
+                                        $disc = $orig - $net;
+                                    }
+
+                                    // Accumulate Totals
+                                    $totalNet += $net;
+                                    $totalOriginal += $orig;
+                                    $totalDiscount += $disc;
+
+                                    // Check if this is a monthly fee that should be grouped
+                                    if ($item->fee_type === 'Monthly' && $item->month) {
+                                        $nameParts = explode(' - ', $item->fee_name);
+                                        $baseName = count($nameParts) > 1 ? trim($nameParts[0]) : $item->fee_name;
+
+                                        $monthLabel = $item->month;
+                                        if ($item->year && strpos($monthLabel, $item->year) === false) {
+                                            $monthLabel .= ' ' . $item->year;
+                                        } elseif (!$item->year && isset($nameParts[1])) {
+                                            $monthLabel = trim($nameParts[1]);
                                         }
 
-                                        // Double check discount
-                                        if ($disc <= 0 && $orig > $net) {
-                                            $disc = $orig - $net;
-                                        }
-
-                                        // Accumulate Totals
-                                        $totalNet += $net;
-                                        $totalOriginal += $orig;
-                                        $totalDiscount += $disc;
-
-                                        // Check if this is a monthly fee that should be grouped
-                                        if (isset($fee['type']) && $fee['type'] === 'Monthly' && isset($fee['month'])) {
-                                            $nameParts = explode(' - ', $fee['name']);
-                                            $baseName = count($nameParts) > 1 ? trim($nameParts[0]) : $fee['name'];
-
-                                            $monthLabel = $fee['month'];
-                                            if (isset($fee['year']) && strpos($monthLabel, $fee['year']) === false) {
-                                                $monthLabel .= ' ' . $fee['year'];
-                                            } elseif (!isset($fee['year']) && isset($nameParts[1])) {
-                                                $monthLabel = trim($nameParts[1]);
-                                            }
-
-                                            if (!isset($monthlyGroups[$baseName])) {
-                                                $monthlyGroups[$baseName] = [
-                                                    'months' => [],
-                                                    'total_amount' => 0,
-                                                    'total_original' => 0,
-                                                ];
-                                            }
-                                            $monthlyGroups[$baseName]['months'][] = $monthLabel;
-                                            $monthlyGroups[$baseName]['total_amount'] += $net;
-                                            $monthlyGroups[$baseName]['total_original'] += $orig;
-                                        } else {
-                                            $item = [
-                                                'name' => $fee['name'],
-                                                'amount' => $net,
+                                        if (!isset($monthlyGroups[$baseName])) {
+                                            $monthlyGroups[$baseName] = [
+                                                'months' => [],
+                                                'total_amount' => 0,
+                                                'total_original' => 0,
                                             ];
-
-                                            if (
-                                                strpos($fee['name'], 'Admission Fee (Partial)') !== false &&
-                                                isset($fee['original_amount'])
-                                            ) {
-                                                $item['original'] = floatval($fee['original_amount']);
-                                            } elseif (
-                                                strpos($fee['name'], 'Admission Fee (Partial)') !== false &&
-                                                $disc > 0
-                                            ) {
-                                                $item['original'] = $net + $disc;
-                                            }
-
-                                            $processedFees[] = $item;
                                         }
+                                        $monthlyGroups[$baseName]['months'][] = $monthLabel;
+                                        $monthlyGroups[$baseName]['total_amount'] += $net;
+                                        $monthlyGroups[$baseName]['total_original'] += $orig;
+                                    } else {
+                                        $processedFee = [
+                                            'name' => $item->fee_name,
+                                            'amount' => $net,
+                                        ];
+
+                                        if (
+                                            strpos($item->fee_name, 'Admission Fee (Partial)') !== false &&
+                                            isset($item->original_amount)
+                                        ) {
+                                            $processedFee['original'] = floatval($item->original_amount);
+                                        } elseif (
+                                            strpos($item->fee_name, 'Admission Fee (Partial)') !== false &&
+                                            $disc > 0
+                                        ) {
+                                            $processedFee['original'] = $net + $disc;
+                                        }
+
+                                        $processedFees[] = $processedFee;
                                     }
                                 }
 
@@ -182,7 +180,7 @@
                                     ];
                                 }
 
-                                $totalPaid = $latestPayment->amount ?? 0;
+                                $totalPaid = $latestPayment->final_amount ?? 0;
 
                                 // Final Calculation
                                 $subtotal = $totalOriginal;
@@ -273,14 +271,14 @@
                                 </table>
                             </div>
                         @else
-                            <!-- Simple Payment Display (fallback for old payments without fee_details) -->
+                            <!-- Simple Payment Display (fallback for old payments without payment_items) -->
                             <div style="display:flex;justify-content:space-between;align-items:center">
                                 <div>
                                     <label style="display:block;color:var(--muted);font-size:12px;margin-bottom:4px">
                                         {{ $latestPayment->payment_type }} Fee Paid
                                     </label>
                                     <p style="color:#4caf50;font-weight:700;font-size:24px;margin:0">
-                                        ৳{{ number_format($latestPayment->amount, 2) }}</p>
+                                        ৳{{ number_format($latestPayment->final_amount, 2) }}</p>
                                 </div>
                                 <div style="text-align:right">
                                     <label style="display:block;color:var(--muted);font-size:12px;margin-bottom:4px">Payment
@@ -464,7 +462,7 @@
         function shareViaWhatsApp() {
             const studentName = "{{ $student->name }}";
             const studentId = "{{ $student->student_id }}";
-            const amount = "{{ $latestPayment ? number_format($latestPayment->amount, 2) : '0.00' }}";
+            const amount = "{{ $latestPayment ? number_format($latestPayment->final_amount, 2) : '0.00' }}";
             const pdfUrl = "{{ route('students.receipt.download', $student) }}";
 
             // For WhatsApp, we need to download the PDF first
@@ -494,7 +492,7 @@
         function shareViaEmail() {
             const studentName = "{{ $student->name }}";
             const studentId = "{{ $student->student_id }}";
-            const amount = "{{ $latestPayment ? number_format($latestPayment->amount, 2) : '0.00' }}";
+            const amount = "{{ $latestPayment ? number_format($latestPayment->final_amount, 2) : '0.00' }}";
             const pdfUrl = "{{ route('students.receipt.download', $student) }}";
 
             const subject = `Payment Receipt - ${studentName} (${studentId})`;
@@ -523,7 +521,7 @@
         async function shareReceipt() {
             const studentName = "{{ $student->name }}";
             const studentId = "{{ $student->student_id }}";
-            const amount = "{{ $latestPayment ? number_format($latestPayment->amount, 2) : '0.00' }}";
+            const amount = "{{ $latestPayment ? number_format($latestPayment->final_amount, 2) : '0.00' }}";
             const pdfUrl = "{{ route('students.receipt.download', $student) }}";
 
             if (!navigator.share) {

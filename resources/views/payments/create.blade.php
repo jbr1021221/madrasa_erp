@@ -28,8 +28,8 @@
 
     <div class="form-group">
       <label>Amount (৳) *</label>
-      <input type="number" name="amount" step="0.01" min="0" value="{{ old('amount') }}" required>
-      @error('amount')
+      <input type="number" name="final_amount" step="0.01" min="0" value="{{ old('final_amount') }}" required>
+      @error('final_amount')
         <div class="error">{{ $message }}</div>
       @enderror
     </div>
