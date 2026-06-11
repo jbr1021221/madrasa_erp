@@ -8,46 +8,8 @@
         $allClassFees = $student->classroom->fees ?? [];
         $recurringFees = $student->selected_fees ?? ($student->fees ?? []);
 
-        // Calculate Paid Fees Tracker for this student
-        $paidFeeTracker = [];
-        foreach ($student->payment_items as $paymentItem) {
-            $fType = strtolower($paymentItem->fee_type ?? '');
-            if ($fType === 'monthly') {
-                $monthName = $paymentItem->month ?? '';
-                $year = $paymentItem->year ?? date('y');
-                $monthKey = strpos($monthName, ', ') !== false ? $monthName : $monthName . ', ' . $year;
-
-                if (!isset($paidFeeTracker[$monthKey])) {
-                    $paidFeeTracker[$monthKey] = [];
-                }
-
-                $name = $paymentItem->fee_name;
-                if (strpos($name, ' - ') !== false) {
-                    $parts = explode(' - ', $name);
-                    $name = trim($parts[0]);
-                }
-                $paidFeeTracker[$monthKey][] = $name;
-            } else {
-                $rawName = $paymentItem->fee_name ?? '';
-                if (strpos($rawName, ' - ') !== false) {
-                    $separatorPos = strpos($rawName, ' - ');
-                    $baseName = trim(substr($rawName, 0, $separatorPos));
-                    $partsStr = substr($rawName, $separatorPos + 3);
-                    $parts = explode(',', $partsStr);
-                    foreach ($parts as $p) {
-                        $p = trim($p);
-                        if (!empty($p)) {
-                            $paidFeeTracker[$baseName . ' - ' . $p] = true;
-                        }
-                    }
-                } else {
-                    $names = explode(',', $rawName);
-                    foreach ($names as $n) {
-                        $paidFeeTracker[trim($n)] = true;
-                    }
-                }
-            }
-        }
+        // Get paid months from student_months table
+        $paidMonths = $student->paidMonthKeys; // Returns array like ['June, 26', 'July, 26']
     @endphp
 
     <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
@@ -67,7 +29,7 @@
         {{-- Right: Action buttons --}}
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
             <button
-                onclick='openPayModal({{ $student->id }}, "{{ $student->name }} ({{ $className }})", "{{ $student->father_name }}", @json($recurringFees), @json($student->discounts ?? []), @json($paidFeeTracker), @json($allClassFees ?? []), @json($student->partial_payments ?? []))'
+                onclick='openPayModal({{ $student->id }}, "{{ $student->name }} ({{ $className }})", "{{ $student->father_name }}", @json($recurringFees), @json($student->discounts ?? []), @json($paidMonths), @json($allClassFees ?? []), @json($student->partial_payments ?? []), "{{ $student->created_at->format('Y-m') }}")'
                 class="btn">Make Payment</button>
 
             <a href="{{ route('students.admission-form.download', $student) }}" class="btn" target="_blank">Admission Form</a>
@@ -453,7 +415,7 @@
             fatherName: '{{ $student->father_name }}',
             fees: @json($recurringFees),
             discounts: @json($student->discounts ?? []),
-            paidTracker: @json($paidFeeTracker),
+            paidMonths: @json($paidMonths),
             classFees: @json($allClassFees ?? []),
             partialPayments: @json($student->partial_payments ?? [])
         };
@@ -508,27 +470,16 @@
             if (details && !Array.isArray(details) && details.fee_details) details = details.fee_details;
             details = details || [];
 
-            // 1. Clean Paid Tracker (Unlock edited fees so they are selectable)
-            const cleanTracker = JSON.parse(JSON.stringify(studentData.paidTracker));
-
-            details.forEach(d => {
-                // Non-Monthly Keys check
-                if (cleanTracker[d.name]) delete cleanTracker[d.name];
-
-                // Monthly Keys check
-                Object.keys(cleanTracker).forEach(key => {
-                    if (Array.isArray(cleanTracker[key])) {
-                        let matchesMonth = false;
-                        if (d.month && key.includes(d.month)) matchesMonth = true;
-                        else if (d.name.includes(key) || d.name.includes(key.split(',')[0])) matchesMonth =
-                            true; // Heuristic
-
-                        if (matchesMonth) {
-                            const cleanName = d.name.split(' - ')[0]; // Extract base name "Tuition"
-                            cleanTracker[key] = cleanTracker[key].filter(f => f !== cleanName && f !==
-                                '__ALL__');
-                        }
+            // 1. Create clean paid months array excluding months being edited
+            const cleanPaidMonths = studentData.paidMonths.filter(monthKey => {
+                // Check if any detail in this payment matches this month
+                return !details.some(d => {
+                    if (d.month) {
+                        const monthDisplay = d.month.includes(', ') ? d.month : `${d.month}, ${d.year || date('y')}`;
+                        return monthDisplay === monthKey;
                     }
+                    // Also check if the detail name contains the month
+                    return d.name.includes(monthKey);
                 });
             });
 
@@ -607,7 +558,7 @@
                 studentData.fatherName,
                 studentData.fees,
                 editModeDiscounts, // <--- Pass Only Payment Discounts
-                cleanTracker,
+                cleanPaidMonths,
                 studentData.classFees,
                 studentData.partialPayments
             );

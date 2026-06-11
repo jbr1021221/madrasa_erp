@@ -176,85 +176,12 @@
                                         }
                                     }
                                 }
-                                // Calculate paid months and fees from all payments
-                                $paidFeeTracker = [];
-                                if ($student->payments) {
-                                    foreach ($student->payments as $payment) {
-                                        if ($payment->fee_details && is_array($payment->fee_details)) {
-                                            foreach ($payment->fee_details as $feeDetail) {
-                                                $fType = strtolower($feeDetail['type'] ?? '');
-                                                if ($fType === 'monthly') {
-                                                    // Build month key in format "MonthName, YY"
-                                                    $monthName = $feeDetail['month'] ?? '';
-                                                    $year = $feeDetail['year'] ?? date('y');
-
-                                                    if (strpos($monthName, ', ') !== false) {
-                                                        $monthKey = $monthName;
-                                                    } else {
-                                                        $monthKey = $monthName . ', ' . $year;
-                                                    }
-
-                                                    if (!isset($paidFeeTracker[$monthKey])) {
-                                                        $paidFeeTracker[$monthKey] = [];
-                                                    }
-
-                                                    // Extract simple fee name
-                                                    $name = $feeDetail['name'];
-                                                    if (strpos($name, ' - ') !== false) {
-                                                        $parts = explode(' - ', $name);
-                                                        $name = trim($parts[0]);
-                                                    }
-
-                                                    $paidFeeTracker[$monthKey][] = $name;
-                                                } else {
-                                                    // For Quarterly/Half/Other
-                                                    $rawName = $feeDetail['name'] ?? '';
-
-                                                    // Check if name is in "Fee - Parts" format
-                                                    if (strpos($rawName, ' - ') !== false) {
-                                                        // Extract Base Name and Parts String
-                                                        // We need to be careful finding the first valid separator that separates Fee from Parts
-                                                        // Assuming "Fee Name - Part1, Part2"
-                                                        $separatorPos = strpos($rawName, ' - ');
-                                                        $baseName = trim(substr($rawName, 0, $separatorPos));
-                                                        $partsStr = substr($rawName, $separatorPos + 3);
-
-                                                        $parts = explode(',', $partsStr);
-                                                        foreach ($parts as $p) {
-                                                            $p = trim($p);
-                                                            if (!empty($p)) {
-                                                                $paidFeeTracker[$baseName . ' - ' . $p] = true;
-                                                            }
-                                                        }
-                                                    } else {
-                                                        // Fallback for simple names
-                                                        $names = explode(',', $rawName);
-                                                        foreach ($names as $n) {
-                                                            $prioritizedKey = trim($n);
-                                                            $paidFeeTracker[$prioritizedKey] = true;
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        // Fallback for legacy payments (if full month was marked paid without details)
-                                        elseif ($payment->month && strtolower($payment->payment_type) === 'monthly') {
-                                            preg_match_all('/([A-Za-z]+,\s*\d{2})/', $payment->month, $matches);
-                                            if (!empty($matches[0])) {
-                                                foreach ($matches[0] as $m) {
-                                                    // Assume ALL fees paid for this legacy month
-                                                    if (!isset($paidFeeTracker[$m])) {
-                                                        $paidFeeTracker[$m] = ['__ALL__'];
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
+                                // Get paid months from student_months table
+                                $paidMonths = $student->paidMonthKeys; // Returns array like ['June, 26', 'July, 26']
                             @endphp
                             <div class="action-group">
                                 <button type="button" class="icon-btn icon-btn-fee"
-                                    onclick="openPayModal({{ $student->id }}, '{{ $student->name }} ({{ $className }})', '{{ $student->father_name }}', {{ json_encode($recurringFees) }}, {{ json_encode($student->discounts ?? []) }}, {{ json_encode($paidFeeTracker) }}, {{ json_encode($allClassFees ?? []) }}, {{ json_encode($student->partial_payments ?? []) }}, '{{ $student->created_at->format('Y-m') }}')"
+                                    onclick="openPayModal({{ $student->id }}, '{{ $student->name }} ({{ $className }})', '{{ $student->father_name }}', {{ json_encode($recurringFees) }}, {{ json_encode($student->discounts ?? []) }}, {{ json_encode($paidMonths) }}, {{ json_encode($allClassFees ?? []) }}, {{ json_encode($student->partial_payments ?? []) }}, '{{ $student->created_at->format('Y-m') }}')"
                                     title="Pay Fees">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
                                     Fees

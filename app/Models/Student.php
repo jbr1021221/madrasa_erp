@@ -71,4 +71,27 @@ class Student extends Model
     {
         return $this->hasMany(PaymentItem::class);
     }
+
+    public function studentMonths()
+    {
+        return $this->hasMany(StudentMonth::class);
+    }
+
+    public function paidMonths()
+    {
+        return $this->studentMonths()->where('status', 'paid');
+    }
+
+    public function getPaidMonthKeysAttribute()
+    {
+        return $this->paidMonths()->pluck('month_key')->toArray();
+    }
+
+    /**
+     * Check if a month is unpaid (no record exists in student_months)
+     */
+    public function isMonthUnpaid($monthKey)
+    {
+        return !$this->studentMonths()->where('month_key', $monthKey)->exists();
+    }
 }

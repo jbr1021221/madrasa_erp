@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Payment;
 use App\Models\PaymentItem;
+use App\Models\StudentMonth;
 use App\Models\Student;
 use App\Models\Classroom;
 use Carbon\Carbon;
@@ -373,16 +374,13 @@ class PaymentController extends Controller
                 foreach ($feeDetails as $fee) {
                     $feeName = $fee['name'];
 
-                    // Extract base fee name (remove month suffix like " - May, 26")
-                    $baseFeeName = preg_replace('/\s*-\s*[\w]+,\s*\d+$/', '', $feeName);
-
-                    // Check if student is subscribed to this fee type
-                    $isSubscribed = in_array($baseFeeName, $subscribedFeeNames) ||
-                                    in_array($feeName, $subscribedFeeNames);
+                    // Check if student is subscribed to this fee
+                    // Payment modal sends properly formatted fee names
+                    $isSubscribed = in_array($feeName, $subscribedFeeNames);
 
                     if (!$isSubscribed) {
                         return redirect()->back()
-                            ->with('error', "Student is not subscribed to '{$baseFeeName}' fee. Please select only subscribed fees.")
+                            ->with('error', "Student is not subscribed to '{$feeName}' fee. Please select only subscribed fees.")
                             ->withInput();
                     }
                 }
@@ -433,6 +431,86 @@ class PaymentController extends Controller
                     'original_amount' => $fee['original_amount'] ?? $fee['amount'],
                     'discount' => $fee['discount'] ?? 0
                 ]);
+            }
+        }
+
+        // Mark months as paid in student_months table
+        // Check if payment covers all required monthly fees based on payment_items
+        if (!empty($payment->month)) {
+            // Get student's assigned monthly fees
+            $student = Student::find($payment->student_id);
+            if ($student) {
+                $selectedFees = $student->selected_fees ?? [];
+                $monthlyFees = collect($selectedFees)->filter(function ($fee) {
+                    return isset($fee['type']) && strtolower($fee['type']) === 'monthly';
+                });
+                $requiredMonthlyFeeNames = $monthlyFees->pluck('name')->unique()->toArray();
+
+                // Get payment items for this payment
+                $paymentItems = $payment->payment_items;
+                $paidMonthlyFeeNames = [];
+
+                foreach ($paymentItems as $item) {
+                    // Check if this payment item is for a monthly fee
+                    if (strtolower($item->fee_type ?? '') === 'monthly') {
+                        // Extract base fee name from fee_name (remove month suffix like " - June, 26")
+                        $baseFeeName = preg_replace('/\s*-\s*[A-Za-z]+,\s*\d+$/', '', $item->fee_name);
+                        if (!empty($baseFeeName)) {
+                            $paidMonthlyFeeNames[] = $baseFeeName;
+                        }
+                    }
+                }
+
+                // Determine payment status based on fee coverage
+                $paidFeeCount = count(array_intersect($requiredMonthlyFeeNames, $paidMonthlyFeeNames));
+                $totalRequiredFees = count($requiredMonthlyFeeNames);
+
+                // Only create record if at least some monthly fees are covered
+                if ($paidFeeCount > 0) {
+                    $paymentStatus = ($paidFeeCount >= $totalRequiredFees) ? 'paid' : 'partial';
+
+                    // Parse month field - payment modal sends properly formatted month keys like "June, 26, July, 26"
+                    $monthEntries = preg_split('/,\s*/', $payment->month);
+                    $processedMonths = [];
+
+                    foreach ($monthEntries as $monthEntry) {
+                        $monthKey = trim($monthEntry);
+
+                        // Skip empty entries
+                        if (empty($monthKey)) continue;
+
+                        // Avoid duplicates
+                        if (!in_array($monthKey, $processedMonths)) {
+                            $processedMonths[] = $monthKey;
+
+                            // Check if existing record exists
+                            $existingRecord = StudentMonth::where('student_id', $payment->student_id)
+                                ->where('month_key', $monthKey)
+                                ->first();
+
+                            if ($existingRecord) {
+                                // Update existing record - upgrade to paid if all fees now covered
+                                if ($paymentStatus === 'paid') {
+                                    $existingRecord->update([
+                                        'status' => 'paid',
+                                        'payment_id' => $payment->id
+                                    ]);
+                                } else {
+                                    // Keep existing status, just update payment_id
+                                    $existingRecord->update(['payment_id' => $payment->id]);
+                                }
+                            } else {
+                                // Create new record with calculated status
+                                StudentMonth::create([
+                                    'student_id' => $payment->student_id,
+                                    'month_key' => $monthKey,
+                                    'status' => $paymentStatus,
+                                    'payment_id' => $payment->id
+                                ]);
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -540,42 +618,81 @@ class PaymentController extends Controller
         // Once a payment is recorded, its amounts cannot be changed
         // Only allow editing of: payment_date, month, payment_type, payment_mode, note
 
+        // Store old month value before updating
+        $oldMonth = $payment->month;
+
         $validated['payment_type'] = $request->payment_type;
         $validated['payment_mode'] = $request->payment_mode;
         $validated['note'] = $request->note;
         $validated['month'] = $request->month;
         $validated['payment_date'] = $request->payment_date;
 
-        // Extract month and year from the month field (e.g., "February, 26")
-        $monthValue = $request->month;
-        $newMonth = null;
-        $newYear = null;
+        $payment->update($validated);
 
-        if (preg_match('/^([A-Za-z]+)\s*,\s*(\d{2})$/', $monthValue, $matches)) {
-            $newMonth = $matches[1]; // e.g., "February"
-            $newYear = $matches[2];   // e.g., "26"
-        }
+        // Update student_months table when month changes
+        if ($oldMonth !== $request->month) {
+            // Get student's assigned monthly fees for proper status calculation
+            $student = Student::find($payment->student_id);
+            if ($student) {
+                $selectedFees = $student->selected_fees ?? [];
+                $monthlyFees = collect($selectedFees)->filter(function ($fee) {
+                    return isset($fee['type']) && strtolower($fee['type']) === 'monthly';
+                });
+                $requiredMonthlyFeeNames = $monthlyFees->pluck('name')->unique()->toArray();
 
-        // Update payment_items month/year if the payment month changed
-        if ($newMonth && $newYear) {
-            // Update fee names to reflect new month/year
-            foreach ($payment->payment_items as $item) {
-                // Update fee name: replace old month pattern with new one
-                $newFeeName = preg_replace(
-                    '/\s*-\s*[A-Za-z]+,\s*\d{2}$/',
-                    ' - ' . $monthValue,
-                    $item->fee_name
-                );
+                // Get payment items for this payment
+                $paymentItems = $payment->payment_items;
+                $paidMonthlyFeeNames = [];
 
-                $item->update([
-                    'month' => $newMonth,
-                    'year' => $newYear,
-                    'fee_name' => $newFeeName ?: $item->fee_name
-                ]);
+                foreach ($paymentItems as $item) {
+                    if (strtolower($item->fee_type ?? '') === 'monthly') {
+                        // Extract base fee name from fee_name (remove month suffix like " - June, 26")
+                        $baseFeeName = preg_replace('/\s*-\s*[A-Za-z]+,\s*\d+$/', '', $item->fee_name);
+                        if (!empty($baseFeeName)) {
+                            $paidMonthlyFeeNames[] = $baseFeeName;
+                        }
+                    }
+                }
+
+                // Determine payment status based on fee coverage
+                $paidFeeCount = count(array_intersect($requiredMonthlyFeeNames, $paidMonthlyFeeNames));
+                $totalRequiredFees = count($requiredMonthlyFeeNames);
+                $paymentStatus = ($paidFeeCount >= $totalRequiredFees) ? 'paid' : 'partial';
+
+                // Remove old month records
+                $oldMonthEntries = preg_split('/,\s*/', $oldMonth);
+                foreach ($oldMonthEntries as $monthEntry) {
+                    $monthKey = trim($monthEntry);
+                    if (!empty($monthKey)) {
+                        StudentMonth::where('student_id', $payment->student_id)
+                            ->where('month_key', $monthKey)
+                            ->where('payment_id', $payment->id)
+                            ->delete();
+                    }
+                }
+
+                // Add new month records if payment has monthly fees
+                if (!empty($request->month) && $paidFeeCount > 0) {
+                    // Create new month records
+                    $newMonthEntries = preg_split('/,\s*/', $request->month);
+                    foreach ($newMonthEntries as $monthEntry) {
+                        $monthKey = trim($monthEntry);
+                        if (!empty($monthKey)) {
+                            StudentMonth::updateOrCreate(
+                                [
+                                    'student_id' => $payment->student_id,
+                                    'month_key' => $monthKey
+                                ],
+                                [
+                                    'status' => $paymentStatus,
+                                    'payment_id' => $payment->id
+                                ]
+                            );
+                        }
+                    }
+                }
             }
         }
-
-        $payment->update($validated);
 
         $redirectRoute = $request->input('redirect_to', 'payments.index');
 
@@ -588,6 +705,9 @@ class PaymentController extends Controller
      */
     public function destroy(Payment $payment)
     {
+        // Clean up student_months records when payment is deleted
+        StudentMonth::where('payment_id', $payment->id)->delete();
+
         $payment->delete();
 
         return redirect()->back()

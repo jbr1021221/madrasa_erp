@@ -154,7 +154,7 @@
     let allFees = [];
     let currentSubscribedFees = [];
     let currentNetPayable = 0;
-    let currentPaidFeeTracker = {};
+    let currentPaidMonths = []; // Simple array of paid months: ['June, 26', 'July, 26']
     let availableClassFees = [];
     let currentAdmissionDate = null; // e.g. "2024-09"
 
@@ -179,11 +179,19 @@
         return monthDate >= sinceDate;
     }
 
+    // Simple check if month is paid
+    function isMonthPaid(monthDisplayText) {
+        return currentPaidMonths.includes(monthDisplayText);
+    }
 
-    function openPayModal(id, name, fatherName, selectedFees, discounts, paidFeeTracker, classFees, partialPayments, admissionDate) {
+
+    function openPayModal(id, name, fatherName, selectedFees, discounts, paidMonths, classFees, partialPayments, admissionDate) {
         // Reset Redirect to default (Receipt)
         const redirectInput = document.querySelector('input[name="redirect_to"]');
         if (redirectInput) redirectInput.value = 'students.receipt.confirm';
+
+        // Store paid months as simple array
+        currentPaidMonths = paidMonths || [];
 
         // fees = selectedFees (what student has subscribed to)
         // classFees = all available fees for the class
@@ -223,7 +231,6 @@
         });
 
         currentDiscounts = discounts || {};
-        currentPaidFeeTracker = paidFeeTracker || {};
         currentAdmissionDate = admissionDate || null;
 
 
@@ -865,62 +872,30 @@
 
             orderedMonths.forEach((monthObj, index) => {
                 const displayText = monthObj.displayText;
-                const paidFeesForThisMonth = currentPaidFeeTracker[displayText] || [];
-
-                // Only count fees that were applicable for this specific month (respects 'since' date)
-                const monthlyFees = allFees.filter(f => (f.type || '').toLowerCase() === 'monthly');
-                const applicableMonthlyFees = monthlyFees.filter(f => feeApplicableForMonth(f.since, monthObj.displayText));
-                const totalMonthlyFees = applicableMonthlyFees.length;
-                const monthlyFeeNames = applicableMonthlyFees.map(f => f.name.toLowerCase());
-
-                let paidCount = 0;
-                if (Array.isArray(paidFeesForThisMonth)) {
-                    // If it's an array, it contains fee names or __ALL__
-                    if (paidFeesForThisMonth.includes('__ALL__')) {
-                        paidCount = totalMonthlyFees; // Only counts fees applicable for this month
-                    } else {
-                        // Count how many of the applicable monthly fees have been paid
-                        paidCount = paidFeesForThisMonth.filter(pf => monthlyFeeNames.includes(pf
-                            .toLowerCase())).length;
-                    }
-                }
-
-                let status = 'unpaid';
-                if (totalMonthlyFees > 0) {
-                    if (paidCount >= totalMonthlyFees) status = 'paid';
-                    else if (paidCount > 0) status = 'partial';
-                } else if (paidCount > 0 || (Array.isArray(paidFeesForThisMonth) && paidFeesForThisMonth
-                        .includes('__ALL__'))) {
-                    status = 'paid';
-                }
-
-                const isFullyPaid = status === 'paid';
-                const isChecked = false;
+                const isPaid = isMonthPaid(displayText);
 
                 const div = document.createElement('div');
                 div.style.padding = '8px';
-                div.style.cursor = isFullyPaid ? 'not-allowed' : 'pointer';
+                div.style.cursor = isPaid ? 'not-allowed' : 'pointer';
                 div.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
-                div.style.background = isFullyPaid ? 'rgba(255,255,255,0.02)' : 'transparent';
+                div.style.background = isPaid ? 'rgba(255,255,255,0.02)' : 'transparent';
 
                 let badge = '';
-                if (status === 'paid') badge =
+                if (isPaid) badge =
                     '<span style="font-size:10px; background:rgba(76,175,80,0.2); color:#4caf50; padding:1px 4px; border-radius:3px; margin-left:6px; border:1px solid #4caf50;">PAID</span>';
-                else if (status === 'partial') badge =
-                    '<span style="font-size:10px; background:rgba(255,193,7,0.2); color:#ffc107; padding:1px 4px; border-radius:3px; margin-left:6px; border:1px solid #ffc107;">PARTIAL</span>';
 
                 div.innerHTML = `
-                <label style="cursor:${isFullyPaid ? 'not-allowed' : 'pointer'}; display:flex; align-items:center; width:100%; margin:0; ${isFullyPaid ? 'opacity:0.6;' : ''}">
+                <label style="cursor:${isPaid ? 'not-allowed' : 'pointer'}; display:flex; align-items:center; width:100%; margin:0; ${isPaid ? 'opacity:0.6;' : ''}">
                     <input type="checkbox" value="${monthObj.name}" class="month-checkbox"
                            data-year="${monthObj.year}"
                            data-display-text="${monthObj.displayText}"
-                           ${isChecked ? 'checked' : ''}
-                           ${isFullyPaid ? 'disabled' : ''}
+                           ${false ? 'checked' : ''}
+                           ${isPaid ? 'disabled' : ''}
                            onchange="updateSelectedMonths()">
                     <span style="margin-left:8px">${monthObj.displayText}${badge}</span>
                 </label>
             `;
-                if (!isFullyPaid) {
+                if (!isPaid) {
                     div.onmouseover = function() {
                         this.style.background = 'rgba(255,255,255,0.1)';
                     };
@@ -986,14 +961,10 @@
                 let validMonthCount = 0;
 
                 if (feeType === 'monthly') {
-                    const targetFeeName = feeName.toLowerCase();
                     const feeSince = row.dataset.since || null;
                     selectedMonthTexts.forEach(monthText => {
                         if (!feeApplicableForMonth(feeSince, monthText)) return; // Skip months before fee started
-                        const paidFees = currentPaidFeeTracker[monthText] || [];
-                        const isPaid = paidFees.some(pf => pf.toLowerCase() === targetFeeName) ||
-                            paidFees.includes('__ALL__');
-                        if (!isPaid) validMonthCount++;
+                        if (!isMonthPaid(monthText)) validMonthCount++;
                     });
                     totalForThisFee = discountedFee * validMonthCount;
                 } else {
@@ -1121,10 +1092,7 @@
                         const monthText = cb.dataset.displayText;
                         const feeSince = row.dataset.since || null;
                         if (!feeApplicableForMonth(feeSince, monthText)) return; // Skip months before fee started
-                        const paidFees = currentPaidFeeTracker[monthText] || [];
-                        const isPaid = paidFees.some(pf => pf.toLowerCase() === targetFeeName) ||
-                            paidFees.includes('__ALL__');
-                        if (!isPaid) {
+                        if (!isMonthPaid(monthText)) {
                             paymentDetails.fee_details.push({
                                 name: feeName + ' - ' + monthText,
                                 type: 'Monthly',
