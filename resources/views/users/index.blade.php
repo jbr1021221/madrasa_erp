@@ -48,17 +48,32 @@
                         </span>
                     </td>
                     <td>{{ $user->created_at->format('d M Y') }}</td>
-                    <td style="display:flex;gap:6px;justify-content:center">
-                        <a href="{{ route('users.edit', $user) }}" class="action-btn edit" title="Edit User">Edit</a>
-                        @if ($user->id !== auth()->id())
-                            <form action="{{ route('users.destroy', $user) }}" method="POST"
-                                onsubmit="return confirm('Are you sure you want to delete this user?');"
-                                style="display:inline">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="action-btn delete" title="Delete User">Delete</button>
-                            </form>
-                        @endif
+                    <td>
+                        <div class="action-group">
+                            <a href="{{ route('users.edit', $user) }}" class="action-btn action-btn-soft">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
+                                Edit
+                            </a>
+                            @if ($user->id !== auth()->id())
+                                <form action="{{ route('users.destroy', $user) }}" method="POST" style="display:inline" onsubmit="return confirm('Are you sure you want to delete this user?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="action-btn action-btn-danger">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                            <path d="M19 6l-1 14H6L5 6"></path>
+                                            <path d="M10 11v6"></path>
+                                            <path d="M14 11v6"></path>
+                                            <path d="M9 6V4h6v2"></path>
+                                        </svg>
+                                        Delete
+                                    </button>
+                                </form>
+                            @endif
+                        </div>
                     </td>
                 </tr>
             @endforeach
@@ -104,40 +119,75 @@
             transition: 0.2s
         }
 
+        /* Action group */
+        .action-group {
+            display: flex;
+            gap: 6px;
+            justify-content: flex-end;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
         .action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
             padding: 6px 10px;
             border-radius: 6px;
-            border: 1px solid var(--accent);
-            color: var(--accent);
-            background: transparent;
+            border: none;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 14px;
+            font-weight: 600;
             text-decoration: none;
-            display: inline-block;
-            margin: 2px;
-            transition: all 0.2s
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            line-height: 1;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
         }
 
         .action-btn:hover {
-            background: rgba(227, 120, 20, 0.15)
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
 
-        .action-btn.delete {
-            border-color: var(--danger);
-            color: var(--danger)
+        .action-btn:focus-visible {
+            outline: 2px solid;
+            outline-offset: 2px;
         }
 
-        .action-btn.delete:hover {
-            background: rgba(255, 78, 78, 0.15)
+        .action-btn svg {
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
+            margin-left: -4px;
         }
 
-        .action-btn.edit {
-            border-color: #ffc107;
-            color: #ffc107
+        /* Soft button */
+        .action-btn-soft {
+            background-color: rgba(255, 193, 7, 0.1);
+            color: #f59e0b;
         }
 
-        .action-btn.edit:hover {
-            background: rgba(255, 193, 7, 0.15)
+        .action-btn-soft:hover {
+            background-color: rgba(255, 193, 7, 0.2);
+        }
+
+        .action-btn-soft:focus-visible {
+            outline-color: #f59e0b;
+        }
+
+        /* Danger button - Soft red */
+        .action-btn-danger {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+
+        .action-btn-danger:hover {
+            background-color: rgba(239, 68, 68, 0.2);
+        }
+
+        .action-btn-danger:focus-visible {
+            outline-color: #ef4444;
         }
 
         /* DataTables Customization */

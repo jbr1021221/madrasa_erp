@@ -375,12 +375,19 @@ class PaymentController extends Controller
                     $feeName = $fee['name'];
 
                     // Check if student is subscribed to this fee
-                    // Payment modal sends properly formatted fee names
-                    $isSubscribed = in_array($feeName, $subscribedFeeNames);
+                    // Payment modal sends fee names with month suffix like "Monthly Fee - June, 26"
+                    // We need to extract the base fee name for subscription check
+                    $baseFeeName = $feeName;
+                    if (strpos($feeName, ' - ') !== false) {
+                        $parts = explode(' - ', $feeName);
+                        $baseFeeName = trim($parts[0]);
+                    }
+
+                    $isSubscribed = in_array($baseFeeName, $subscribedFeeNames);
 
                     if (!$isSubscribed) {
                         return redirect()->back()
-                            ->with('error', "Student is not subscribed to '{$feeName}' fee. Please select only subscribed fees.")
+                            ->with('error', "Student is not subscribed to '{$baseFeeName}' fee. Please select only subscribed fees.")
                             ->withInput();
                     }
                 }

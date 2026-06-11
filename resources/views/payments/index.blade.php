@@ -161,7 +161,7 @@
                         <td>
                             <a href="{{ route('students.show', $student->id) }}"
                                class="pay-action-btn pay-action-view">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                 View
                             </a>
                         </td>
@@ -183,7 +183,7 @@
                         <td>
                             <a href="{{ route('payments.receipt', $payment) }}" target="_blank"
                                class="pay-action-btn pay-action-receipt">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
                                 Receipt
                             </a>
                         </td>
@@ -362,22 +362,58 @@
     .pay-action-btn {
         display: inline-flex;
         align-items: center;
-        gap: 4px;
-        padding: 5px 10px;
+        gap: 6px;
+        padding: 6px 10px;
         border-radius: 6px;
-        border: 1px solid;
-        font-size: 12px;
-        font-weight: 500;
+        border: none;
+        font-size: 14px;
+        font-weight: 600;
         text-decoration: none;
         cursor: pointer;
-        transition: background 0.18s, transform 0.1s;
+        transition: all 0.2s ease;
         white-space: nowrap;
+        line-height: 1;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     }
-    .pay-action-btn:hover { transform: translateY(-1px); }
-    .pay-action-view    { border-color: #2196f3; color: #2196f3; }
-    .pay-action-view:hover { background: rgba(33,150,243,0.15); }
-    .pay-action-receipt { border-color: #4caf50; color: #4caf50; }
-    .pay-action-receipt:hover { background: rgba(76,175,80,0.15); }
+    .pay-action-btn svg {
+        flex-shrink: 0;
+        width: 20px;
+        height: 20px;
+        margin-left: -4px;
+    }
+    .pay-action-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    .pay-action-btn:focus-visible {
+        outline: 2px solid;
+        outline-offset: 2px;
+    }
+    .pay-action-view    {
+        background-color: rgba(33, 150, 243, 0.1);
+        color: #2196f3;
+    }
+    .pay-action-view:hover {
+        background-color: rgba(33, 150, 243, 0.2);
+    }
+    .pay-action-view:focus-visible {
+        outline-color: #2196f3;
+    }
+    .pay-action-receipt {
+        background-color: rgba(76, 175, 80, 0.1);
+        color: #4caf50;
+    }
+    .pay-action-receipt:hover {
+        background-color: rgba(76, 175, 80, 0.2);
+    }
+    .pay-action-receipt:focus-visible {
+        outline-color: #4caf50;
+    }
+
+    /* Right align action buttons */
+    td:has(.pay-action-btn) {
+        text-align: right;
+    }
 
     /* DataTables overrides */
     .dataTables_wrapper { color: var(--text); font-size: 13px; margin-top: 10px; }

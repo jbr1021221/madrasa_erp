@@ -187,32 +187,24 @@
                                 $paidMonths = $student->paidMonthKeys; // Returns array like ['June, 26', 'July, 26']
                             @endphp
                             <div class="action-group">
-                                <button type="button" class="icon-btn icon-btn-fee"
-                                    onclick="openPayModal({{ $student->id }}, '{{ $student->name }} ({{ $className }})', '{{ $student->father_name }}', {{ json_encode($recurringFees) }}, {{ json_encode($student->discounts ?? []) }}, {{ json_encode($paidMonths) }}, {{ json_encode($allClassFees ?? []) }}, {{ json_encode($student->partial_payments ?? []) }}, '{{ $student->created_at->format('Y-m') }}')"
-                                    title="Pay Fees">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
-                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                        stroke-linecap="round" stroke-linejoin="round">
+                                <button type="button" class="action-btn action-btn-fee"
+                                    onclick="openPayModal({{ $student->id }}, '{{ $student->name }} ({{ $className }})', '{{ $student->father_name }}', {{ json_encode($recurringFees) }}, {{ json_encode($student->discounts ?? []) }}, {{ json_encode($paidMonths) }}, {{ json_encode($allClassFees ?? []) }}, {{ json_encode($student->partial_payments ?? []) }}, '{{ $student->created_at->format('Y-m') }}')">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <rect x="1" y="4" width="22" height="16" rx="2" />
                                         <line x1="1" y1="10" x2="23" y2="10" />
                                     </svg>
                                     Fees
                                 </button>
-                                <a href="{{ route('students.show', $student) }}" class="icon-btn icon-btn-view"
-                                    title="View Details">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
-                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                        stroke-linecap="round" stroke-linejoin="round">
+                                <a href="{{ route('students.show', $student) }}" class="action-btn action-btn-view">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                                         <circle cx="12" cy="12" r="3" />
                                     </svg>
                                     View
                                 </a>
                                 <div class="dropdown">
-                                    <button type="button" class="icon-btn icon-btn-more" onclick="toggleDropdown(event, '{{ $student->id }}')">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round">
+                                    <button type="button" class="action-btn action-btn-more" onclick="toggleDropdown(event, '{{ $student->id }}')">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                             <circle cx="12" cy="12" r="1" />
                                             <circle cx="12" cy="5" r="1" />
                                             <circle cx="12" cy="19" r="1" />
@@ -223,17 +215,13 @@
                                             class="dropdown-item {{ $student->is_active ? 'dropdown-item-deactivate' : 'dropdown-item-activate' }}"
                                             onclick="confirmToggleStatus('{{ route('students.toggle-status', $student) }}', {{ $student->is_active ? 'true' : 'false' }}, this)">
                                             @if ($student->is_active)
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
-                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                                    stroke-linecap="round" stroke-linejoin="round">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                     <circle cx="12" cy="12" r="10" />
                                                     <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
                                                 </svg>
                                                 Inactive
                                             @else
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
-                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                                    stroke-linecap="round" stroke-linejoin="round">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                                                     <polyline points="22 4 12 14.01 9 11.01" />
                                                 </svg>
@@ -242,9 +230,7 @@
                                         </button>
                                         <button type="button" class="dropdown-item dropdown-item-delete"
                                             onclick="confirmDelete('{{ route('students.destroy', $student) }}')">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
-                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                                stroke-linecap="round" stroke-linejoin="round">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                 <polyline points="3 6 5 6 21 6" />
                                                 <path d="M19 6l-1 14H6L5 6" />
                                                 <path d="M10 11v6" />
@@ -405,80 +391,86 @@
         /* Action group */
         .action-group {
             display: flex;
-            gap: 5px;
-            justify-content: center;
+            gap: 6px;
+            justify-content: flex-end;
             align-items: center;
             flex-wrap: wrap;
         }
 
-        .icon-btn {
+        .action-btn {
             display: inline-flex;
             align-items: center;
-            gap: 4px;
-            padding: 5px 9px;
+            gap: 6px;
+            padding: 6px 10px;
             border-radius: 6px;
-            border: 1px solid;
-            background: transparent;
+            border: none;
             cursor: pointer;
-            font-size: 12px;
-            font-weight: 500;
+            font-size: 14px;
+            font-weight: 600;
             text-decoration: none;
-            transition: background 0.18s, transform 0.1s;
+            transition: all 0.2s ease;
             white-space: nowrap;
             line-height: 1;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
         }
 
-        .icon-btn:hover {
+        .action-btn:hover {
             transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
 
-        .icon-btn svg {
+        .action-btn:focus-visible {
+            outline: 2px solid;
+            outline-offset: 2px;
+        }
+
+        .action-btn svg {
             flex-shrink: 0;
+            width: 20px;
+            height: 20px;
+            margin-left: -4px;
         }
 
-        .icon-btn-fee {
-            border-color: var(--accent);
-            color: var(--accent);
+        /* Soft buttons */
+        .action-btn-fee {
+            background-color: rgba(227, 120, 20, 0.1);
+            color: #e37814;
         }
 
-        .icon-btn-fee:hover {
-            background: rgba(227, 120, 20, 0.15);
+        .action-btn-fee:hover {
+            background-color: rgba(227, 120, 20, 0.2);
         }
 
-        .icon-btn-view {
-            border-color: #2196f3;
+        .action-btn-fee:focus-visible {
+            outline-color: #e37814;
+        }
+
+        .action-btn-view {
+            background-color: rgba(33, 150, 243, 0.1);
             color: #2196f3;
         }
 
-        .icon-btn-view:hover {
-            background: rgba(33, 150, 243, 0.15);
+        .action-btn-view:hover {
+            background-color: rgba(33, 150, 243, 0.2);
         }
 
-        .icon-btn-activate {
-            border-color: #4caf50;
-            color: #4caf50;
+        .action-btn-view:focus-visible {
+            outline-color: #2196f3;
         }
 
-        .icon-btn-activate:hover {
-            background: rgba(76, 175, 80, 0.15);
+        /* More button - Minimal */
+        .action-btn-more {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+            padding: 6px 8px;
         }
 
-        .icon-btn-deactivate {
-            border-color: #e74c3c;
-            color: #e74c3c;
+        .action-btn-more:hover {
+            background-color: rgba(255, 255, 255, 0.1);
         }
 
-        .icon-btn-deactivate:hover {
-            background: rgba(231, 76, 60, 0.15);
-        }
-
-        .icon-btn-delete {
-            border-color: var(--danger);
-            color: var(--danger);
-        }
-
-        .icon-btn-delete:hover {
-            background: rgba(255, 78, 78, 0.15);
+        .action-btn-more:focus-visible {
+            outline-color: rgba(255, 255, 255, 0.3);
         }
 
         /* More options dropdown */
@@ -488,13 +480,23 @@
         }
 
         .icon-btn-more {
-            border-color: rgba(255, 255, 255, 0.3);
+            background-color: rgba(255, 255, 255, 0.1);
             color: var(--text);
+            min-width: auto;
+            width: 42px;
+            min-height: 38px;
+            padding: 8px 0;
+            justify-content: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .icon-btn-more:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.5);
+            background-color: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .icon-btn-more:focus-visible {
+            outline-color: rgba(255, 255, 255, 0.5);
         }
 
         .dropdown-content {
@@ -518,14 +520,15 @@
         .dropdown-item {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             width: 100%;
-            padding: 8px 12px;
+            padding: 6px 10px;
             border: none;
             background: transparent;
             color: var(--text);
             text-align: left;
-            font-size: 13px;
+            font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
             transition: background 0.2s;
             border-radius: 0;
@@ -544,22 +547,24 @@
         }
 
         .dropdown-item-activate:hover {
-            background: rgba(76, 175, 80, 0.15);
+            background: rgba(76, 175, 80, 0.1);
             color: #4caf50;
         }
 
         .dropdown-item-deactivate:hover {
-            background: rgba(231, 76, 60, 0.15);
+            background: rgba(231, 76, 60, 0.1);
             color: #e74c3c;
         }
 
         .dropdown-item-delete:hover {
-            background: rgba(255, 78, 78, 0.15);
+            background: rgba(255, 78, 78, 0.1);
             color: var(--danger);
         }
 
         .dropdown-item svg {
             flex-shrink: 0;
+            width: 20px;
+            height: 20px;
         }
 
         .btn.ghost {
