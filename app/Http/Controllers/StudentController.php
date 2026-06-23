@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Student;
 use App\Models\Classroom;
+use App\Models\PaymentItem;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Http\Requests\StoreStudentRequest;
@@ -376,11 +377,18 @@ class StudentController extends Controller
             }
         } while (!$created && $retryCount < $maxRetries);
 
-        // Create admission payment record
+        // Compute final_amount the same way PaymentController::store() does,
+        // so the receipt's reconciliation logic works for admission payments.
+        $paymentFinalAmount = max(0, $paymentSubTotal - $paymentDiscount);
+
+        // Create admission payment record.
+        // NOTE: column is `total_discount` (not `discount`), and `final_amount`
+        // must be written so the receipt view can reconcile the totals.
         $admissionPayment = $student->payments()->create([
             'amount' => $actualPaymentAmount,
             'sub_total' => $paymentSubTotal,
-            'discount' => $paymentDiscount,
+            'total_discount' => $paymentDiscount,
+            'final_amount' => $paymentFinalAmount,
             'payment_type' => 'Admission',
             'payment_mode' => $validated['payment_mode'],
             'month' => 'Admission',
@@ -388,6 +396,26 @@ class StudentController extends Controller
             'payment_date' => now(),
             'fee_details' => $feeDetails,
         ]);
+
+        // Mirror PaymentController::store(): create one PaymentItem per fee
+        // so the receipt (which reads $payment->payment_items) renders correctly.
+        // NOTE: payment_items.student_id is the students.id PK (FK constraint),
+        // NOT the students.student_id string — same convention PaymentController uses.
+        if (!empty($feeDetails)) {
+            foreach ($feeDetails as $fee) {
+                PaymentItem::create([
+                    'payment_id' => $admissionPayment->id,
+                    'student_id' => $student->id,
+                    'fee_name' => $fee['name'],
+                    'fee_type' => $fee['type'] ?? 'Other',
+                    'month' => $fee['month'] ?? null,
+                    'year' => $fee['year'] ?? null,
+                    'amount' => $fee['amount'],
+                    'original_amount' => $fee['original_amount'] ?? $fee['amount'],
+                    'discount' => $fee['discount'] ?? 0,
+                ]);
+            }
+        }
 
 
         // Update partial_payments with payment ID for each fee
