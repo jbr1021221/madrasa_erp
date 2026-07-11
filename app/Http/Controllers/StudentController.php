@@ -562,7 +562,109 @@ class StudentController extends Controller
 
         $student->update($validated);
 
-        return redirect()->route('students.index')->with('success', 'Student updated successfully.');
+        // Update admission payment record whenever fees are modified
+        if ($request->has('student_assigned_fees') && !empty($request->student_assigned_fees)) {
+            $this->updateAdmissionPayment($student, $request);
+        }
+
+        return redirect()->route('students.show', $student->id)->with('success', 'Student updated successfully.');
+    }
+
+    /**
+     * Update the admission payment record when fees are modified
+     */
+    protected function updateAdmissionPayment(Student $student, $request)
+    {
+        // Find the existing admission payment
+        $admissionPayment = $student->payments()
+            ->where('payment_type', 'Admission')
+            ->first();
+
+        if (!$admissionPayment) {
+            \Log::warning("No admission payment found for student {$student->id}");
+            return;
+        }
+
+        // Build new fee details from student_assigned_fees
+        $feeDetails = [];
+        if ($request->has('student_assigned_fees') && !empty($request->student_assigned_fees)) {
+            $assignedFees = json_decode($request->student_assigned_fees, true);
+
+            \Log::info('Update Admission Payment - Received Fees:', ['fees' => $assignedFees]);
+
+            if (is_array($assignedFees)) {
+                foreach ($assignedFees as $fee) {
+                    $feeName = $fee['name'] ?? '';
+                    $baseAmount = floatval($fee['amount'] ?? 0); // This is the base amount from JavaScript
+                    $feeType = $fee['type'] ?? 'Other';
+                    $discount = floatval($fee['discount'] ?? 0);
+
+                    // Calculate net amount after discount
+                    $netAmount = max(0, $baseAmount - $discount);
+
+                    if ($baseAmount > 0 && !empty($feeName)) {
+                        // Include ALL fees from Student's Fees section (including monthly fees)
+                        $feeDetails[] = [
+                            'name' => $feeName,
+                            'type' => $feeType,
+                            'amount' => $netAmount,  // Net amount after discount
+                            'original_amount' => $baseAmount,  // Base amount before discount
+                            'discount' => $discount
+                        ];
+                    }
+                }
+            }
+
+            \Log::info('Update Admission Payment - Processed Fee Details:', ['fee_details' => $feeDetails]);
+        }
+
+        // Calculate totals
+        $subTotal = 0;
+        $totalDiscount = 0;
+        $amount = 0;
+
+        foreach ($feeDetails as $fee) {
+            $subTotal += floatval($fee['original_amount'] ?? $fee['amount']);
+            $totalDiscount += floatval($fee['discount'] ?? 0);
+            $amount += floatval($fee['amount']);
+        }
+
+        $finalAmount = max(0, $subTotal - $totalDiscount);
+
+        // Update the payment record
+        $admissionPayment->update([
+            'amount' => $amount,
+            'sub_total' => $subTotal,
+            'total_discount' => $totalDiscount,
+            'final_amount' => $finalAmount,
+            'fee_details' => $feeDetails,
+        ]);
+
+        // Delete old payment items
+        $admissionPayment->payment_items()->delete();
+
+        // Create new payment items
+        if (!empty($feeDetails)) {
+            foreach ($feeDetails as $fee) {
+                PaymentItem::create([
+                    'payment_id' => $admissionPayment->id,
+                    'student_id' => $student->id,
+                    'fee_name' => $fee['name'],
+                    'fee_type' => $fee['type'] ?? 'Other',
+                    'month' => $fee['month'] ?? null,
+                    'year' => $fee['year'] ?? null,
+                    'amount' => $fee['amount'],
+                    'original_amount' => $fee['original_amount'] ?? $fee['amount'],
+                    'discount' => $fee['discount'] ?? 0,
+                ]);
+            }
+        }
+
+        \Log::info("Updated admission payment for student {$student->id} due to fee changes", [
+            'payment_id' => $admissionPayment->id,
+            'new_amount' => $amount,
+            'new_fee_details' => $feeDetails
+        ]);
     }
 
     /**
