@@ -242,10 +242,11 @@ class StudentController extends Controller
                 foreach ($classroom->fees as $fee) {
                     if (isset($fee['type']) && $fee['type'] === 'Monthly') {
                         $feeDetails[] = [
-                            'name' => ($fee['name'] ?? 'Monthly Fee') . ' - ' . $request->first_month . ' ' . date('Y'),
+                            'name' => ($fee['name'] ?? 'Monthly Fee') . ' - ' . $request->first_month . ', ' . date('y'),
                             'type' => 'Monthly',
                             'amount' => $fee['amount'] ?? 0,
-                            'month' => $request->first_month . ' ' . date('Y')
+                            'month' => $request->first_month,
+                            'year' => date('y')
                         ];
                     }
                 }
@@ -417,6 +418,71 @@ class StudentController extends Controller
             }
         }
 
+        // Mark months as paid in student_months table if monthly fees were included
+        $monthlyFeesInPayment = collect($feeDetails)->filter(function ($fee) {
+            return isset($fee['type']) && strtolower($fee['type']) === 'monthly' && isset($fee['month']) && isset($fee['year']);
+        });
+
+        if ($monthlyFeesInPayment->isNotEmpty()) {
+            // Get student's assigned monthly fees
+            $selectedFees = $student->selected_fees ?? [];
+            $monthlyFees = collect($selectedFees)->filter(function ($fee) {
+                return isset($fee['type']) && strtolower($fee['type']) === 'monthly';
+            });
+            $requiredMonthlyFeeNames = $monthlyFees->pluck('name')->unique()->toArray();
+
+            // Get paid monthly fee names from payment
+            $paidMonthlyFeeNames = [];
+            foreach ($monthlyFeesInPayment as $fee) {
+                // Extract base fee name (remove month suffix like " - July, 26")
+                $baseFeeName = preg_replace('/\s*-\s*[A-Za-z]+,\s*\d+$/', '', $fee['name']);
+                if (!empty($baseFeeName)) {
+                    $paidMonthlyFeeNames[] = $baseFeeName;
+                }
+            }
+
+            // Determine payment status based on fee coverage
+            $paidFeeCount = count(array_intersect($requiredMonthlyFeeNames, $paidMonthlyFeeNames));
+            $totalRequiredFees = count($requiredMonthlyFeeNames);
+
+            if ($paidFeeCount > 0) {
+                $paymentStatus = ($paidFeeCount >= $totalRequiredFees) ? 'paid' : 'partial';
+
+                // Create StudentMonth records for each unique month
+                $processedMonths = [];
+                foreach ($monthlyFeesInPayment as $fee) {
+                    $monthKey = $fee['month'] . ', ' . $fee['year'];
+
+                    // Avoid duplicates
+                    if (!in_array($monthKey, $processedMonths)) {
+                        $processedMonths[] = $monthKey;
+
+                        // Check if existing record exists
+                        $existingRecord = \App\Models\StudentMonth::where('student_id', $student->id)
+                            ->where('month_key', $monthKey)
+                            ->first();
+
+                        if ($existingRecord) {
+                            // Update existing record - upgrade to paid if all fees now covered
+                            if ($paymentStatus === 'paid') {
+                                $existingRecord->update([
+                                    'status' => 'paid',
+                                    'payment_id' => $admissionPayment->id
+                                ]);
+                            }
+                        } else {
+                            // Create new record with calculated status
+                            \App\Models\StudentMonth::create([
+                                'student_id' => $student->id,
+                                'month_key' => $monthKey,
+                                'status' => $paymentStatus,
+                                'payment_id' => $admissionPayment->id
+                            ]);
+                        }
+                    }
+                }
+            }
+        }
 
         // Update partial_payments with payment ID for each fee
         if ($isPartialPayment && $partialAmount > 0 && $partialAmount < $totalAdmissionAmount) {
