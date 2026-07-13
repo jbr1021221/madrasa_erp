@@ -13,6 +13,7 @@ class PaymentItem extends Model
         'payment_id',
         'student_id',
         'fee_name',
+        'base_fee_name',
         'fee_type',
         'month',
         'year',

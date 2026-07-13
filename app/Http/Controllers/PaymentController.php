@@ -129,10 +129,48 @@ class PaymentController extends Controller
             $selectedMonthDate = \Carbon\Carbon::createFromDate($year, date('m', strtotime($month)), 1)->endOfMonth();
             $query->where('created_at', '<=', $selectedMonthDate);
 
+            // Exclude students who have paid for the selected month
             $query->whereDoesntHave('payment_items', function ($q) use ($month, $year) {
                 $q->where('fee_type', 'Monthly')
                     ->where('month', $month)
                     ->where('year', date('y', strtotime($year)));
+            });
+
+            // Exclude students whose first payment month is AFTER the filtered month
+            // (e.g., student created in July but first payment is August, shouldn't show as unpaid for July)
+            $filterMonthNumber = date('n', strtotime($month)); // 1-12
+            $filterYear = date('y', strtotime($year)); // 2-digit year
+
+            $query->where(function ($q) use ($filterMonthNumber, $filterYear) {
+                // Either student has no monthly payments at all (should show as unpaid)
+                $q->whereDoesntHave('payment_items', function ($subQ) {
+                    $subQ->where('fee_type', 'Monthly');
+                })
+                // OR student's earliest payment month is on or before the filter month
+                ->orWhereHas('payment_items', function ($subQ) use ($filterMonthNumber, $filterYear) {
+                    $subQ->where('fee_type', 'Monthly')
+                        ->where(function ($dateQ) use ($filterMonthNumber, $filterYear) {
+                            // Convert month name to number for comparison using CASE
+                            $dateQ->whereRaw("
+                                (CAST(year AS UNSIGNED) < ? OR
+                                (CAST(year AS UNSIGNED) = ? AND
+                                CASE month
+                                    WHEN 'January' THEN 1
+                                    WHEN 'February' THEN 2
+                                    WHEN 'March' THEN 3
+                                    WHEN 'April' THEN 4
+                                    WHEN 'May' THEN 5
+                                    WHEN 'June' THEN 6
+                                    WHEN 'July' THEN 7
+                                    WHEN 'August' THEN 8
+                                    WHEN 'September' THEN 9
+                                    WHEN 'October' THEN 10
+                                    WHEN 'November' THEN 11
+                                    WHEN 'December' THEN 12
+                                END <= ?))
+                            ", [$filterYear, $filterYear, $filterMonthNumber]);
+                        });
+                });
             });
 
             $unpaidStudents = $query->latest()->get();
@@ -335,8 +373,10 @@ class PaymentController extends Controller
 
                         // Add each monthly fee component (Tuition, Structural, etc.)
                         foreach ($paymentDetails['monthlyFees'] as $fee) {
+                            $baseName = $fee['name'] ?? 'Monthly Fee';
                             $feeDetails[] = [
-                                'name' => ($fee['name'] ?? 'Monthly Fee') . ' - ' . $displayMonth,
+                                'name' => $baseName . ' - ' . $displayMonth,
+                                'base_name' => $baseName,
                                 'type' => 'Monthly',
                                 'amount' => $fee['amount'],
                                 'month' => $monthName,
@@ -431,6 +471,7 @@ class PaymentController extends Controller
                     'payment_id' => $payment->id,
                     'student_id' => $validated['student_id'],
                     'fee_name' => $fee['name'],
+                    'base_fee_name' => $fee['base_name'] ?? $fee['name'],
                     'fee_type' => $fee['type'] ?? 'Other',
                     'month' => $fee['month'] ?? null,
                     'year' => $fee['year'] ?? null,
@@ -460,10 +501,9 @@ class PaymentController extends Controller
                 foreach ($paymentItems as $item) {
                     // Check if this payment item is for a monthly fee
                     if (strtolower($item->fee_type ?? '') === 'monthly') {
-                        // Extract base fee name from fee_name (remove month suffix like " - June, 26")
-                        $baseFeeName = preg_replace('/\s*-\s*[A-Za-z]+,\s*\d+$/', '', $item->fee_name);
-                        if (!empty($baseFeeName)) {
-                            $paidMonthlyFeeNames[] = $baseFeeName;
+                        // Use base_fee_name field directly
+                        if (!empty($item->base_fee_name)) {
+                            $paidMonthlyFeeNames[] = $item->base_fee_name;
                         }
                     }
                 }
@@ -653,10 +693,9 @@ class PaymentController extends Controller
 
                 foreach ($paymentItems as $item) {
                     if (strtolower($item->fee_type ?? '') === 'monthly') {
-                        // Extract base fee name from fee_name (remove month suffix like " - June, 26")
-                        $baseFeeName = preg_replace('/\s*-\s*[A-Za-z]+,\s*\d+$/', '', $item->fee_name);
-                        if (!empty($baseFeeName)) {
-                            $paidMonthlyFeeNames[] = $baseFeeName;
+                        // Use base_fee_name field directly
+                        if (!empty($item->base_fee_name)) {
+                            $paidMonthlyFeeNames[] = $item->base_fee_name;
                         }
                     }
                 }

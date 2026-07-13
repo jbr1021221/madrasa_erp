@@ -220,8 +220,33 @@ class StudentController extends Controller
                             'discount' => $discount
                         ];
 
-                        // Add month information if it's a monthly fee
-                        if ($feeMonth) {
+                        // For Monthly/Quarterly/Half-Yearly fees, parse month and year from fee name
+                        if (in_array($feeType, ['Monthly', 'Quarterly', 'Half Yearly', 'Half-Yearly', 'Half_Yearly'])) {
+                            // Fee name format: "Monthly Tuition Fee - August, 26"
+                            // Extract base name and month/year
+                            if (preg_match('/^(.+?)\s*-\s*([A-Za-z]+),\s*(\d+)$/', $feeName, $matches)) {
+                                $baseName = trim($matches[1]);
+                                $monthName = trim($matches[2]);
+                                $yearValue = trim($matches[3]);
+
+                                $feeDetail['base_name'] = $baseName;
+                                $feeDetail['month'] = $monthName;
+                                $feeDetail['year'] = $yearValue;
+                            } elseif (preg_match('/^(.+?)\s*-\s*(.+)$/', $feeName, $matches)) {
+                                // Fallback for other formats like "Fee - 1st Half"
+                                $baseName = trim($matches[1]);
+                                $monthPart = trim($matches[2]);
+
+                                $feeDetail['base_name'] = $baseName;
+                                $feeDetail['month'] = $monthPart;
+                            }
+                        } else {
+                            // For non-monthly fees, base_name = fee_name
+                            $feeDetail['base_name'] = $feeName;
+                        }
+
+                        // Add month information if it was provided separately (legacy)
+                        if ($feeMonth && !isset($feeDetail['month'])) {
                             $feeDetail['month'] = $feeMonth;
                         }
 
@@ -241,8 +266,10 @@ class StudentController extends Controller
                 // Add each monthly fee component for the first month
                 foreach ($classroom->fees as $fee) {
                     if (isset($fee['type']) && $fee['type'] === 'Monthly') {
+                        $baseName = $fee['name'] ?? 'Monthly Fee';
                         $feeDetails[] = [
-                            'name' => ($fee['name'] ?? 'Monthly Fee') . ' - ' . $request->first_month . ', ' . date('y'),
+                            'name' => $baseName . ' - ' . $request->first_month . ', ' . date('y'),
+                            'base_name' => $baseName,
                             'type' => 'Monthly',
                             'amount' => $fee['amount'] ?? 0,
                             'month' => $request->first_month,
@@ -408,6 +435,7 @@ class StudentController extends Controller
                     'payment_id' => $admissionPayment->id,
                     'student_id' => $student->id,
                     'fee_name' => $fee['name'],
+                    'base_fee_name' => $fee['base_name'] ?? $fee['name'],
                     'fee_type' => $fee['type'] ?? 'Other',
                     'month' => $fee['month'] ?? null,
                     'year' => $fee['year'] ?? null,
@@ -434,10 +462,9 @@ class StudentController extends Controller
             // Get paid monthly fee names from payment
             $paidMonthlyFeeNames = [];
             foreach ($monthlyFeesInPayment as $fee) {
-                // Extract base fee name (remove month suffix like " - July, 26")
-                $baseFeeName = preg_replace('/\s*-\s*[A-Za-z]+,\s*\d+$/', '', $fee['name']);
-                if (!empty($baseFeeName)) {
-                    $paidMonthlyFeeNames[] = $baseFeeName;
+                // Use base_name field directly
+                if (!empty($fee['base_name'])) {
+                    $paidMonthlyFeeNames[] = $fee['base_name'];
                 }
             }
 
@@ -716,6 +743,7 @@ class StudentController extends Controller
                     'payment_id' => $admissionPayment->id,
                     'student_id' => $student->id,
                     'fee_name' => $fee['name'],
+                    'base_fee_name' => $fee['base_name'] ?? $fee['name'],
                     'fee_type' => $fee['type'] ?? 'Other',
                     'month' => $fee['month'] ?? null,
                     'year' => $fee['year'] ?? null,
